@@ -1,0 +1,17 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  # Prisma's anonymous-telemetry postinstall pinger — opt out.
+  '@scarf/scarf': false
+  argon2: true
+  prisma: true
+  # Native resolver used by eslint-config-next's tooling — legitimate.
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - '@expo/cli@57.0.26'
+  - expo-asset@57.0.18
+  - expo-constants@57.0.19
+  - expo@57.0.24

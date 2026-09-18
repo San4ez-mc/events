@@ -1,0 +1,10 @@
+{
+  "extends": "@kiro/tsconfig/base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "noEmit": true
+  },
+  "include": ["src"]
+}

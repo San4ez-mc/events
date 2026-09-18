@@ -1,0 +1,92 @@
+{
+  "app": {
+    "name": "Kiro"
+  },
+  "nav": {
+    "discover": "Discover",
+    "search": "Search",
+    "create": "Create",
+    "notifications": "Notifications",
+    "profile": "Profile",
+    "myEvents": "My events",
+    "organizer": "Organizer",
+    "admin": "Admin"
+  },
+  "common": {
+    "loading": "Loading…",
+    "retry": "Retry",
+    "somethingWentWrong": "Something went wrong",
+    "empty": "Nothing here yet",
+    "offline": "No network connection",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "yes": "Yes",
+    "no": "No",
+    "free": "Free"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up",
+      "forgotPassword": "Forgot password?"
+    },
+    "register": {
+      "title": "Create account",
+      "name": "Name",
+      "nickname": "Nickname",
+      "submit": "Sign up",
+      "hasAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "nameOrNicknameRequired": "Enter a name or nickname"
+    },
+    "password": {
+      "required": "Enter a password",
+      "tooShort": "Password must be at least 8 characters",
+      "tooLong": "Password is too long",
+      "needsLetter": "Password must contain at least one letter",
+      "needsDigit": "Password must contain at least one digit"
+    },
+    "forgotPassword": {
+      "title": "Reset password",
+      "submit": "Send instructions",
+      "sent": "If that email is registered, we've sent instructions to it"
+    },
+    "resetPassword": {
+      "title": "New password",
+      "submit": "Save password"
+    },
+    "verifyEmail": {
+      "title": "Verify email",
+      "success": "Email verified",
+      "resend": "Resend"
+    },
+    "logout": "Log out"
+  },
+  "errors": {
+    "VALIDATION_ERROR": "Please check the fields you entered",
+    "AUTH_REQUIRED": "You need to sign in",
+    "FORBIDDEN": "You don't have permission to do this",
+    "NOT_FOUND": "Not found",
+    "RATE_LIMITED": "Too many attempts. Try again later",
+    "INTERNAL_ERROR": "Internal server error",
+    "INVALID_CREDENTIALS": "Invalid email or password",
+    "EMAIL_ALREADY_REGISTERED": "This email is already registered",
+    "EMAIL_NOT_VERIFIED": "Please verify your email to continue",
+    "INVALID_OR_EXPIRED_TOKEN": "This link is invalid or has expired",
+    "EVENT_NOT_FOUND": "Event not found",
+    "EVENT_CAPACITY_REACHED": "This event is fully booked",
+    "REGISTRATION_CLOSED": "Registration for this event is closed",
+    "ALREADY_REGISTERED": "You're already registered for this event",
+    "INSUFFICIENT_LISTING_CREDITS": "Not enough listing credits",
+    "EVENT_REQUIRES_MODERATION": "This event needs moderation before publishing",
+    "PAYMENT_REQUIRED": "Payment required"
+  }
+}

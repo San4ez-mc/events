@@ -1,0 +1,92 @@
+{
+  "app": {
+    "name": "Кіро"
+  },
+  "nav": {
+    "discover": "Події",
+    "search": "Пошук",
+    "create": "Створити",
+    "notifications": "Сповіщення",
+    "profile": "Профіль",
+    "myEvents": "Мої події",
+    "organizer": "Організатор",
+    "admin": "Адмінка"
+  },
+  "common": {
+    "loading": "Завантаження…",
+    "retry": "Повторити",
+    "somethingWentWrong": "Щось пішло не так",
+    "empty": "Поки що нічого немає",
+    "offline": "Немає з'єднання з мережею",
+    "save": "Зберегти",
+    "cancel": "Скасувати",
+    "confirm": "Підтвердити",
+    "back": "Назад",
+    "next": "Далі",
+    "done": "Готово",
+    "yes": "Так",
+    "no": "Ні",
+    "free": "Безкоштовно"
+  },
+  "auth": {
+    "login": {
+      "title": "Вхід",
+      "email": "Email",
+      "password": "Пароль",
+      "submit": "Увійти",
+      "noAccount": "Немає акаунта?",
+      "signUp": "Зареєструватися",
+      "forgotPassword": "Забули пароль?"
+    },
+    "register": {
+      "title": "Реєстрація",
+      "name": "Ім'я",
+      "nickname": "Нікнейм",
+      "submit": "Зареєструватися",
+      "hasAccount": "Вже маєте акаунт?",
+      "signIn": "Увійти",
+      "nameOrNicknameRequired": "Вкажіть ім'я або нікнейм"
+    },
+    "password": {
+      "required": "Введіть пароль",
+      "tooShort": "Пароль має містити щонайменше 8 символів",
+      "tooLong": "Пароль занадто довгий",
+      "needsLetter": "Пароль має містити хоча б одну літеру",
+      "needsDigit": "Пароль має містити хоча б одну цифру"
+    },
+    "forgotPassword": {
+      "title": "Відновлення пароля",
+      "submit": "Надіслати інструкції",
+      "sent": "Якщо такий email зареєстровано, ми надіслали інструкції на пошту"
+    },
+    "resetPassword": {
+      "title": "Новий пароль",
+      "submit": "Зберегти пароль"
+    },
+    "verifyEmail": {
+      "title": "Підтвердження email",
+      "success": "Email підтверджено",
+      "resend": "Надіслати ще раз"
+    },
+    "logout": "Вийти"
+  },
+  "errors": {
+    "VALIDATION_ERROR": "Перевірте правильність введених даних",
+    "AUTH_REQUIRED": "Потрібно увійти в акаунт",
+    "FORBIDDEN": "Недостатньо прав для цієї дії",
+    "NOT_FOUND": "Не знайдено",
+    "RATE_LIMITED": "Забагато спроб. Спробуйте пізніше",
+    "INTERNAL_ERROR": "Внутрішня помилка сервера",
+    "INVALID_CREDENTIALS": "Невірний email або пароль",
+    "EMAIL_ALREADY_REGISTERED": "Цей email вже зареєстровано",
+    "EMAIL_NOT_VERIFIED": "Підтвердіть email, щоб продовжити",
+    "INVALID_OR_EXPIRED_TOKEN": "Посилання недійсне або застаріло",
+    "EVENT_NOT_FOUND": "Подію не знайдено",
+    "EVENT_CAPACITY_REACHED": "Усі місця вже зайнято",
+    "REGISTRATION_CLOSED": "Реєстрація на подію закрита",
+    "ALREADY_REGISTERED": "Ви вже зареєстровані на цю подію",
+    "INSUFFICIENT_LISTING_CREDITS": "Недостатньо кредитів на публікацію",
+    "EVENT_REQUIRES_MODERATION": "Подія потребує модерації перед публікацією",
+    "PAYMENT_REQUIRED": "Потрібна оплата"
+  }
+}

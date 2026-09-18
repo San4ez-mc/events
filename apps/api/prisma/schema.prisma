@@ -1,0 +1,227 @@
+// Kiro API — Prisma schema.
+// Phase 0 scope: users, roles, auth support tables.
+// Geography / categories / events land in Phase 1 (see TS spec §115).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// `postgis` and `pg_trgm` are enabled on kiro_dev/kiro_test/kiro directly
+// (infrastructure/scripts/bootstrap-db.md), not through Prisma's
+// `postgresqlExtensions` preview feature: that feature requires the DB role
+// to be superuser to CREATE EXTENSION via a migration, which we deliberately
+// don't grant `kiro`. Prisma models never reference native PostGIS geometry
+// columns anyway (lat/lng stay plain Decimal) — postgis is only used via raw
+// SQL (ST_Distance etc.) for proximity queries in later phases.
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums (kept 1:1 with packages/types/src/enums.ts — do not let these drift)
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BLOCKED
+  DELETED
+}
+
+enum SocialLinkType {
+  INSTAGRAM
+  TELEGRAM
+  FACEBOOK
+  TIKTOK
+  WEBSITE
+  OTHER
+}
+
+enum LocationPermissionState {
+  UNKNOWN
+  GRANTED
+  DENIED
+}
+
+enum DevicePlatform {
+  IOS
+  ANDROID
+  WEB
+}
+
+// ---------------------------------------------------------------------------
+// Users & auth
+// ---------------------------------------------------------------------------
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
+
+  email           String    @unique
+  emailVerifiedAt DateTime?
+  passwordHash    String
+
+  name      String?
+  nickname  String?
+  avatarUrl String?
+  bio       String?
+
+  phone           String?
+  phoneVerifiedAt DateTime?
+
+  locale String     @default("uk")
+  status UserStatus @default(ACTIVE)
+  role   UserRole   @default(USER)
+
+  /// Set the first time this user creates an event (§10: organizer is not a role).
+  organizerActivatedAt DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
+  socialLinks        UserSocialLink[]
+  preferences        UserPreferences?
+  devices            UserDevice[]
+  refreshTokens      RefreshToken[]
+  emailVerifications EmailVerificationToken[]
+  passwordResets     PasswordResetToken[]
+  auditLogs          AuditLog[]
+
+  @@map("users")
+}
+
+model UserSocialLink {
+  id     String         @id @default(uuid()) @db.Uuid
+  userId String         @db.Uuid
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type   SocialLinkType
+  url    String
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("user_social_links")
+}
+
+model UserPreferences {
+  userId String @id @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  maxBudget Decimal? @db.Decimal(10, 2)
+
+  allowPush                        Boolean @default(true)
+  allowEmail                       Boolean @default(true)
+  allowFriendActivityNotifications Boolean @default(true)
+  allowSubscriptionNotifications   Boolean @default(true)
+  allowEventReminderNotifications  Boolean @default(true)
+
+  locationPermissionState LocationPermissionState @default(UNKNOWN)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_preferences")
+}
+
+/// Device push tokens (§41). Deactivated automatically on delivery failure.
+model UserDevice {
+  id         String         @id @default(uuid()) @db.Uuid
+  userId     String         @db.Uuid
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform   DevicePlatform
+  pushToken  String
+  lastSeenAt DateTime       @default(now())
+  active     Boolean        @default(true)
+
+  @@unique([userId, pushToken])
+  @@index([userId])
+  @@map("user_devices")
+}
+
+/// Refresh tokens are stored hashed, never in plaintext, and rotated on every
+/// use (§9). A reused (already-rotated) token indicates theft and revokes the
+/// whole family.
+model RefreshToken {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String    @unique
+  /// Groups all tokens descended from one login, so theft-detection can
+  /// revoke the entire chain at once.
+  familyId     String    @db.Uuid
+  replacedById String?   @db.Uuid
+  revokedAt    DateTime?
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  createdByIp  String?
+  userAgent    String?
+
+  @@index([userId])
+  @@index([familyId])
+  @@map("refresh_tokens")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("email_verification_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// ---------------------------------------------------------------------------
+// System-wide
+// ---------------------------------------------------------------------------
+
+/// Config values that should be changeable without a deploy (§95).
+model SystemSetting {
+  key       String   @id
+  valueJson Json
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+/// Every admin/moderator mutation must create one of these (§75).
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorUserId String?  @db.Uuid
+  actor       User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  action      String
+  entityType  String
+  entityId    String
+  beforeJson  Json?
+  afterJson   Json?
+  ip          String?
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorUserId])
+  @@map("audit_logs")
+}
