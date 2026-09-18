@@ -7,7 +7,7 @@ generator client {
 }
 
 // `postgis` and `pg_trgm` are enabled on kiro_dev/kiro_test/kiro directly
-// (infrastructure/scripts/bootstrap-db.md), not through Prisma's
+// on the server (see docs/VPS_ACCESS.md), not through Prisma's
 // `postgresqlExtensions` preview feature: that feature requires the DB role
 // to be superuser to CREATE EXTENSION via a migration, which we deliberately
 // don't grant `kiro`. Prisma models never reference native PostGIS geometry
@@ -94,6 +94,10 @@ model User {
   emailVerifications EmailVerificationToken[]
   passwordResets     PasswordResetToken[]
   auditLogs          AuditLog[]
+  districtsCreated   District[]               @relation("DistrictCreator")
+  categoriesCreated  Category[]               @relation("CategoryCreator")
+  events             Event[]
+  eventSeries        EventSeries[]
 
   @@map("users")
 }
@@ -224,4 +228,346 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([actorUserId])
   @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Geography (§14, §15, §37) — Ukraine only for now; country hierarchy is
+// still explicit (countryCode on Region) so this isn't locked to one country.
+// ---------------------------------------------------------------------------
+
+enum RegionStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum CityStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum DistrictStatus {
+  ACTIVE
+  PENDING
+  MERGED
+  ARCHIVED
+}
+
+/// Where a district/category row came from — drives moderation UX (§37: user-
+/// created local districts start PENDING and can be approved/merged by an admin).
+enum GeoSource {
+  SYSTEM
+  USER_CREATED
+  ADMIN_CREATED
+}
+
+model Region {
+  id           String       @id @default(uuid()) @db.Uuid
+  countryCode  String /// ISO 3166-1 alpha-2, e.g. "UA"
+  nameUk       String
+  nameEn       String
+  externalCode String? /// e.g. KOATUU/KATOTTG code from the import source (§94)
+  status       RegionStatus @default(ACTIVE)
+
+  cities City[]
+
+  @@unique([countryCode, nameUk])
+  @@map("regions")
+}
+
+model City {
+  id         String     @id @default(uuid()) @db.Uuid
+  regionId   String     @db.Uuid
+  region     Region     @relation(fields: [regionId], references: [id])
+  nameUk     String
+  nameEn     String
+  slug       String     @unique
+  latitude   Decimal    @db.Decimal(9, 6)
+  longitude  Decimal    @db.Decimal(9, 6)
+  population Int?
+  status     CityStatus @default(ACTIVE)
+
+  districts District[]
+  events    Event[]
+
+  @@index([regionId])
+  @@map("cities")
+}
+
+model District {
+  id     String @id @default(uuid()) @db.Uuid
+  cityId String @db.Uuid
+  city   City   @relation(fields: [cityId], references: [id])
+
+  nameUk String
+  nameEn String?
+
+  status DistrictStatus @default(ACTIVE)
+  source GeoSource      @default(SYSTEM)
+
+  createdByUserId      String?    @db.Uuid
+  createdByUser        User?      @relation("DistrictCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  mergedIntoDistrictId String?    @db.Uuid
+  mergedIntoDistrict   District?  @relation("DistrictMerge", fields: [mergedIntoDistrictId], references: [id])
+  mergedFromDistricts  District[] @relation("DistrictMerge")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events Event[]
+
+  @@unique([cityId, nameUk])
+  @@index([cityId])
+  @@index([mergedIntoDistrictId])
+  @@map("districts")
+}
+
+// ---------------------------------------------------------------------------
+// Categories (§16, §38) — max tree depth 2 (parent -> child), enforced in
+// application logic (CategoriesService), not by the schema.
+// ---------------------------------------------------------------------------
+
+enum CategoryStatus {
+  ACTIVE
+  PENDING
+  MERGED
+  HIDDEN
+  ARCHIVED
+}
+
+model Category {
+  id       String     @id @default(uuid()) @db.Uuid
+  parentId String?    @db.Uuid
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+
+  slug   String @unique
+  nameUk String
+  nameEn String
+
+  icon String?
+
+  status CategoryStatus @default(ACTIVE)
+  source GeoSource      @default(SYSTEM)
+
+  createdByUserId      String?    @db.Uuid
+  createdByUser        User?      @relation("CategoryCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  mergedIntoCategoryId String?    @db.Uuid
+  mergedIntoCategory   Category?  @relation("CategoryMerge", fields: [mergedIntoCategoryId], references: [id])
+  mergedFromCategories Category[] @relation("CategoryMerge")
+
+  sortOrder Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events Event[]
+
+  @@index([parentId])
+  @@index([mergedIntoCategoryId])
+  @@map("categories")
+}
+
+// ---------------------------------------------------------------------------
+// Events (§17-24, §29). Phase 1 scope: the event record itself, media, and
+// simple (single-price) pricing. Deliberately NOT in this migration —
+// they're later phases per §115 and would just be dead columns/tables today:
+//   - event_price_options (multiple ticket tiers)      -> Phase 4
+//   - event_registration_fields / registrations         -> Phase 4
+//   - event_collaborators (co-organizers)                -> Phase 7
+//   - event_faq_items, saves, subscriptions, reviews      -> Phase 6/7/8
+// EventSeries is included now (empty of real UX) only because Event.seriesId
+// is part of the core event record per §17 — Phase 7 builds recurrence UX on
+// top of this FK, it doesn't need a schema change to do so.
+// ---------------------------------------------------------------------------
+
+enum RecurrenceType {
+  DAILY
+  EVERY_N_DAYS
+  WEEKLY
+  EVERY_N_WEEKS
+  SPECIFIC_WEEKDAY
+  SPECIFIC_DAY_OF_MONTH
+  EVERY_N_MONTHS
+}
+
+/// Groups recurring event occurrences (§29). Each occurrence is a normal
+/// `Event` row with its own id/registrations/stats — never one event record
+/// with an array of dates.
+model EventSeries {
+  id      String @id @default(uuid()) @db.Uuid
+  ownerId String @db.Uuid
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  recurrenceType     RecurrenceType
+  recurrenceRuleJson Json
+
+  templateEventId String? @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  occurrences Event[]
+
+  @@index([ownerId])
+  @@map("event_series")
+}
+
+enum EventStatus {
+  DRAFT
+  PENDING_MODERATION
+  PUBLISHED
+  REJECTED
+  CANCELLED
+  COMPLETED
+  ARCHIVED
+}
+
+enum EventVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum EventFormat {
+  OFFLINE
+  ONLINE
+}
+
+enum ApprovalMode {
+  AUTO
+  ORGANIZER_APPROVAL
+}
+
+enum EventPriceType {
+  FREE
+  PAID
+}
+
+enum Currency {
+  UAH
+}
+
+model Event {
+  id String @id @default(uuid()) @db.Uuid
+
+  ownerId String @db.Uuid
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  seriesId String?      @db.Uuid
+  series   EventSeries? @relation(fields: [seriesId], references: [id])
+
+  slug String @unique
+
+  title       String
+  description String @db.Text
+
+  categoryId String   @db.Uuid
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  language String @default("uk") /// §84 — event.language; user content isn't auto-translated
+
+  status     EventStatus     @default(DRAFT)
+  visibility EventVisibility @default(PUBLIC)
+  format     EventFormat     @default(OFFLINE)
+
+  startsAt DateTime
+  endsAt   DateTime
+  timezone String   @default("Europe/Kyiv")
+
+  cityId     String?   @db.Uuid
+  city       City?     @relation(fields: [cityId], references: [id])
+  districtId String?   @db.Uuid
+  district   District? @relation(fields: [districtId], references: [id])
+
+  addressText    String?
+  addressDetails Json?
+
+  googlePlaceId String?
+  latitude      Decimal? @db.Decimal(9, 6)
+  longitude     Decimal? @db.Decimal(9, 6)
+
+  onlineUrl String?
+
+  capacity        Int?
+  minParticipants Int?
+
+  registrationDeadline DateTime?
+
+  approvalMode ApprovalMode @default(AUTO)
+
+  /// Minimum age to attend, e.g. 18. Null = no restriction (§151/UX "усі/18+").
+  ageRestriction Int?
+
+  rules String? @db.Text
+
+  /// Phase 1: simple single price. Multiple ticket tiers (event_price_options,
+  /// §24) land in Phase 4 — this covers the "Безкоштовно / платно" step from
+  /// the create-event wizard (UX §31 step 6) and §69's publish-validation
+  /// requirement for a price/free state.
+  priceType EventPriceType @default(FREE)
+  price     Decimal?       @db.Decimal(10, 2)
+  currency  Currency       @default(UAH)
+
+  /// External payment link/instruction (§21) — Kiro is not a party to this payment.
+  paymentUrl String?
+
+  publishedAt DateTime?
+  cancelledAt DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  media EventMedia[]
+
+  @@index([ownerId])
+  @@index([categoryId])
+  @@index([cityId])
+  @@index([districtId])
+  @@index([seriesId])
+  @@index([status, visibility])
+  @@map("events")
+}
+
+enum EventMediaType {
+  IMAGE
+  VIDEO
+}
+
+enum MediaModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Derivatives (display/thumbnail) are generated after upload (§23) — the
+/// original is never destructively cropped, so the card's focal point can be
+/// changed later without re-uploading.
+model EventMedia {
+  id      String @id @default(uuid()) @db.Uuid
+  eventId String @db.Uuid
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  type EventMediaType
+
+  originalUrl  String
+  displayUrl   String
+  thumbnailUrl String
+
+  width           Int?
+  height          Int?
+  durationSeconds Int?
+
+  sortOrder Int @default(0)
+
+  /// Crop focal point as a 0..1 fraction of the original image, so the
+  /// vertical card preview can be regenerated without re-cropping (§23).
+  focalX Decimal? @db.Decimal(4, 3)
+  focalY Decimal? @db.Decimal(4, 3)
+
+  moderationStatus MediaModerationStatus @default(APPROVED)
+
+  createdAt DateTime @default(now())
+
+  @@index([eventId])
+  @@map("event_media")
 }

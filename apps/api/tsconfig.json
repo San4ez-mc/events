@@ -8,6 +8,6 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*.ts", "prisma/seed.ts", "test/**/*.ts"],
+  "include": ["src/**/*.ts", "prisma/seed.ts", "prisma/import-ukraine-geo.ts", "test/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

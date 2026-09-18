@@ -1,0 +1,42 @@
+[
+  {
+    "slug": "sport", "nameUk": "Спорт", "nameEn": "Sport", "icon": "sport",
+    "children": [
+      { "slug": "sport-table-tennis", "nameUk": "Настільний теніс", "nameEn": "Table tennis" },
+      { "slug": "sport-tennis", "nameUk": "Великий теніс", "nameEn": "Tennis" },
+      { "slug": "sport-padel", "nameUk": "Падел", "nameEn": "Padel" },
+      { "slug": "sport-football", "nameUk": "Футбол", "nameEn": "Football" },
+      { "slug": "sport-basketball", "nameUk": "Баскетбол", "nameEn": "Basketball" },
+      { "slug": "sport-volleyball", "nameUk": "Волейбол", "nameEn": "Volleyball" },
+      { "slug": "sport-running", "nameUk": "Біг", "nameEn": "Running" },
+      { "slug": "sport-cycling", "nameUk": "Велосипед", "nameEn": "Cycling" },
+      { "slug": "sport-motorcycling", "nameUk": "Мотопокатушки", "nameEn": "Motorcycling" },
+      { "slug": "sport-badminton", "nameUk": "Бадмінтон", "nameEn": "Badminton" },
+      { "slug": "sport-billiards", "nameUk": "Більярд", "nameEn": "Billiards" },
+      { "slug": "sport-bowling", "nameUk": "Боулінг", "nameEn": "Bowling" },
+      { "slug": "sport-karting", "nameUk": "Картинг", "nameEn": "Karting" },
+      { "slug": "sport-yoga", "nameUk": "Йога", "nameEn": "Yoga" },
+      { "slug": "sport-fitness", "nameUk": "Фітнес", "nameEn": "Fitness" },
+      { "slug": "sport-watersports", "nameUk": "Водний спорт", "nameEn": "Water sports" },
+      { "slug": "sport-wintersports", "nameUk": "Зимовий спорт", "nameEn": "Winter sports" },
+      { "slug": "sport-other", "nameUk": "Інше", "nameEn": "Other" }
+    ]
+  },
+  { "slug": "board-games", "nameUk": "Настільні ігри", "nameEn": "Board games", "icon": "board-games" },
+  { "slug": "parties", "nameUk": "Вечірки", "nameEn": "Parties", "icon": "parties" },
+  { "slug": "concerts", "nameUk": "Концерти", "nameEn": "Concerts", "icon": "concerts" },
+  { "slug": "standup", "nameUk": "Стендап", "nameEn": "Stand-up", "icon": "standup" },
+  { "slug": "cinema", "nameUk": "Кіно", "nameEn": "Cinema", "icon": "cinema" },
+  { "slug": "dating", "nameUk": "Знайомства", "nameEn": "Dating", "icon": "dating" },
+  { "slug": "networking", "nameUk": "Нетворкінг", "nameEn": "Networking", "icon": "networking" },
+  { "slug": "education", "nameUk": "Навчання", "nameEn": "Education", "icon": "education" },
+  { "slug": "workshops", "nameUk": "Майстер-класи", "nameEn": "Workshops", "icon": "workshops" },
+  { "slug": "food-tasting", "nameUk": "Їжа та дегустації", "nameEn": "Food & tasting", "icon": "food" },
+  { "slug": "travel", "nameUk": "Подорожі", "nameEn": "Travel", "icon": "travel" },
+  { "slug": "excursions", "nameUk": "Екскурсії", "nameEn": "Excursions", "icon": "excursions" },
+  { "slug": "outdoor", "nameUk": "Активний відпочинок", "nameEn": "Outdoor activities", "icon": "outdoor" },
+  { "slug": "culture", "nameUk": "Культура", "nameEn": "Culture", "icon": "culture" },
+  { "slug": "art", "nameUk": "Мистецтво", "nameEn": "Art", "icon": "art" },
+  { "slug": "kids", "nameUk": "Для дітей", "nameEn": "For kids", "icon": "kids" },
+  { "slug": "online", "nameUk": "Онлайн", "nameEn": "Online", "icon": "online" }
+]

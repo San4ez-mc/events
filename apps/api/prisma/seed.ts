@@ -1,20 +1,32 @@
 /**
  * Seed script (§93). Run with `pnpm --filter @kiro/api seed`.
  *
- * Phase 0 scope only: super-admin user + default system_settings. Geography,
- * categories, credit packages seed data lands with their respective phases
- * (§93/§94) — do not hardcode them here ahead of the schema that needs them.
+ * Covers: super-admin user, system_settings, Ukraine geography (delegates to
+ * import-ukraine-geo.ts, §94), and initial categories (§38). Credit packages
+ * (§50) land with Phase 9 — the table doesn't exist yet.
  */
 import { PrismaClient } from "@prisma/client";
 import * as argon2 from "argon2";
 import { randomBytes } from "node:crypto";
 import { SYSTEM_SETTING_DEFAULTS } from "@kiro/types";
+import { importUkraineGeography } from "./import-ukraine-geo";
+import categoriesData from "./seed-data/categories.json";
 
 const prisma = new PrismaClient();
+
+interface CategorySeed {
+  slug: string;
+  nameUk: string;
+  nameEn: string;
+  icon?: string;
+  children?: CategorySeed[];
+}
 
 async function main() {
   await seedSuperAdmin();
   await seedSystemSettings();
+  await seedGeography();
+  await seedCategories();
 }
 
 async function seedSuperAdmin() {
@@ -64,6 +76,53 @@ async function seedSystemSettings() {
     });
   }
   console.log(`[seed] Ensured ${Object.keys(SYSTEM_SETTING_DEFAULTS).length} system_settings rows.`);
+}
+
+async function seedGeography() {
+  const result = await importUkraineGeography(prisma);
+  console.log(
+    `[seed] Geography: ${result.regions} regions, ${result.cities} cities (+${result.citiesCreated} new), ` +
+      `${result.districts} districts (+${result.districtsCreated} new).`,
+  );
+}
+
+async function seedCategories() {
+  let created = 0;
+  let sortOrder = 0;
+
+  for (const category of categoriesData as CategorySeed[]) {
+    created += await upsertCategory(category, null, sortOrder++);
+  }
+
+  console.log(`[seed] Categories: ${await prisma.category.count()} total (+${created} new).`);
+}
+
+async function upsertCategory(
+  data: CategorySeed,
+  parentId: string | null,
+  sortOrder: number,
+): Promise<number> {
+  const before = await prisma.category.findUnique({ where: { slug: data.slug } });
+  const category = await prisma.category.upsert({
+    where: { slug: data.slug },
+    create: {
+      slug: data.slug,
+      nameUk: data.nameUk,
+      nameEn: data.nameEn,
+      icon: data.icon,
+      parentId,
+      sortOrder,
+      source: "SYSTEM",
+    },
+    update: { nameUk: data.nameUk, nameEn: data.nameEn, icon: data.icon, sortOrder },
+  });
+
+  let created = before ? 0 : 1;
+  let childSortOrder = 0;
+  for (const child of data.children ?? []) {
+    created += await upsertCategory(child, category.id, childSortOrder++);
+  }
+  return created;
 }
 
 main()

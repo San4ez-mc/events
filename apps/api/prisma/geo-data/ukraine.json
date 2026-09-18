@@ -1,0 +1,135 @@
+{
+  "_comment": "Seed data for §94 (Ukrainian geography import). Source: administrative division of Ukraine — 24 oblasts + Autonomous Republic of Crimea + 2 cities of special status (Kyiv, Sevastopol). Each region ships with its administrative-center city (real coordinates); most cities have no districts here yet — official raions for the largest cities (starting with Kyiv) are seeded explicitly, everything else is filled in over time via admin/user district creation (§37) rather than pretending to a completeness this importer doesn't have.",
+  "countryCode": "UA",
+  "regions": [
+    {
+      "nameUk": "Вінницька область", "nameEn": "Vinnytsia Oblast",
+      "cities": [{ "nameUk": "Вінниця", "nameEn": "Vinnytsia", "slug": "vinnytsia", "lat": 49.2331, "lng": 28.4682, "population": 370000 }]
+    },
+    {
+      "nameUk": "Волинська область", "nameEn": "Volyn Oblast",
+      "cities": [{ "nameUk": "Луцьк", "nameEn": "Lutsk", "slug": "lutsk", "lat": 50.7472, "lng": 25.3254, "population": 217000 }]
+    },
+    {
+      "nameUk": "Дніпропетровська область", "nameEn": "Dnipropetrovsk Oblast",
+      "cities": [
+        { "nameUk": "Дніпро", "nameEn": "Dnipro", "slug": "dnipro", "lat": 48.4647, "lng": 35.0462, "population": 980000 },
+        { "nameUk": "Кривий Ріг", "nameEn": "Kryvyi Rih", "slug": "kryvyi-rih", "lat": 47.9105, "lng": 33.3918, "population": 600000 }
+      ]
+    },
+    {
+      "nameUk": "Донецька область", "nameEn": "Donetsk Oblast",
+      "cities": [
+        { "nameUk": "Донецьк", "nameEn": "Donetsk", "slug": "donetsk", "lat": 48.0159, "lng": 37.8028, "population": 900000 },
+        { "nameUk": "Маріуполь", "nameEn": "Mariupol", "slug": "mariupol", "lat": 47.0971, "lng": 37.5434, "population": 425000 }
+      ]
+    },
+    {
+      "nameUk": "Житомирська область", "nameEn": "Zhytomyr Oblast",
+      "cities": [{ "nameUk": "Житомир", "nameEn": "Zhytomyr", "slug": "zhytomyr", "lat": 50.2547, "lng": 28.6587, "population": 262000 }]
+    },
+    {
+      "nameUk": "Закарпатська область", "nameEn": "Zakarpattia Oblast",
+      "cities": [{ "nameUk": "Ужгород", "nameEn": "Uzhhorod", "slug": "uzhhorod", "lat": 48.6208, "lng": 22.2879, "population": 115000 }]
+    },
+    {
+      "nameUk": "Запорізька область", "nameEn": "Zaporizhzhia Oblast",
+      "cities": [{ "nameUk": "Запоріжжя", "nameEn": "Zaporizhzhia", "slug": "zaporizhzhia", "lat": 47.8388, "lng": 35.1396, "population": 710000 }]
+    },
+    {
+      "nameUk": "Івано-Франківська область", "nameEn": "Ivano-Frankivsk Oblast",
+      "cities": [{ "nameUk": "Івано-Франківськ", "nameEn": "Ivano-Frankivsk", "slug": "ivano-frankivsk", "lat": 48.9226, "lng": 24.7111, "population": 238000 }]
+    },
+    {
+      "nameUk": "Київська область", "nameEn": "Kyiv Oblast",
+      "cities": [{ "nameUk": "Біла Церква", "nameEn": "Bila Tserkva", "slug": "bila-tserkva", "lat": 49.7950, "lng": 30.1310, "population": 200000 }]
+    },
+    {
+      "nameUk": "Кіровоградська область", "nameEn": "Kirovohrad Oblast",
+      "cities": [{ "nameUk": "Кропивницький", "nameEn": "Kropyvnytskyi", "slug": "kropyvnytskyi", "lat": 48.5079, "lng": 32.2623, "population": 220000 }]
+    },
+    {
+      "nameUk": "Луганська область", "nameEn": "Luhansk Oblast",
+      "cities": [{ "nameUk": "Луганськ", "nameEn": "Luhansk", "slug": "luhansk", "lat": 48.5740, "lng": 39.3078, "population": 420000 }]
+    },
+    {
+      "nameUk": "Львівська область", "nameEn": "Lviv Oblast",
+      "cities": [{ "nameUk": "Львів", "nameEn": "Lviv", "slug": "lviv", "lat": 49.8397, "lng": 24.0297, "population": 720000 }]
+    },
+    {
+      "nameUk": "Миколаївська область", "nameEn": "Mykolaiv Oblast",
+      "cities": [{ "nameUk": "Миколаїв", "nameEn": "Mykolaiv", "slug": "mykolaiv", "lat": 46.9750, "lng": 31.9946, "population": 475000 }]
+    },
+    {
+      "nameUk": "Одеська область", "nameEn": "Odesa Oblast",
+      "cities": [{ "nameUk": "Одеса", "nameEn": "Odesa", "slug": "odesa", "lat": 46.4825, "lng": 30.7233, "population": 1000000 }]
+    },
+    {
+      "nameUk": "Полтавська область", "nameEn": "Poltava Oblast",
+      "cities": [{ "nameUk": "Полтава", "nameEn": "Poltava", "slug": "poltava", "lat": 49.5883, "lng": 34.5514, "population": 280000 }]
+    },
+    {
+      "nameUk": "Рівненська область", "nameEn": "Rivne Oblast",
+      "cities": [{ "nameUk": "Рівне", "nameEn": "Rivne", "slug": "rivne", "lat": 50.6199, "lng": 26.2516, "population": 245000 }]
+    },
+    {
+      "nameUk": "Сумська область", "nameEn": "Sumy Oblast",
+      "cities": [{ "nameUk": "Суми", "nameEn": "Sumy", "slug": "sumy", "lat": 50.9077, "lng": 34.7981, "population": 256000 }]
+    },
+    {
+      "nameUk": "Тернопільська область", "nameEn": "Ternopil Oblast",
+      "cities": [{ "nameUk": "Тернопіль", "nameEn": "Ternopil", "slug": "ternopil", "lat": 49.5535, "lng": 25.5948, "population": 220000 }]
+    },
+    {
+      "nameUk": "Харківська область", "nameEn": "Kharkiv Oblast",
+      "cities": [
+        {
+          "nameUk": "Харків", "nameEn": "Kharkiv", "slug": "kharkiv", "lat": 49.9935, "lng": 36.2304, "population": 1420000,
+          "districts": [
+            "Основ'янський", "Київський", "Слобідський", "Шевченківський", "Новобаварський", "Холодногірський", "Немишлянський", "Індустріальний"
+          ]
+        }
+      ]
+    },
+    {
+      "nameUk": "Херсонська область", "nameEn": "Kherson Oblast",
+      "cities": [{ "nameUk": "Херсон", "nameEn": "Kherson", "slug": "kherson", "lat": 46.6354, "lng": 32.6169, "population": 280000 }]
+    },
+    {
+      "nameUk": "Хмельницька область", "nameEn": "Khmelnytskyi Oblast",
+      "cities": [{ "nameUk": "Хмельницький", "nameEn": "Khmelnytskyi", "slug": "khmelnytskyi", "lat": 49.4229, "lng": 26.9871, "population": 274000 }]
+    },
+    {
+      "nameUk": "Черкаська область", "nameEn": "Cherkasy Oblast",
+      "cities": [{ "nameUk": "Черкаси", "nameEn": "Cherkasy", "slug": "cherkasy", "lat": 49.4444, "lng": 32.0598, "population": 273000 }]
+    },
+    {
+      "nameUk": "Чернівецька область", "nameEn": "Chernivtsi Oblast",
+      "cities": [{ "nameUk": "Чернівці", "nameEn": "Chernivtsi", "slug": "chernivtsi", "lat": 48.2921, "lng": 25.9358, "population": 265000 }]
+    },
+    {
+      "nameUk": "Чернігівська область", "nameEn": "Chernihiv Oblast",
+      "cities": [{ "nameUk": "Чернігів", "nameEn": "Chernihiv", "slug": "chernihiv", "lat": 51.4982, "lng": 31.2893, "population": 285000 }]
+    },
+    {
+      "nameUk": "Автономна Республіка Крим", "nameEn": "Autonomous Republic of Crimea",
+      "cities": [{ "nameUk": "Сімферополь", "nameEn": "Simferopol", "slug": "simferopol", "lat": 44.9521, "lng": 34.1024, "population": 340000 }]
+    },
+    {
+      "nameUk": "м. Київ", "nameEn": "Kyiv",
+      "cities": [
+        {
+          "nameUk": "Київ", "nameEn": "Kyiv", "slug": "kyiv", "lat": 50.4501, "lng": 30.5234, "population": 2950000,
+          "districts": [
+            "Голосіївський", "Дарницький", "Деснянський", "Дніпровський", "Оболонський",
+            "Печерський", "Подільський", "Святошинський", "Солом'янський", "Шевченківський"
+          ]
+        }
+      ]
+    },
+    {
+      "nameUk": "м. Севастополь", "nameEn": "Sevastopol",
+      "cities": [{ "nameUk": "Севастополь", "nameEn": "Sevastopol", "slug": "sevastopol", "lat": 44.6054, "lng": 33.5220, "population": 443000 }]
+    }
+  ]
+}

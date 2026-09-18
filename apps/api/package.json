@@ -18,6 +18,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed": "ts-node prisma/seed.ts",
+    "geo:import": "ts-node prisma/import-ukraine-geo.ts",
     "clean": "rimraf dist"
   },
   "dependencies": {
