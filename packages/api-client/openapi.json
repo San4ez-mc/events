@@ -490,6 +490,134 @@
           "events"
         ]
       }
+    },
+    "/api/v1/events/{eventId}/media": {
+      "post": {
+        "operationId": "EventMediaController_upload",
+        "parameters": [
+          {
+            "name": "eventId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "event-media"
+        ]
+      }
+    },
+    "/api/v1/events/{eventId}/media/reorder": {
+      "patch": {
+        "operationId": "EventMediaController_reorder",
+        "parameters": [
+          {
+            "name": "eventId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderMediaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "event-media"
+        ]
+      }
+    },
+    "/api/v1/events/{eventId}/media/{mediaId}/focal-point": {
+      "patch": {
+        "operationId": "EventMediaController_updateFocalPoint",
+        "parameters": [
+          {
+            "name": "eventId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mediaId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFocalPointDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "event-media"
+        ]
+      }
+    },
+    "/api/v1/events/{eventId}/media/{mediaId}": {
+      "delete": {
+        "operationId": "EventMediaController_remove",
+        "parameters": [
+          {
+            "name": "eventId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mediaId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "event-media"
+        ]
+      }
     }
   },
   "info": {
@@ -756,6 +884,39 @@
             "description": "Confirms the organizer wants participants notified of a significant change (§78). Required to be true when changing startsAt/address/onlineUrl on an already-published event."
           }
         }
+      },
+      "ReorderMediaDto": {
+        "type": "object",
+        "properties": {
+          "mediaIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "mediaIds"
+        ]
+      },
+      "UpdateFocalPointDto": {
+        "type": "object",
+        "properties": {
+          "focalX": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "focalY": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "focalX",
+          "focalY"
+        ]
       }
     }
   }

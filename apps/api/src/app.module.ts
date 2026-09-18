@@ -9,6 +9,7 @@ import { ApiExceptionFilter } from "./common/filters/api-exception.filter";
 import { RequestIdMiddleware } from "./common/middleware/request-id.middleware";
 import { PrismaModule } from "./prisma/prisma.module";
 import { MailModule } from "./mail/mail.module";
+import { StorageModule } from "./storage/storage.module";
 import { AuthModule } from "./auth/auth.module";
 import { JwtAuthGuard } from "./auth/guards/jwt-auth.guard";
 import { RolesGuard } from "./auth/guards/roles.guard";
@@ -17,6 +18,7 @@ import { HealthModule } from "./health/health.module";
 import { GeographyModule } from "./geography/geography.module";
 import { CategoriesModule } from "./categories/categories.module";
 import { EventsModule } from "./events/events.module";
+import { EventMediaModule } from "./event-media/event-media.module";
 
 @Module({
   imports: [
@@ -41,12 +43,14 @@ import { EventsModule } from "./events/events.module";
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     PrismaModule,
     MailModule,
+    StorageModule,
     AuthModule,
     UsersModule,
     HealthModule,
     GeographyModule,
     CategoriesModule,
     EventsModule,
+    EventMediaModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: ApiExceptionFilter },

@@ -8,6 +8,8 @@ allowBuilds:
   '@scarf/scarf': false
   argon2: true
   prisma: true
+  # Native image-processing bindings (prebuilt binary download) — legitimate.
+  sharp: true
   # Native resolver used by eslint-config-next's tooling — legitimate.
   unrs-resolver: true
 minimumReleaseAgeExclude:

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Cross-platform (Windows/macOS/Linux) SSH local-port-forward to reach
- * PostgreSQL on the VPS from local dev tools. See docs/VPS_ACCESS.md.
+ * PostgreSQL and MinIO on the VPS from local dev tools. See docs/VPS_ACCESS.md.
  *
  * Node-based rather than a shell script so `pnpm db:tunnel` works the same
  * from PowerShell, cmd, and any POSIX shell without picking the wrong `bash`
@@ -17,8 +17,13 @@ const repoRoot = join(__dirname, "..", "..");
 const keyPath = join(repoRoot, ".secrets", "kiro_vps_deploy_key");
 
 const VPS_HOST = "173.242.62.180";
-const LOCAL_PORT = 5433;
-const REMOTE_PORT = 5432;
+
+/** [localPort, remotePort, label] — all forwarded over one SSH connection. */
+const FORWARDS = [
+  [5433, 5432, "PostgreSQL"],
+  [5502, 5102, "MinIO API"],
+  [5503, 5103, "MinIO console"],
+];
 
 if (!existsSync(keyPath)) {
   console.error(
@@ -27,7 +32,12 @@ if (!existsSync(keyPath)) {
   process.exit(1);
 }
 
-console.log(`Tunnelling localhost:${LOCAL_PORT} -> ${VPS_HOST}:${REMOTE_PORT} (Ctrl+C to stop)`);
+for (const [local, remote, label] of FORWARDS) {
+  console.log(`Tunnelling localhost:${local} -> ${VPS_HOST}:${remote} (${label})`);
+}
+console.log("(Ctrl+C to stop)");
+
+const forwardArgs = FORWARDS.flatMap(([local, remote]) => ["-L", `${local}:127.0.0.1:${remote}`]);
 
 const ssh = spawn(
   "ssh",
@@ -39,8 +49,7 @@ const ssh = spawn(
     "-o",
     "ExitOnForwardFailure=yes",
     "-N",
-    "-L",
-    `${LOCAL_PORT}:127.0.0.1:${REMOTE_PORT}`,
+    ...forwardArgs,
     `root@${VPS_HOST}`,
   ],
   { stdio: "inherit" },

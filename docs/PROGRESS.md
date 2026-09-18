@@ -48,7 +48,18 @@ Acceptance: "organizer can create draft and preview an event."
       notifyParticipants confirmation gate implemented (notification
       *sending* itself is Phase 5 — TODO left in code). 25/25 e2e tests
       passing (auth + categories + events).
-- [ ] StorageModule (S3/MinIO abstraction) + media upload/processing
+- [x] MinIO running on the VPS (own Docker container, own buckets —
+      docs/VPS_ACCESS.md), StorageService abstraction (section 6) over
+      @aws-sdk/client-s3 (works against any S3-compatible endpoint)
+- [x] EventMediaModule: upload (multipart), magic-byte MIME validation
+      (section 88 — sniffs actual file content via `file-type`, not the
+      client-supplied header or extension), sharp-based image processing
+      (display max 1600px + thumbnail max 400px, both re-encoded so EXIF is
+      stripped, original never destructively cropped per section 23), focal
+      point storage, reorder, delete, 10-file cap (section 22). Video upload
+      stores the original only — no transcoding/thumbnail-frame-extraction
+      yet, that needs a worker process. 32/32 e2e tests passing across all
+      four suites (auth, categories, events, event-media).
 - [ ] Google Places integration (address autocomplete on event create)
 - [ ] Public event page (web)
 - [ ] Organizer event list (web)

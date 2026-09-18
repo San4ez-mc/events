@@ -2,8 +2,8 @@
 
 Kiro is **not** part of the FINEKO ecosystem — it just happens to live on the
 same physical VPS, in its own directory, with its own git repo, own
-PostgreSQL role/databases, and (eventually) its own nginx vhost. Nothing here
-is shared with other services beyond the box itself.
+PostgreSQL role/databases, own MinIO buckets, and (eventually) its own nginx
+vhost. Nothing here is shared with other services beyond the box itself.
 
 ## Server
 
@@ -23,10 +23,33 @@ is shared with other services beyond the box itself.
   machine) and `kiro_test` (for CI/integration tests, same tunnel).
   `kiro` (production) gets created when we actually deploy.
 - Extensions enabled on both: `postgis`, `pg_trgm`.
-- Local dev reaches it through an SSH tunnel — see `pnpm db:tunnel` (root
-  package.json) / `infrastructure/scripts/db-tunnel.sh` /
-  `db-tunnel.ps1`. This forwards `localhost:5433` → VPS `127.0.0.1:5432`.
-  `apps/api/.env`'s `DATABASE_URL` points at that local port.
+
+## MinIO (own Docker container, `kiro-minio`)
+
+- Image: `quay.io/minio/minio` (Docker Hub blocks anonymous pulls of
+  `minio/minio` now — use the quay.io mirror).
+- Bound to `127.0.0.1:5102` (S3 API) and `127.0.0.1:5103` (console) only —
+  not exposed publicly, same pattern as Postgres.
+- Data dir: `/var/www/kiro/minio-data` on the VPS (persisted volume).
+- Buckets: `kiro-dev`, `kiro-test`, both with anonymous **download** policy
+  (public-read, so event photos can be served directly by URL without
+  proxying through the API) but not public-write/list.
+- Credentials: in `apps/api/.env` (`S3_ACCESS_KEY`/`S3_SECRET_KEY`), never in git.
+- Restart policy: `unless-stopped`, so it survives a VPS reboot.
+
+## Local dev tunnel
+
+Both Postgres and MinIO are reached through one SSH tunnel — `pnpm db:tunnel`
+(root `package.json`) / `infrastructure/scripts/db-tunnel.mjs`. It forwards:
+
+| Local port | → VPS port | Service       |
+|------------|-----------|----------------|
+| `5433`     | `5432`    | PostgreSQL     |
+| `5502`     | `5102`    | MinIO S3 API   |
+| `5503`     | `5103`    | MinIO console  |
+
+`apps/api/.env`'s `DATABASE_URL`/`S3_ENDPOINT` point at these local ports.
+Keep the tunnel running in its own terminal while developing.
 
 ## Reserved ports on the VPS (for when we actually deploy)
 
@@ -48,13 +71,15 @@ sites via certbot) will reverse-proxy `kiro.fineko.space` → `127.0.0.1:5101`
 ## Directory on the server
 
 Planned: `/var/www/kiro` (sibling to the FINEKO folders, not inside any of
-them). Not created yet — this repo is still local-only; nothing has been
-deployed there.
+them). Currently only `/var/www/kiro/minio-data` exists (MinIO's volume) —
+the app itself hasn't been deployed there yet; this repo is still local-only.
 
-## What's already been done here (Phase 0)
+## What's already been done here
 
 - [x] SSH key-based access provisioned.
 - [x] PostgreSQL role `kiro` + `kiro_dev`/`kiro_test` databases created.
 - [x] `postgis` + `pg_trgm` extensions installed and enabled.
-- [ ] Production database `kiro`, MinIO container, nginx vhost, systemd/PM2
-      service — all deferred until we actually ship something.
+- [x] MinIO container running, `kiro-dev`/`kiro-test` buckets created with
+      public-read policy.
+- [ ] Production database `kiro`, production MinIO bucket, nginx vhost,
+      systemd/PM2 service — all deferred until we actually ship something.
