@@ -457,11 +457,15 @@ model Event {
 
   slug String @unique
 
+  /// Only `title` is required to create a draft — everything else below is
+  /// only enforced at publish time (§69's "minimum required" list), not at
+  /// the DB level, so the create-event wizard can save incrementally
+  /// (§68: "Autosave draft") without every step being filled in yet.
   title       String
-  description String @db.Text
+  description String? @db.Text
 
-  categoryId String   @db.Uuid
-  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId String?   @db.Uuid
+  category   Category? @relation(fields: [categoryId], references: [id])
 
   language String @default("uk") /// §84 — event.language; user content isn't auto-translated
 
@@ -469,9 +473,9 @@ model Event {
   visibility EventVisibility @default(PUBLIC)
   format     EventFormat     @default(OFFLINE)
 
-  startsAt DateTime
-  endsAt   DateTime
-  timezone String   @default("Europe/Kyiv")
+  startsAt DateTime?
+  endsAt   DateTime?
+  timezone String    @default("Europe/Kyiv")
 
   cityId     String?   @db.Uuid
   city       City?     @relation(fields: [cityId], references: [id])
@@ -494,7 +498,7 @@ model Event {
 
   approvalMode ApprovalMode @default(AUTO)
 
-  /// Minimum age to attend, e.g. 18. Null = no restriction (§151/UX "усі/18+").
+  /// Minimum age to attend, e.g. 18. Null = no restriction (UX doc §23, §41 — "усі/18+").
   ageRestriction Int?
 
   rules String? @db.Text

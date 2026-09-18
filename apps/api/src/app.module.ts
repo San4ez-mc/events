@@ -16,6 +16,7 @@ import { UsersModule } from "./users/users.module";
 import { HealthModule } from "./health/health.module";
 import { GeographyModule } from "./geography/geography.module";
 import { CategoriesModule } from "./categories/categories.module";
+import { EventsModule } from "./events/events.module";
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { CategoriesModule } from "./categories/categories.module";
     HealthModule,
     GeographyModule,
     CategoriesModule,
+    EventsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: ApiExceptionFilter },

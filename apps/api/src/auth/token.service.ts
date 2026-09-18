@@ -47,6 +47,23 @@ export class TokenService {
     return createHash("sha256").update(token).digest("hex");
   }
 
+  /**
+   * Verifies a bearer access token's signature and expiry, returning the
+   * user id if valid. Used by endpoints that need "authenticated if a valid
+   * token is present, public otherwise" behavior (e.g. previewing an
+   * unpublished draft by slug) — never trust an unverified/decoded-only
+   * payload for this, a forged token must not be able to claim to be anyone.
+   */
+  tryVerifyAccessToken(token: string): { sub: string; email: string } | undefined {
+    try {
+      return this.jwtService.verify<{ sub: string; email: string }>(token, {
+        secret: this.configService.get("JWT_ACCESS_SECRET", { infer: true }),
+      });
+    } catch {
+      return undefined;
+    }
+  }
+
   refreshTokenExpiryDate(): Date {
     const days = this.configService.get("JWT_REFRESH_TTL_DAYS", { infer: true });
     return new Date(Date.now() + days * 24 * 60 * 60 * 1000);

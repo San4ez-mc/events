@@ -38,7 +38,16 @@ Acceptance: "organizer can create draft and preview an event."
 - [x] Categories: `GET /categories` (tree), `POST /categories`
       (user-created, PENDING, depth-2 enforced server-side) — 15/15 e2e
       tests passing (auth + categories suites)
-- [ ] Events CRUD (create/edit/get/list) — **in progress**
+- [x] Events CRUD: create (minimal draft, title-only per UX §31 step 1),
+      incremental PATCH (autosave-friendly — every other field optional),
+      GET /events/mine (cursor-paginated organizer list), GET /events/:id
+      (owner-only), GET /events/slug/:slug (public if PUBLISHED, owner-only
+      preview otherwise — this is what "preview a draft" means for Phase 1
+      since there's no dedicated preview endpoint). Slug auto-regenerates
+      from title while still DRAFT, frozen once PUBLISHED. §78's
+      notifyParticipants confirmation gate implemented (notification
+      *sending* itself is Phase 5 — TODO left in code). 25/25 e2e tests
+      passing (auth + categories + events).
 - [ ] StorageModule (S3/MinIO abstraction) + media upload/processing
 - [ ] Google Places integration (address autocomplete on event create)
 - [ ] Public event page (web)
