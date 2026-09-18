@@ -1,22 +1,32 @@
 {
-  "name": "mobile",
+  "name": "@kiro/mobile",
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
     "expo": "~57.0.24",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
-    "react-native": "0.86.3"
+    "react-native": "0.86.3",
+    "@kiro/api-client": "workspace:*",
+    "@kiro/i18n": "workspace:*",
+    "@kiro/schemas": "workspace:*",
+    "@kiro/types": "workspace:*"
   },
   "devDependencies": {
+    "@kiro/eslint-config": "workspace:*",
+    "@kiro/tsconfig": "workspace:*",
     "@types/react": "~19.2.2",
-    "typescript": "~6.0.3"
+    "eslint": "^9.18.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.20.0"
   },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
   },
   "private": true
 }

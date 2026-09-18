@@ -17,7 +17,13 @@ Acceptance (з ТЗ): "all three apps run locally and communicate with one API."
 - [x] `apps/mobile` заскафолджено (Expo) — **ще без реальних екранів/Expo Router tabs**
 - [x] `@kiro/api-client` — typed client генерується з живого OpenAPI
 - [x] `@kiro/i18n` — uk/en ресурси (auth/common), ще не підключені до web/mobile UI
-- [ ] CI (lint/typecheck/test/build на push)
+- [x] Тести: unit (TokenService, duration parser) + e2e (register/login/
+      refresh-rotation+reuse-detection/auth-guard) проти реальної `kiro_test` —
+      10/10 проходять. `pnpm lint && pnpm typecheck && pnpm build && pnpm test
+      && pnpm test:e2e` — усе зелене з кореня монорепо.
+- [x] CI (`.github/workflows/ci.yml`): lint/typecheck/build/test на push/PR,
+      з postgis/postgres service-контейнером — **не перевірено в реальному
+      GitHub Actions**, бо репо ще без remote
 - [ ] Seed-скрипт: тільки super-admin + system_settings; ще нема категорій/географії (Phase 1)
 - [ ] git: репо ініціалізовано локально, ще не запушено нікуди (немає remote)
 

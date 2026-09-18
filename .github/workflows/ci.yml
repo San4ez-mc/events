@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  # Deliberately fake/non-secret — CI never touches the real VPS database.
+  DATABASE_URL: postgresql://kiro:kiro@localhost:5432/kiro_test
+  JWT_ACCESS_SECRET: ci-only-access-secret-not-a-real-secret-32chars
+  JWT_REFRESH_SECRET: ci-only-refresh-secret-not-a-real-secret-32chars
+  APP_URL: http://localhost:3000
+  API_URL: http://localhost:3100
+  CORS_ORIGINS: http://localhost:3000
+  NODE_ENV: test
+
+jobs:
+  lint-typecheck-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: kiro
+          POSTGRES_PASSWORD: kiro
+          POSTGRES_DB: kiro_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Enable pg_trgm on kiro_test
+        run: |
+          PGPASSWORD=kiro psql -h localhost -U kiro -d kiro_test -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
+
+      - name: Build shared packages consumed at Node runtime
+        # Only @kiro/types and @kiro/config need a real dist/ build — the API
+        # is plain `node dist/main.js` and can't require() raw .ts. The other
+        # shared packages (schemas/i18n/api-client) are consumed as source by
+        # bundler-based apps (Next.js/Expo) and don't need this.
+        run: pnpm --filter @kiro/types --filter @kiro/config build
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Apply migrations
+        run: pnpm --filter @kiro/api exec prisma migrate deploy
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  web-e2e:
+    runs-on: ubuntu-latest
+    needs: lint-typecheck-test
+    if: false # TODO(Phase 3+): enable once apps/web has real pages to test (§99, Playwright)
+    steps:
+      - run: echo "placeholder — Playwright E2E lands with the first real web flow"

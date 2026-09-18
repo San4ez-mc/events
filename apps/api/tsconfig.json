@@ -8,6 +8,6 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*.ts", "prisma/seed.ts"],
-  "exclude": ["node_modules", "dist", "test"]
+  "include": ["src/**/*.ts", "prisma/seed.ts", "test/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

@@ -60,7 +60,9 @@
     "@types/nodemailer": "^6.4.17",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
+    "dotenv": "^16.4.7",
     "eslint": "^9.18.0",
+    "typescript-eslint": "^8.20.0",
     "jest": "^29.7.0",
     "pino-pretty": "^13.0.0",
     "prisma": "^6.2.1",
@@ -74,5 +76,16 @@
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
+  },
+  "jest": {
+    "rootDir": ".",
+    "testRegex": "(?:(?:^|/)__tests__/.*|(?:\\.|/)(?:test|spec))\\.[tj]sx?$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "moduleFileExtensions": ["js", "json", "ts"],
+    "collectCoverageFrom": ["src/**/*.(t|j)s"],
+    "coverageDirectory": "./coverage",
+    "testEnvironment": "node"
   }
 }
