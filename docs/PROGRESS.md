@@ -29,8 +29,20 @@ Acceptance (з ТЗ): "all three apps run locally and communicate with one API."
 
 ## Phase 1 — Event core
 
-geography, categories, create/edit event, media, Google Places, публічна
-сторінка події, список подій організатора. **Не почато.**
+Acceptance: "organizer can create draft and preview an event."
+
+- [x] Prisma: Region/City/District/Category/Event/EventMedia/EventSeries
+- [x] Geography: `GET /geography/{regions,cities,cities/:slug,districts}` —
+      public, backed by real Ukraine data (27 regions, 29 cities, Kyiv +
+      Kharkiv districts seeded)
+- [x] Categories: `GET /categories` (tree), `POST /categories`
+      (user-created, PENDING, depth-2 enforced server-side) — 15/15 e2e
+      tests passing (auth + categories suites)
+- [ ] Events CRUD (create/edit/get/list) — **in progress**
+- [ ] StorageModule (S3/MinIO abstraction) + media upload/processing
+- [ ] Google Places integration (address autocomplete on event create)
+- [ ] Public event page (web)
+- [ ] Organizer event list (web)
 
 ## Phase 2 — Publication
 

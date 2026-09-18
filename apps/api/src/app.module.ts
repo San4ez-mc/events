@@ -14,6 +14,8 @@ import { JwtAuthGuard } from "./auth/guards/jwt-auth.guard";
 import { RolesGuard } from "./auth/guards/roles.guard";
 import { UsersModule } from "./users/users.module";
 import { HealthModule } from "./health/health.module";
+import { GeographyModule } from "./geography/geography.module";
+import { CategoriesModule } from "./categories/categories.module";
 
 @Module({
   imports: [
@@ -41,6 +43,8 @@ import { HealthModule } from "./health/health.module";
     AuthModule,
     UsersModule,
     HealthModule,
+    GeographyModule,
+    CategoriesModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: ApiExceptionFilter },
