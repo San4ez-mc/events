@@ -33,7 +33,7 @@ export class EventsService {
         title: dto.title,
         slug,
       },
-      include: { media: true },
+      include: { media: true, category: true, city: true, district: true },
     });
   }
 
@@ -95,7 +95,7 @@ export class EventsService {
     const updated = await this.prisma.event.update({
       where: { id: eventId },
       data: updateData,
-      include: { media: true },
+      include: { media: true, category: true, city: true, district: true },
     });
 
     // TODO(Phase 5): if touchesSignificantField, enqueue event.changed
@@ -127,7 +127,13 @@ export class EventsService {
   }
 
   async findByIdForOwner(eventId: string, userId: string) {
-    return this.getOwnedEvent(eventId, userId);
+    await this.getOwnedEvent(eventId, userId);
+    // Re-fetch with the same relations the wizard/edit UI needs, rather than
+    // making callers hit /events/slug/:slug just to get media/category/etc.
+    return this.prisma.event.findUniqueOrThrow({
+      where: { id: eventId },
+      include: { media: { orderBy: { sortOrder: "asc" } }, category: true, city: true, district: true },
+    });
   }
 
   /**

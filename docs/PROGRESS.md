@@ -13,7 +13,8 @@ Acceptance (з ТЗ): "all three apps run locally and communicate with one API."
 - [x] Auth: register/login/refresh-rotation+reuse-detection/verify-email/forgot-reset-password,
       httpOnly cookie (web) vs body (mobile), RBAC guard-каркас (`@Public`, `@Roles`)
 - [x] Error contract (`{error:{code,message}}`), request-id, structured logging (pino)
-- [x] `apps/web` заскафолджено (Next.js App Router + Tailwind) — **ще без реальних сторінок**
+- [x] `apps/web` заскафолджено (Next.js App Router + Tailwind); реальні
+      сторінки з'явилися в Phase 1 (auth + event wizard + public event page)
 - [x] `apps/mobile` заскафолджено (Expo) — **ще без реальних екранів/Expo Router tabs**
 - [x] `@kiro/api-client` — typed client генерується з живого OpenAPI
 - [x] `@kiro/i18n` — uk/en ресурси (auth/common), ще не підключені до web/mobile UI
@@ -60,9 +61,24 @@ Acceptance: "organizer can create draft and preview an event."
       stores the original only — no transcoding/thumbnail-frame-extraction
       yet, that needs a worker process. 32/32 e2e tests passing across all
       four suites (auth, categories, events, event-media).
-- [ ] Google Places integration (address autocomplete on event create)
-- [ ] Public event page (web)
-- [ ] Organizer event list (web)
+- [x] Web UI (apps/web): auth pages (login/register/forgot-password),
+      i18n (uk/en, cookie-based, server + client), light/dark/system theme
+      (useSyncExternalStore, no FOUC), API client wired through a Next.js
+      rewrite so the web app and API are same-origin from the browser's
+      perspective (needed for the httpOnly refresh cookie — see
+      next.config.ts comment), 5-step create-event wizard (basics/media/
+      date+place/price/preview) with autosave-per-step, organizer event
+      list, and the public/preview event page (SSR + `generateMetadata` +
+      JSON-LD for published events per section 62, client-side draft-preview
+      fallback for the owner). **Verified end-to-end through the real
+      browser** (not just API tests): register → create draft → fill all 5
+      wizard steps → public preview page renders correct title/date/
+      location/price/category/address with the "not published" banner and
+      disabled CTA. This is the literal Phase 1 acceptance criterion,
+      confirmed working through the UI, not just the API.
+- [ ] Google Places integration (address autocomplete on event create) —
+      **blocked on a real `GOOGLE_MAPS_API_KEY`**; address is a plain text
+      field for now instead of autocomplete
 
 ## Phase 2 — Publication
 
@@ -110,8 +126,8 @@ audit — admin routes, phone-friendly UI. **Не почато.**
 
 ## Наскрізне (не прив'язане до однієї фази)
 
-- [ ] Реальний UI на web (routes: `/`, `/events/*`, `/search`, `/profile/*`,
-      `/organizer/*`, `/admin/*`)
+- [x] `/`, `/login`, `/register`, `/forgot-password`, `/events/[slug]`,
+      `/organizer/events*` — [ ] `/search`, `/profile/*`, `/admin/*` (later phases)
 - [ ] Реальні екрани на mobile (bottom tabs: Discover/Search/Create/Notifications/Profile)
       + Expo push реєстрація токенів
   Реальна деплой-конфігурація на VPS (nginx vhost, systemd/PM2, MinIO) —
@@ -130,3 +146,24 @@ audit — admin routes, phone-friendly UI. **Не почато.**
   bootstrap-скрипт на сервері. Prisma-моделі не використовують нативні
   geometry-колонки (lat/lng лишаються `Decimal`), тож на функціональність
   це не впливає — деталі в коментарі на початку `apps/api/prisma/schema.prisma`.
+- **Tech debt**: `EventsController`/`CategoriesController` тощо повертають
+  сирі Prisma-об'єкти, а не response DTO-класи, тож Swagger/openapi-typescript
+  не бачить форму відповіді (`content?: never` у згенерованій схемі —
+  `packages/api-client/src/schema.d.ts`). Web тимчасово дублює форму вручну
+  в `apps/web/src/lib/{event-types,geo-types}.ts` з явним TODO-коментарем —
+  порушує §8 ("не дублювати вручну interfaces"). Правильне рішення: додати
+  `@ApiOkResponse`/`@ApiCreatedResponse` з response DTO-класами на кожен
+  ендпоінт. Не зроблено зараз через обсяг (довелось би зробити на ~26
+  ендпоінтах одразу) — зробити поступово при наступних дотиках до кожного
+  контролера.
+- Next.js web-застосунок і API навмисно **same-origin з погляду браузера**
+  (rewrite у `next.config.ts`, а не прямий cross-origin fetch) — інакше
+  httpOnly refresh-cookie (SameSite=Lax) ненадійно долітає при cross-origin
+  fetch/XHR, навіть у dev (localhost:3000 → localhost:3100 — це вже
+  cross-origin). Це також збігається з планом продакшн-деплою
+  (`kiro.fineko.space/api` на тому ж домені).
+- Concurrent refresh-token calls (React StrictMode подвійний виклик ефекту
+  в dev, або дві вкладки одночасно) **спалювали всю сесію** через
+  reuse-detection (§9) — виправлено single-flight-дедуплікацією в
+  `apps/web/src/lib/api-client.ts::refreshAccessToken()`. Актуально і для
+  прода (дві вкладки/ретрай можуть так само зіткнутися), не лише для dev.
