@@ -23,6 +23,7 @@ import { CreditsModule } from "./credits/credits.module";
 import { ModerationModule } from "./moderation/moderation.module";
 import { DiscoveryModule } from "./discovery/discovery.module";
 import { SearchModule } from "./search/search.module";
+import { RegistrationsModule } from "./registrations/registrations.module";
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { SearchModule } from "./search/search.module";
     ModerationModule,
     DiscoveryModule,
     SearchModule,
+    RegistrationsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: ApiExceptionFilter },

@@ -9,6 +9,7 @@ import { EventsService } from "./events.service";
 import { CreateEventDto } from "./dto/create-event.dto";
 import { UpdateEventDto } from "./dto/update-event.dto";
 import { ListMyEventsDto } from "./dto/list-my-events.dto";
+import { CancelEventDto } from "./dto/cancel-event.dto";
 
 @ApiTags("events")
 @Controller("events")
@@ -45,6 +46,11 @@ export class EventsController {
   @Post(":id/publish")
   publish(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
     return this.eventsService.publish(id, user.id);
+  }
+
+  @Post(":id/cancel")
+  cancel(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() dto: CancelEventDto) {
+    return this.eventsService.cancel(id, user.id, dto.reason);
   }
 
   /**

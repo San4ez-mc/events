@@ -90,6 +90,14 @@ export function SiteHeader() {
                     {t("nav.saved")}
                   </Link>
                   <Link
+                    href="/my-registrations"
+                    role="menuitem"
+                    className="block px-4 py-2 text-sm hover:bg-surface"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {t("nav.myRegistrations")}
+                  </Link>
+                  <Link
                     href="/organizer/events"
                     role="menuitem"
                     className="block px-4 py-2 text-sm hover:bg-surface"

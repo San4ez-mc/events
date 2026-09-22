@@ -138,7 +138,13 @@ export class EventsService {
     // making callers hit /events/slug/:slug just to get media/category/etc.
     return this.prisma.event.findUniqueOrThrow({
       where: { id: eventId },
-      include: { media: { orderBy: { sortOrder: "asc" } }, category: true, city: true, district: true },
+      include: {
+        media: { orderBy: { sortOrder: "asc" } },
+        category: true,
+        city: true,
+        district: true,
+        registrationFields: { orderBy: { sortOrder: "asc" } },
+      },
     });
   }
 
@@ -152,7 +158,13 @@ export class EventsService {
   async findBySlugForPreview(slug: string, requesterId: string | undefined) {
     const event = await this.prisma.event.findUnique({
       where: { slug },
-      include: { media: { orderBy: { sortOrder: "asc" } }, category: true, city: true, district: true },
+      include: {
+        media: { orderBy: { sortOrder: "asc" } },
+        category: true,
+        city: true,
+        district: true,
+        registrationFields: { orderBy: { sortOrder: "asc" } },
+      },
     });
     if (!event) throw new ResourceNotFoundException("Event not found");
 
@@ -225,6 +237,31 @@ export class EventsService {
         data: { status: "PUBLISHED", publishedAt: new Date() },
       });
     });
+  }
+
+  /**
+   * §79 — cancels an event. Never deletes it. Existing registrations are
+   * left as-is (their own attendees decide whether to also cancel
+   * individually); this just stops new ones and would notify participants
+   * once Phase 5 exists to send that notification.
+   */
+  async cancel(eventId: string, userId: string, reason: string | undefined) {
+    const event = await this.getOwnedEvent(eventId, userId);
+    if (event.status === "CANCELLED") return event;
+    if (event.status !== "PUBLISHED" && event.status !== "PENDING_MODERATION") {
+      throw new ApiException(
+        "VALIDATION_ERROR",
+        `Cannot cancel an event with status ${event.status}`,
+        400,
+      );
+    }
+
+    const cancelled = await this.prisma.event.update({
+      where: { id: eventId },
+      data: { status: "CANCELLED", cancelledAt: new Date(), cancellationReason: reason },
+    });
+    // TODO(Phase 5): enqueue an EVENT_CANCELLED notification to every active registrant.
+    return cancelled;
   }
 
   /** §69 — the minimum fields required to publish (drafts may be incomplete until this point). */

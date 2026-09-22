@@ -80,11 +80,8 @@ export default function OrganizerEventsPage() {
       {!error && events !== null && events.length > 0 && (
         <ul className="flex flex-col gap-3">
           {events.map((event) => (
-            <li key={event.id}>
-              <Link
-                href={`/organizer/events/${event.id}/edit`}
-                className="flex items-center gap-4 rounded-lg border border-border p-4 hover:bg-surface"
-              >
+            <li key={event.id} className="flex items-center gap-2 rounded-lg border border-border p-4 hover:bg-surface">
+              <Link href={`/organizer/events/${event.id}/edit`} className="flex min-w-0 flex-1 items-center gap-4">
                 <div className="h-16 w-12 shrink-0 overflow-hidden rounded bg-surface">
                   {event.media[0] && (
                     // eslint-disable-next-line @next/next/no-img-element -- external MinIO URLs, not worth Next/Image config for Phase 1
@@ -109,6 +106,14 @@ export default function OrganizerEventsPage() {
                   </p>
                 </div>
               </Link>
+              {event.status === "PUBLISHED" && (
+                <Link
+                  href={`/organizer/events/${event.id}/registrations`}
+                  className="shrink-0 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-background"
+                >
+                  {t("organizerRegistrations.viewRegistrations")}
+                </Link>
+              )}
             </li>
           ))}
         </ul>

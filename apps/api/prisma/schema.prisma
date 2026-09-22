@@ -102,6 +102,7 @@ model User {
   moderationCasesResolved ModerationCase[]
   eventInteractions       EventInteraction[]
   savedEvents             SavedEvent[]
+  registrations           Registration[]
 
   @@map("users")
 }
@@ -520,9 +521,11 @@ model Event {
 
   rules String? @db.Text
 
-  /// Phase 1: simple single price. Multiple ticket tiers (event_price_options,
-  /// §24) land in Phase 4 — this covers the "Безкоштовно / платно" step from
-  /// the create-event wizard (UX §31 step 6) and §69's publish-validation
+  /// Simple single price. Multiple ticket tiers (event_price_options, §24)
+  /// are NOT in Phase 4's acceptance checklist (custom questions/approval/
+  /// capacity/payment-link/manual-confirmation/cancellations only) — still
+  /// deferred, this covers the "Безкоштовно / платно" step from the
+  /// create-event wizard (UX §31 step 6) and §69's publish-validation
   /// requirement for a price/free state.
   priceType EventPriceType @default(FREE)
   price     Decimal?       @db.Decimal(10, 2)
@@ -531,16 +534,20 @@ model Event {
   /// External payment link/instruction (§21) — Kiro is not a party to this payment.
   paymentUrl String?
 
-  publishedAt DateTime?
-  cancelledAt DateTime?
-  completedAt DateTime?
+  publishedAt        DateTime?
+  cancelledAt        DateTime?
+  /// Optional organizer-given reason (§79), shown to registrants in the (Phase 5) cancellation notification.
+  cancellationReason String?
+  completedAt        DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  media        EventMedia[]
-  interactions EventInteraction[]
-  savedBy      SavedEvent[]
+  media              EventMedia[]
+  interactions       EventInteraction[]
+  savedBy            SavedEvent[]
+  registrationFields RegistrationField[]
+  registrations      Registration[]
 
   @@index([ownerId])
   @@index([categoryId])
@@ -726,4 +733,110 @@ model SavedEvent {
   @@unique([userId, eventId])
   @@index([userId, createdAt])
   @@map("saved_events")
+}
+
+// ---------------------------------------------------------------------------
+// Registrations (§25-28, §78-79, Phase 4). Ticket tiers (event_price_options)
+// stay deferred — see the note on Event.priceType above.
+// ---------------------------------------------------------------------------
+
+enum RegistrationFieldType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  PHONE
+  EMAIL
+  SELECT
+  MULTISELECT
+  CHECKBOX
+  DATE
+}
+
+/// §25's `event_registration_fields` — organizer-defined custom questions on
+/// top of the built-in name/phone/email (which come from the User profile).
+model RegistrationField {
+  id      String @id @default(uuid()) @db.Uuid
+  eventId String @db.Uuid
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  label    String
+  type     RegistrationFieldType
+  required Boolean               @default(false)
+  /// Option labels for SELECT/MULTISELECT, e.g. ["Beginner","Intermediate","Advanced"].
+  optionsJson Json?
+  sortOrder   Int                @default(0)
+
+  createdAt DateTime @default(now())
+
+  answers RegistrationAnswer[]
+
+  @@index([eventId])
+  @@map("event_registration_fields")
+}
+
+enum RegistrationStatus {
+  PENDING
+  REGISTERED
+  PAYMENT_PENDING
+  CONFIRMED
+  REJECTED
+  CANCELLED
+  ATTENDED
+  NO_SHOW
+  WAITLISTED
+}
+
+/// §26's `event_registrations`. The state machine (§27) is driven by
+/// `Event.approvalMode` + `Event.priceType` — see RegistrationsService.
+model Registration {
+  id      String @id @default(uuid()) @db.Uuid
+  eventId String @db.Uuid
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId  String @db.Uuid
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status RegistrationStatus @default(PENDING)
+
+  /// UX §83 — opt-in, default false: shown in the event page's public
+  /// attendee-preview list only if the registrant explicitly agreed.
+  showAsParticipant Boolean @default(false)
+
+  registeredAt DateTime  @default(now())
+  approvedAt   DateTime?
+  rejectedAt   DateTime?
+  cancelledAt  DateTime?
+
+  paymentClickedAt   DateTime?
+  paymentConfirmedAt DateTime?
+
+  /// Visible to the organizer only, never the registrant (§83).
+  organizerPrivateNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  answers RegistrationAnswer[]
+
+  @@unique([eventId, userId])
+  @@index([eventId, status])
+  @@index([userId])
+  @@map("event_registrations")
+}
+
+/// §28's `event_registration_answers` — one row per field, not one big blob,
+/// so answers stay individually queryable/exportable per the spec's explicit
+/// warning against collapsing a whole form into unstructured JSON.
+model RegistrationAnswer {
+  id             String       @id @default(uuid()) @db.Uuid
+  registrationId String       @db.Uuid
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  fieldId        String       @db.Uuid
+  field          RegistrationField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  valueJson Json
+
+  createdAt DateTime @default(now())
+
+  @@unique([registrationId, fieldId])
+  @@map("event_registration_answers")
 }

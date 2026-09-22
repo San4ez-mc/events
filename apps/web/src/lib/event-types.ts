@@ -4,6 +4,8 @@ import type {
   EventPriceType,
   EventStatus,
   EventVisibility,
+  RegistrationFieldType,
+  RegistrationStatus,
 } from "@kiro/types";
 
 /**
@@ -48,6 +50,16 @@ export interface EventSummary {
   media: EventMedia[];
 }
 
+export interface RegistrationField {
+  id: string;
+  eventId: string;
+  label: string;
+  type: RegistrationFieldType;
+  required: boolean;
+  optionsJson: string[] | null;
+  sortOrder: number;
+}
+
 export interface EventDetail extends EventSummary {
   description: string | null;
   language: string;
@@ -61,9 +73,49 @@ export interface EventDetail extends EventSummary {
   ageRestriction: number | null;
   rules: string | null;
   paymentUrl: string | null;
+  cancellationReason: string | null;
   category: { id: string; nameUk: string; nameEn: string } | null;
   city: { id: string; nameUk: string; nameEn: string } | null;
   district: { id: string; nameUk: string } | null;
+  registrationFields: RegistrationField[];
+}
+
+export interface RegistrationAnswer {
+  id: string;
+  fieldId: string;
+  valueJson: unknown;
+  field: RegistrationField;
+}
+
+export interface Registration {
+  id: string;
+  eventId: string;
+  userId: string;
+  status: RegistrationStatus;
+  showAsParticipant: boolean;
+  registeredAt: string;
+  approvedAt: string | null;
+  rejectedAt: string | null;
+  cancelledAt: string | null;
+  paymentClickedAt: string | null;
+  paymentConfirmedAt: string | null;
+  organizerPrivateNote: string | null;
+  answers: RegistrationAnswer[];
+}
+
+export interface RegistrationWithEvent extends Registration {
+  event: EventCard;
+}
+
+export interface OrganizerRegistration extends Registration {
+  user: {
+    id: string;
+    name: string | null;
+    nickname: string | null;
+    email: string;
+    phone: string | null;
+    avatarUrl: string | null;
+  };
 }
 
 export interface CursorPage<T> {

@@ -188,7 +188,74 @@ pass, save, and have passed events cool down before resurfacing."
 ## Phase 4 — Registration
 
 кастомні поля реєстрації, approval, capacity, external payment link, manual
-confirm, cancellation, waitlist. **Не почато.**
+confirm, cancellation, waitlist.
+
+Acceptance: "full attendee ↔ organizer registration flow works."
+
+- [x] Prisma: `RegistrationField` (§25's `event_registration_fields`),
+      `Registration` (§26/§27's `event_registrations`, full state machine),
+      `RegistrationAnswer` (§28 — one row per field, not one JSON blob, per
+      the spec's explicit warning). `Event.cancellationReason` added for §79.
+- [x] State machine (§27): initial status is `PENDING` for
+      `ORGANIZER_APPROVAL` events, `REGISTERED` otherwise, regardless of
+      price — matches UX §13's four flows exactly (free/paid ×
+      auto/approval). A paid registration's own separate "Я оплатив" action
+      (`PATCH /registrations/:id/mark-paid`) moves `REGISTERED` ->
+      `PAYMENT_PENDING`; the organizer's `confirm-payment` action moves it to
+      `CONFIRMED`.
+- [x] Capacity + waitlist (UX §15/§16): `pg_advisory_xact_lock` per event
+      (same technique as the credits ledger) serializes concurrent
+      registration attempts so two requests can't both grab the last spot.
+      `PENDING` counts toward capacity too (reserves the slot immediately,
+      so approving later never needs a second capacity check). Joining the
+      waitlist is opt-in (`joinWaitlist: true`) rather than automatic;
+      cancelling/rejecting an active registration promotes the
+      longest-waiting `WAITLISTED` registrant automatically.
+- [x] `POST /events/:id/registrations` (register), `GET .../me` (caller's
+      own status for this event), `GET .../registrations` (organizer list),
+      `PATCH .../:id/approve`, `PATCH .../:id/reject`,
+      `PATCH .../:id/confirm-payment`, `PUT .../registrations/fields`
+      (organizer replaces the whole custom-question set in one call).
+      `PATCH /registrations/:id/cancel`, `PATCH /registrations/:id/mark-paid`,
+      `GET /registrations/mine`.
+- [x] `POST /events/:id/cancel` (§79): sets `CANCELLED` + optional reason,
+      blocks new registrations. Existing registrations are left as-is —
+      actually notifying registrants is a Phase 5 TODO, same pattern as the
+      §78 "notifyParticipants" significant-change flag from Phase 1.
+- [x] Found and fixed a real bug via e2e: the global `ValidationPipe` runs
+      `forbidNonWhitelisted: true`, which 400s any DTO property with zero
+      class-validator decorators (not just strips it) — `RegistrationAnswerDto.value`
+      (intentionally untyped, since it varies by field type) needed an
+      explicit `@IsOptional()` just to be whitelisted at all.
+- [x] Found and fixed a second real bug: a NestJS handler returning a bare
+      `null` sends an *empty* HTTP body, not the JSON text "null" — so
+      `GET .../registrations/me` now returns `{ registration: T | null }`
+      instead of the bare value, which is also just better API shape.
+- [x] 13 new e2e tests (registrations.e2e-spec.ts) — 71/71 total across 9
+      suites passing. Covers all four UX §13 flows, capacity+waitlist+
+      promotion, double-registration prevention, cancel-then-reregister,
+      custom-field validation, organizer-only list access, and registering
+      against an unpublished/cancelled event.
+- [x] Web UI: the event page's CTA is no longer permanently disabled — it
+      now renders every state (sign-in prompt, apply-with-custom-fields
+      form, pending/waitlisted/payment-pending message, pay-now + "I've
+      paid" buttons, cancel button). New `/my-registrations` (attendee) and
+      `/organizer/events/:id/registrations` (organizer approve/reject/
+      confirm-payment) pages. Verified end-to-end in a real browser as two
+      separate users: apply with a required custom field → organizer
+      approves → attendee sees "registered" + cancel option.
+- [ ] Ticket tiers / multiple price options (§24's `event_price_options`)
+      stay deferred — not in this phase's acceptance checklist, single
+      price only (as already noted on `Event.priceType`).
+- [ ] "Мінімум учасників не набраний" organizer warning (UX §15) needs a
+      scheduled job + notification delivery — both are Phase 5 territory,
+      not built yet.
+- [ ] Organizer UI to actually author custom registration fields doesn't
+      exist yet (backend `PUT .../registrations/fields` works, exercised via
+      e2e and curl, but the event wizard has no step for it) — the
+      attendee-facing dynamic form renders whatever fields already exist,
+      so this is forward-compatible once that organizer UI lands.
+- [ ] Mobile screens — still not started.
 
 ## Phase 5 — Notifications
 

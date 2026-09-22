@@ -1,15 +1,14 @@
 import type { SupportedLocale } from "@kiro/i18n";
 import { getT } from "@/lib/i18n-server";
 import type { EventDetail } from "@/lib/event-types";
+import { RegistrationWidget } from "@/components/registration/registration-widget";
 
 /**
  * Shared presentational component for the public event page — used by both
  * the server-rendered page (published events, real visitors) and the
  * client-rendered draft-preview fallback (organizer previewing before
  * publishing). Order follows UX doc §10: gallery, title, date/location/price,
- * description, organizer, location, rules, CTA. §115 Phase 1 acceptance is
- * "preview an event" — registration itself is Phase 4, so the CTA is shown
- * but inert.
+ * description, organizer, location, rules, CTA.
  */
 export function EventPage({ event, locale }: { event: EventDetail; locale: SupportedLocale }) {
   const t = getT(locale);
@@ -82,28 +81,7 @@ export function EventPage({ event, locale }: { event: EventDetail; locale: Suppo
         </section>
       )}
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-border bg-background/95 p-4 backdrop-blur">
-        <div className="mx-auto max-w-2xl">
-          <button
-            type="button"
-            disabled
-            className="w-full rounded-md accent-gradient px-4 py-3 text-sm font-semibold text-white opacity-60"
-            title={
-              locale === "uk"
-                ? "Реєстрація буде доступна найближчим часом"
-                : "Registration will be available soon"
-            }
-          >
-            {event.approvalMode === "ORGANIZER_APPROVAL"
-              ? locale === "uk"
-                ? "Подати заявку"
-                : "Apply"
-              : locale === "uk"
-                ? "Записатися"
-                : "Register"}
-          </button>
-        </div>
-      </div>
+      <RegistrationWidget event={event} />
     </article>
   );
 }
