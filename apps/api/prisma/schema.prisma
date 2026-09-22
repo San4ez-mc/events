@@ -104,6 +104,14 @@ model User {
   savedEvents             SavedEvent[]
   registrations           Registration[]
   notifications           Notification[]
+  friendshipsSent         Friendship[]      @relation("FriendshipRequester")
+  friendshipsReceived     Friendship[]      @relation("FriendshipAddressee")
+  blocksMade              UserBlock[]       @relation("UserBlockBlocker")
+  blocksReceived          UserBlock[]       @relation("UserBlockBlocked")
+  privateNotesAuthored    PrivateUserNote[] @relation("PrivateNoteAuthor")
+  privateNotesAbout       PrivateUserNote[] @relation("PrivateNoteTarget")
+  subscriptions           Subscription[]    @relation("SubscriptionUser")
+  subscribersAsOrganizer  Subscription[]    @relation("SubscriptionOrganizer")
 
   @@map("users")
 }
@@ -144,6 +152,14 @@ model UserPreferences {
   allowFriendActivityNotifications Boolean @default(true)
   allowSubscriptionNotifications   Boolean @default(true)
   allowEventReminderNotifications  Boolean @default(true)
+
+  /// §23 profile-privacy toggles. Per-event "show me as a participant" is a
+  /// separate, already-built field (`Registration.showAsParticipant`) — not
+  /// duplicated here. Friends-only visibility (vs. just public/hidden) isn't
+  /// implemented yet; these are plain on/off.
+  hideSocialLinks       Boolean @default(false)
+  hideUpcomingEvents    Boolean @default(false)
+  hideAttendanceHistory Boolean @default(false)
 
   locationPermissionState LocationPermissionState @default(UNKNOWN)
 
@@ -379,7 +395,8 @@ model Category {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  events Event[]
+  events        Event[]
+  subscriptions Subscription[]
 
   @@index([parentId])
   @@index([mergedIntoCategoryId])
@@ -549,6 +566,8 @@ model Event {
   savedBy            SavedEvent[]
   registrationFields RegistrationField[]
   registrations      Registration[]
+  subscriptions      Subscription[]
+  privateNotes       PrivateUserNote[]
 
   @@index([ownerId])
   @@index([categoryId])
@@ -922,4 +941,109 @@ model NotificationDelivery {
 
   @@index([notificationId])
   @@map("notification_deliveries")
+}
+
+// ---------------------------------------------------------------------------
+// Social (§33-36, Phase 6): friends, blocks, private notes, subscriptions.
+// ---------------------------------------------------------------------------
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+/// §34's `friendships`. A unique *unordered* pair isn't expressible as a
+/// plain DB constraint (A->B and B->A are different rows) — enforced in
+/// FriendsService instead, which checks both directions before creating one.
+model Friendship {
+  id          String @id @default(uuid()) @db.Uuid
+  requesterId String @db.Uuid
+  requester   User   @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addresseeId String @db.Uuid
+  addressee   User   @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  status FriendshipStatus @default(PENDING)
+
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime?
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status])
+  @@index([requesterId, status])
+  @@map("friendships")
+}
+
+/// §35's `user_blocks`. Blocked users can't friend-request the blocker,
+/// their activity is hidden from them, and (best-effort) their events are
+/// excluded from the blocker's recommendations.
+model UserBlock {
+  id            String @id @default(uuid()) @db.Uuid
+  blockerId     String @db.Uuid
+  blocker       User   @relation("UserBlockBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedUserId String @db.Uuid
+  blockedUser   User   @relation("UserBlockBlocked", fields: [blockedUserId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedUserId])
+  @@index([blockedUserId])
+  @@map("user_blocks")
+}
+
+/// §36's `private_user_notes`. Never returned to the target user — only the
+/// author (typically an organizer) can ever read their own notes.
+model PrivateUserNote {
+  id           String @id @default(uuid()) @db.Uuid
+  authorUserId String @db.Uuid
+  author       User   @relation("PrivateNoteAuthor", fields: [authorUserId], references: [id], onDelete: Cascade)
+  targetUserId String @db.Uuid
+  target       User   @relation("PrivateNoteTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  eventId String? @db.Uuid
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  note String @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([authorUserId, targetUserId])
+  @@map("private_user_notes")
+}
+
+enum SubscriptionScope {
+  EVENT
+  ORGANIZER_CATEGORY
+  ORGANIZER_ALL
+}
+
+/// §33's `subscriptions`. "Follow" an organizer within one category (not a
+/// platform-wide category subscription) or all of an organizer's events.
+/// The "Слідкувати" button on an event page creates an EVENT subscription
+/// plus an ORGANIZER_CATEGORY one if it doesn't already exist.
+model Subscription {
+  id     String            @id @default(uuid()) @db.Uuid
+  userId String            @db.Uuid
+  user   User              @relation("SubscriptionUser", fields: [userId], references: [id], onDelete: Cascade)
+  scope  SubscriptionScope
+
+  eventId String? @db.Uuid
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  organizerId String? @db.Uuid
+  organizer   User?   @relation("SubscriptionOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
+
+  categoryId String?   @db.Uuid
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, scope])
+  @@index([organizerId, scope])
+  @@map("subscriptions")
 }

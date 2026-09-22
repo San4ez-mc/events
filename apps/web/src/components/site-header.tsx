@@ -101,6 +101,22 @@ export function SiteHeader() {
                     {t("nav.myRegistrations")}
                   </Link>
                   <Link
+                    href="/friends"
+                    role="menuitem"
+                    className="block px-4 py-2 text-sm hover:bg-surface"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {t("friends.title")}
+                  </Link>
+                  <Link
+                    href={`/users/${user.id}`}
+                    role="menuitem"
+                    className="block px-4 py-2 text-sm hover:bg-surface"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {t("nav.profile")}
+                  </Link>
+                  <Link
                     href="/organizer/events"
                     role="menuitem"
                     className="block px-4 py-2 text-sm hover:bg-surface"

@@ -78,6 +78,7 @@ export interface EventDetail extends EventSummary {
   city: { id: string; nameUk: string; nameEn: string } | null;
   district: { id: string; nameUk: string } | null;
   registrationFields: RegistrationField[];
+  friendsGoing: { count: number; previews: { id: string; name: string | null; avatarUrl: string | null }[] };
 }
 
 export interface RegistrationAnswer {

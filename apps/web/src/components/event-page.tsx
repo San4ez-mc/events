@@ -2,6 +2,7 @@ import type { SupportedLocale } from "@kiro/i18n";
 import { getT } from "@/lib/i18n-server";
 import type { EventDetail } from "@/lib/event-types";
 import { RegistrationWidget } from "@/components/registration/registration-widget";
+import { FollowButton } from "@/components/social/follow-button";
 
 /**
  * Shared presentational component for the public event page — used by both
@@ -59,6 +60,17 @@ export function EventPage({ event, locale }: { event: EventDetail; locale: Suppo
             : `${event.price ?? "?"} ${event.currency}`}
         </span>
         {categoryName && <span>{categoryName}</span>}
+      </div>
+
+      {event.friendsGoing.count > 0 && (
+        <p className="mb-4 text-sm text-muted">
+          👥 {event.friendsGoing.count}{" "}
+          {event.friendsGoing.count === 1 ? t("profile.friendsGoingOne") : t("profile.friendsGoingMany")}
+        </p>
+      )}
+
+      <div className="mb-6">
+        <FollowButton eventId={event.id} />
       </div>
 
       {event.description && (

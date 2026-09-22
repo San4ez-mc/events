@@ -26,6 +26,9 @@ import { DiscoveryModule } from "./discovery/discovery.module";
 import { SearchModule } from "./search/search.module";
 import { RegistrationsModule } from "./registrations/registrations.module";
 import { NotificationsModule } from "./notifications/notifications.module";
+import { FriendsModule } from "./friends/friends.module";
+import { SubscriptionsModule } from "./subscriptions/subscriptions.module";
+import { NotesModule } from "./notes/notes.module";
 
 @Module({
   imports: [
@@ -66,6 +69,9 @@ import { NotificationsModule } from "./notifications/notifications.module";
     SearchModule,
     RegistrationsModule,
     NotificationsModule,
+    FriendsModule,
+    SubscriptionsModule,
+    NotesModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: ApiExceptionFilter },

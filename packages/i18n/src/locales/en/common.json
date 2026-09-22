@@ -180,6 +180,34 @@
   "notifications": {
     "markAllRead": "Mark all as read"
   },
+  "profile": {
+    "addFriend": "Add friend",
+    "cancelRequest": "Cancel request",
+    "acceptRequest": "Accept",
+    "rejectRequest": "Decline",
+    "unfriend": "Remove friend",
+    "friends": "friends",
+    "eventsCreated": "events created",
+    "memberSince": "On Kiro since",
+    "share": "Share profile",
+    "linkCopied": "Link copied",
+    "upcomingEvents": "Upcoming events",
+    "blocked": "This profile isn't available",
+    "pendingSent": "Request sent",
+    "pendingReceived": "Sent you a request",
+    "follow": "Follow",
+    "following": "Following",
+    "friendsGoingOne": "friend is going",
+    "friendsGoingMany": "friends are going"
+  },
+  "friends": {
+    "title": "Friends",
+    "incoming": "Incoming requests",
+    "outgoing": "Outgoing requests",
+    "empty": "No friends yet",
+    "noIncoming": "No incoming requests",
+    "noOutgoing": "No outgoing requests"
+  },
   "organizerRegistrations": {
     "title": "Registrations",
     "viewRegistrations": "Registrations",

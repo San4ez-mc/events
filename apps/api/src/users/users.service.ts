@@ -1,11 +1,27 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { ResourceNotFoundException } from "../common/exceptions/common-exceptions";
+import { EVENT_CARD_INCLUDE } from "../common/utils/event-card-include";
+import { FriendsService } from "../friends/friends.service";
 import type { UpdateProfileDto } from "./dto/update-profile.dto";
+import type { UpdateUserPreferencesDto } from "./dto/update-user-preferences.dto";
+
+const PUBLIC_PROFILE_SELECT = {
+  id: true,
+  name: true,
+  nickname: true,
+  avatarUrl: true,
+  bio: true,
+  createdAt: true,
+  socialLinks: { select: { type: true, url: true } },
+} as const;
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly friendsService: FriendsService,
+  ) {}
 
   async getFullProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -25,6 +41,62 @@ export class UsersService {
     });
     const { passwordHash: _passwordHash, ...safe } = user;
     return safe;
+  }
+
+  async updatePreferences(userId: string, dto: UpdateUserPreferencesDto) {
+    return this.prisma.userPreferences.update({ where: { userId }, data: dto });
+  }
+
+  /**
+   * UX §22/§23/§82 — the public profile: never phone (never public by
+   * default, no toggle for it either), social links/upcoming events hidden
+   * if the target opted out, plus the viewer's relationship to them so the
+   * client can render "Add friend" vs "Friends" vs "Pending" correctly.
+   */
+  async getPublicProfile(viewerId: string | undefined, targetUserId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { ...PUBLIC_PROFILE_SELECT, preferences: true },
+    });
+    if (!user) throw new ResourceNotFoundException("User not found");
+
+    const relationshipStatus = await this.friendsService.getRelationshipStatus(viewerId, targetUserId);
+    if (relationshipStatus === "BLOCKED_ME") {
+      // The target blocked the viewer — don't reveal the profile exists any more than a 404 would.
+      throw new ResourceNotFoundException("User not found");
+    }
+
+    const hideSocialLinks = user.preferences?.hideSocialLinks ?? false;
+    const hideUpcomingEvents = user.preferences?.hideUpcomingEvents ?? false;
+
+    const [friendCount, eventsCreatedCount, upcomingEvents] = await Promise.all([
+      this.prisma.friendship.count({
+        where: { status: "ACCEPTED", OR: [{ requesterId: targetUserId }, { addresseeId: targetUserId }] },
+      }),
+      this.prisma.event.count({ where: { ownerId: targetUserId, status: "PUBLISHED" } }),
+      hideUpcomingEvents
+        ? Promise.resolve([])
+        : this.prisma.event.findMany({
+            where: { ownerId: targetUserId, status: "PUBLISHED", startsAt: { gt: new Date() } },
+            orderBy: { startsAt: "asc" },
+            take: 10,
+            include: EVENT_CARD_INCLUDE,
+          }),
+    ]);
+
+    return {
+      id: user.id,
+      name: user.name,
+      nickname: user.nickname,
+      avatarUrl: user.avatarUrl,
+      bio: user.bio,
+      memberSince: user.createdAt,
+      socialLinks: hideSocialLinks ? [] : user.socialLinks,
+      friendCount,
+      eventsCreatedCount,
+      upcomingEvents,
+      relationshipStatus,
+    };
   }
 
   /**

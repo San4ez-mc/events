@@ -12,6 +12,7 @@ import { ForbiddenActionException, ResourceNotFoundException } from "../common/e
 import { slugifyUnique } from "../common/utils/slugify";
 import { ACTIVE_REGISTRATION_STATUSES } from "../common/constants/registration-active-statuses";
 import { NotificationsService } from "../notifications/notifications.service";
+import { FriendsService } from "../friends/friends.service";
 import type { CreateEventDto } from "./dto/create-event.dto";
 import type { UpdateEventDto } from "./dto/update-event.dto";
 import type { ListMyEventsDto } from "./dto/list-my-events.dto";
@@ -28,6 +29,7 @@ export class EventsService {
     private readonly sensitiveContentService: SensitiveContentService,
     private readonly moderationService: ModerationService,
     private readonly notifications: NotificationsService,
+    private readonly friendsService: FriendsService,
   ) {}
 
   /** §10 — creating a first event is what makes a user an "organizer" (not a role). */
@@ -182,7 +184,7 @@ export class EventsService {
       throw new ResourceNotFoundException("Event not found");
     }
 
-    return event;
+    return { ...event, friendsGoing: await this.getFriendsGoing(event.id, requesterId) };
   }
 
   /**
@@ -273,6 +275,32 @@ export class EventsService {
       body: reason ? `"${cancelled.title}" was cancelled: ${reason}` : `"${cancelled.title}" was cancelled.`,
     });
     return cancelled;
+  }
+
+  /**
+   * §34/UX §4's "👥 N твої друзі йдуть" — only counts actually-going statuses
+   * (not PENDING, which just means "applied, not yet approved"), and only
+   * for an authenticated viewer with accepted friends.
+   */
+  private async getFriendsGoing(eventId: string, viewerId: string | undefined) {
+    if (!viewerId) return { count: 0, previews: [] as { id: string; name: string | null; avatarUrl: string | null }[] };
+
+    const friendIds = await this.friendsService.getFriendIds(viewerId);
+    if (friendIds.length === 0) return { count: 0, previews: [] };
+
+    const registrations = await this.prisma.registration.findMany({
+      where: { eventId, userId: { in: friendIds }, status: { in: ["REGISTERED", "PAYMENT_PENDING", "CONFIRMED"] } },
+      select: { user: { select: { id: true, name: true, nickname: true, avatarUrl: true } } },
+      take: 5,
+    });
+    const count = await this.prisma.registration.count({
+      where: { eventId, userId: { in: friendIds }, status: { in: ["REGISTERED", "PAYMENT_PENDING", "CONFIRMED"] } },
+    });
+
+    return {
+      count,
+      previews: registrations.map((r) => ({ id: r.user.id, name: r.user.name ?? r.user.nickname, avatarUrl: r.user.avatarUrl })),
+    };
   }
 
   /** §44/§79 — notifies everyone with an active registration for an event, e.g. on cancellation or a significant change. */

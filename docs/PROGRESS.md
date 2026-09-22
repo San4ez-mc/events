@@ -333,7 +333,62 @@ Acceptance: "event participant receives scheduled reminder."
 ## Phase 6 — Social
 
 profiles, profile sharing, friends, friend-event-status, subscriptions,
-private notes. **Не почато.**
+private notes.
+
+- [x] Prisma: `Friendship` (§34 — unordered-pair uniqueness enforced in
+      `FriendsService`, not a DB constraint, since A->B and B->A are
+      different rows), `UserBlock` (§35), `PrivateUserNote` (§36),
+      `Subscription` (§33). Added `UserPreferences.hide{SocialLinks,
+      UpcomingEvents,AttendanceHistory}` for §23's privacy toggles.
+- [x] `FriendsModule`: send/accept/reject/cancel/unfriend, block/unblock,
+      list friends/incoming/outgoing/blocked, relationship-status lookup.
+      Blocking cancels any existing/pending friendship between the two
+      users. Notifies on request (`FRIEND_REQUEST`) and accept
+      (`FRIEND_ACCEPTED`).
+- [x] `SubscriptionsModule`: `POST/DELETE /events/:id/subscribe` (UX §25's
+      "Слідкувати" button — creates an EVENT subscription plus an
+      ORGANIZER_CATEGORY one if it doesn't already exist), `POST
+      /subscriptions/organizers/:id` (categories and/or "follow all"),
+      generic unsubscribe, list mine. Re-activates a matching inactive row
+      instead of duplicating (Subscription's nullable discriminator columns
+      can't express this as a clean DB unique constraint, same situation as
+      Friendship).
+- [x] `NotesModule` (§36): upsert/list/delete, scoped to the calling
+      author — there is deliberately no endpoint that could expose a note
+      to its target.
+- [x] `GET /users/:id/profile` (§22/§82): public, optional-auth (same
+      pattern as the event-slug preview), respects the privacy toggles
+      above, never includes phone (no toggle needed — never public by
+      default), 404s instead of 403 when the target blocked the viewer (no
+      leaking existence). Includes `relationshipStatus` so the client can
+      render Add-friend/Pending/Friends correctly. `PATCH
+      /users/me/preferences` added for these toggles plus the existing
+      (previously unexposed) notification opt-outs.
+- [x] "Friend event status" (§34/UX card's "👥 N друзі йдуть"): added to
+      the single-event response (`GET /events/slug/:slug`) as
+      `friendsGoing: {count, previews}` — only counts actually-going
+      statuses (REGISTERED/PAYMENT_PENDING/CONFIRMED, not PENDING). Not
+      added to the discovery feed's per-card response yet — computing it
+      for up to 500 candidate cards per request would be a real N+1 cost;
+      documented as a deferred optimization, not silently dropped.
+- [x] 19 new e2e tests (friends/subscriptions/profile-and-notes specs) —
+      98/98 total across 13 suites passing.
+- [x] Web UI: `/friends` (list + incoming/outgoing requests),
+      `/users/:id` (public profile — share-link copy button, add-friend
+      CTA that reflects relationship state, privacy-respecting upcoming
+      events), a 🔔 follow button and friends-going indicator on the event
+      page. Nav updated with Friends/Profile links.
+- [ ] Blocking has no web UI yet (block/unblock/list-blocked are
+      API-only) — a documented gap, not silently dropped.
+- [ ] Private notes have no web UI yet — no natural place to surface them
+      until Phase 7's organizer participant-list view exists to host an
+      "add a note about this attendee" affordance.
+- [ ] Friends-only visibility granularity (vs. just on/off) isn't
+      implemented — `FriendsService.areFriends()` exists for this purpose
+      but nothing calls it yet.
+- [ ] Public profile page is client-rendered, not SSR — shareable by URL
+      but without server-rendered metadata/SEO, unlike the event page.
+- [ ] Mobile screens — still not started.
 
 ## Phase 7 — Organizer
 
