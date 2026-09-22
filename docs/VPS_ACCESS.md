@@ -22,7 +22,12 @@ vhost. Nothing here is shared with other services beyond the box itself.
 - Databases: `kiro_dev` (this app's dev DB, used via SSH tunnel from your
   machine) and `kiro_test` (for CI/integration tests, same tunnel).
   `kiro` (production) gets created when we actually deploy.
-- Extensions enabled on both: `postgis`, `pg_trgm`.
+- Extensions enabled on both: `postgis`, `pg_trgm`. `prisma migrate reset`
+  drops and recreates the `public` schema, which takes any extensions
+  installed into it down with it — re-run
+  `sudo -u postgres psql -d <db> -c "CREATE EXTENSION IF NOT EXISTS postgis; CREATE EXTENSION IF NOT EXISTS pg_trgm;"`
+  after any reset (this bit us once on `kiro_dev` — search silently 500'd
+  with `function similarity(text, text) does not exist` until re-enabled).
 
 ## MinIO (own Docker container, `kiro-minio`)
 

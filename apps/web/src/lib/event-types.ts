@@ -71,3 +71,10 @@ export interface CursorPage<T> {
   nextCursor: string | null;
   hasMore: boolean;
 }
+
+/** Shape returned by GET /discovery, GET /search, GET /discovery/saved (Phase 3). */
+export interface EventCard extends EventSummary {
+  category: { id: string; nameUk: string; nameEn: string } | null;
+  city: { id: string; nameUk: string; nameEn: string } | null;
+  district: { id: string; nameUk: string } | null;
+}

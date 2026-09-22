@@ -126,7 +126,64 @@ Acceptance: "user can publish a valid public event using one credit."
 ## Phase 3 — Discovery
 
 tinder-картки, swipe, фільтри, пошук (pg_trgm), pass-history, saves, share.
-**Не почато.**
+
+Acceptance: "user gets a ranked, filterable discovery feed and can search,
+pass, save, and have passed events cool down before resurfacing."
+
+- [x] Prisma: `EventInteraction` (§59's `user_event_interactions` —
+      append-only log of PASS/OPEN, not a toggle), `SavedEvent` (unique
+      per user+event), `UserPreferences.preferred{City,DistrictIds,
+      CategoryIds,Format}`/`freeOnly` (UX §7 — filters persist in the
+      profile). Re-enabled `postgis`/`pg_trgm` on `kiro_dev` — a `prisma
+      migrate reset` earlier this session had silently dropped them along
+      with the `public` schema; documented in `docs/VPS_ACCESS.md` so it
+      doesn't surprise anyone again.
+- [x] `GET /discovery` (§57): cursor-paginated (§57 — no offset pagination),
+      filters (cityIds/districtIds/categoryIds/format/freeOnly/maxBudget/
+      dateFrom/dateTo), `@Public()` but personalizes when a bearer token is
+      present (same optional-auth pattern as the event-slug preview).
+      Deterministic rule-based ranking (§58, weights in
+      `@kiro/config`'s `DISCOVERY_RANKING_WEIGHTS`) — preferred city/
+      district/category (from the profile, not the request's own filters,
+      since a hard filter already guarantees 100% match), date proximity,
+      freshness. Popularity/availability (§58) are stubbed at 0: they need
+      registration counts, which don't exist until Phase 4 — documented,
+      not faked.
+- [x] `POST /discovery/:id/interactions` (PASS/OPEN, §59), `POST`/`DELETE
+      /discovery/:id/save` (idempotent), `GET /discovery/saved` ("Мої →
+      Збережені", UX §5), `GET`/`PATCH /discovery/preferences`.
+- [x] Pass-cooldown (§59): a PASSed event is excluded from that user's feed
+      for `feedPassCooldownDays` (system_settings, default 30) and
+      resurfaces automatically after.
+- [x] `GET /search` (§56): pg_trgm fuzzy match (`%`/`similarity()`) across
+      title/description/category/organizer/city/district, same structured
+      filters as discovery, cursor pagination via the same score+id cursor
+      technique (factored into `common/utils/scored-cursor.ts`, shared by
+      both endpoints). Plain PostgreSQL full-text (tsvector) ranking is not
+      implemented — pg_trgm alone is enough for MVP scale; noted as a
+      possible future enhancement, not silently dropped.
+- [x] 15 new e2e tests (discovery.e2e-spec.ts, search.e2e-spec.ts) — 58/58
+      total across 8 suites passing. Covers filters, ranking order,
+      pass-cooldown exclusion (per-user, not global), save/unsave
+      idempotency, cursor pagination without dupes/gaps, preferences
+      persistence, and that drafts never leak through search.
+- [x] Web UI: home page (`/`) is now the Tinder-style feed (one card,
+      undo/pass/save/open buttons — UX §4's large-icon requirement is met
+      without needing a touch-swipe gesture, which is unreliable on desktop
+      web anyway), `/search` (plain list, UX §9), `/saved`. Verified
+      end-to-end in a real browser: filter by free-only, pass an event, undo
+      it back, save/unsave (persists across reload), fuzzy search by title
+      and by city name. Nav updated with Discover/Search/Saved links.
+- [ ] Advanced filters from UX §7 (date/time buckets, price range slider,
+      age, group-size) aren't wired into the filter UI yet — only city/
+      category/free-only. The DTOs and backend filtering already accept
+      dateFrom/dateTo/maxBudget/format; just no UI control for them yet.
+- [ ] Card doesn't show registered-count/attendee-avatars/organizer-rating
+      (UX §3) — needs Phase 4 (registrations) and Phase 8 (reviews) data;
+      showing zeros would be worse than omitting the section.
+- [ ] Share button (UX §11) not wired up in the feed/search UI yet (the
+      event page itself already has a stable public URL).
+- [ ] Mobile screens — still not started (Expo scaffolded only).
 
 ## Phase 4 — Registration
 

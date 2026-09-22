@@ -100,6 +100,8 @@ model User {
   eventSeries             EventSeries[]
   listingCreditEntries    ListingCreditLedger[]
   moderationCasesResolved ModerationCase[]
+  eventInteractions       EventInteraction[]
+  savedEvents             SavedEvent[]
 
   @@map("users")
 }
@@ -122,6 +124,18 @@ model UserPreferences {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   maxBudget Decimal? @db.Decimal(10, 2)
+
+  /// Discovery filters (UX §7 — "filters persist in the profile but can be
+  /// changed anytime"). These also feed the feed-ranking bonus (§58): they're
+  /// the user's *default* interests, separate from the one-off query filters
+  /// a single /discovery request can pass to narrow results further.
+  preferredCityId String? @db.Uuid
+  preferredCity   City?   @relation(fields: [preferredCityId], references: [id], onDelete: SetNull)
+
+  preferredDistrictIds String[]     @default([])
+  preferredCategoryIds String[]     @default([])
+  preferredFormat       EventFormat?
+  freeOnly              Boolean      @default(false)
 
   allowPush                        Boolean @default(true)
   allowEmail                       Boolean @default(true)
@@ -288,8 +302,9 @@ model City {
   population Int?
   status     CityStatus @default(ACTIVE)
 
-  districts District[]
-  events    Event[]
+  districts   District[]
+  events      Event[]
+  preferredBy UserPreferences[]
 
   @@index([regionId])
   @@map("cities")
@@ -523,7 +538,9 @@ model Event {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  media EventMedia[]
+  media        EventMedia[]
+  interactions EventInteraction[]
+  savedBy      SavedEvent[]
 
   @@index([ownerId])
   @@index([categoryId])
@@ -661,4 +678,52 @@ model ModerationCase {
   @@index([targetType, targetId])
   @@index([status])
   @@map("moderation_cases")
+}
+
+// ---------------------------------------------------------------------------
+// Discovery (§56-59, Phase 3): swipe feed, search, saved events.
+// ---------------------------------------------------------------------------
+
+/// §59's `user_event_interactions`. Value is `UserEventInteraction` in
+/// packages/types/src/enums.ts — named `InteractionType` here (not
+/// `UserEventInteraction`) purely to avoid a same-named Prisma-generated
+/// type colliding with the `@kiro/types` enum of the same name.
+enum InteractionType {
+  PASS
+  OPEN
+}
+
+/// Append-only log, not a toggle: every swipe/tap is its own row so the
+/// pass-cooldown window (§59, `feedPassCooldownDays`) can look at *when* the
+/// last PASS happened, not just whether one ever did.
+model EventInteraction {
+  id      String @id @default(uuid()) @db.Uuid
+  userId  String @db.Uuid
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId String @db.Uuid
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  interaction InteractionType
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, interaction, createdAt])
+  @@index([eventId])
+  @@map("user_event_interactions")
+}
+
+/// UX §5 — "Save is not a registration." One row per user+event; saving
+/// twice is a no-op (unique constraint), unsaving deletes the row.
+model SavedEvent {
+  id      String @id @default(uuid()) @db.Uuid
+  userId  String @db.Uuid
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId String @db.Uuid
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, eventId])
+  @@index([userId, createdAt])
+  @@map("saved_events")
 }

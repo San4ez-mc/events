@@ -21,6 +21,8 @@ import { EventsModule } from "./events/events.module";
 import { EventMediaModule } from "./event-media/event-media.module";
 import { CreditsModule } from "./credits/credits.module";
 import { ModerationModule } from "./moderation/moderation.module";
+import { DiscoveryModule } from "./discovery/discovery.module";
+import { SearchModule } from "./search/search.module";
 
 @Module({
   imports: [
@@ -55,6 +57,8 @@ import { ModerationModule } from "./moderation/moderation.module";
     EventMediaModule,
     CreditsModule,
     ModerationModule,
+    DiscoveryModule,
+    SearchModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: ApiExceptionFilter },

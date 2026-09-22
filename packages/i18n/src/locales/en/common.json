@@ -5,6 +5,7 @@
   "nav": {
     "discover": "Discover",
     "search": "Search",
+    "saved": "Saved",
     "create": "Create",
     "notifications": "Notifications",
     "profile": "Profile",
@@ -122,6 +123,35 @@
       "insufficientCredits": "Not enough credits to publish.",
       "claimFreeCredits": "🎁 Take 5 free publications"
     }
+  },
+  "discover": {
+    "loading": "Loading the feed…",
+    "empty": "No more events. Try different filters.",
+    "errorLoading": "Couldn't load the feed",
+    "pass": "Pass",
+    "save": "Save",
+    "unsave": "Remove",
+    "open": "Open",
+    "undo": "Undo",
+    "filters": "Filters",
+    "freeOnly": "Free only",
+    "anyCity": "Any city",
+    "anyCategory": "Any category",
+    "applyFilters": "Apply",
+    "closeFilters": "Close",
+    "signInToSave": "Sign in to save events",
+    "savedTitle": "Saved events",
+    "savedEmpty": "You haven't saved anything yet",
+    "registered": "registered",
+    "today": "Today",
+    "tomorrow": "Tomorrow"
+  },
+  "search": {
+    "placeholder": "Search events, categories, organizers, cities…",
+    "empty": "Nothing found",
+    "prompt": "Enter a query to start searching",
+    "loading": "Searching…",
+    "loadMore": "Show more"
   },
   "errors": {
     "VALIDATION_ERROR": "Please check the fields you entered",

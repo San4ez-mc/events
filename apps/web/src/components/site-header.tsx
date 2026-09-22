@@ -20,6 +20,17 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-medium sm:flex">
+          <Link href="/" className="hover:opacity-80">
+            {t("nav.discover")}
+          </Link>
+          <Link href="/search" className="hover:opacity-80">
+            {t("nav.search")}
+          </Link>
+          {user && (
+            <Link href="/saved" className="hover:opacity-80">
+              {t("nav.saved")}
+            </Link>
+          )}
           <Link href="/organizer/events" className="hover:opacity-80">
             {t("nav.organizer")}
           </Link>
@@ -70,6 +81,14 @@ export function SiteHeader() {
                   role="menu"
                   className="absolute right-0 mt-2 w-48 rounded-lg border border-border bg-background py-1 shadow-lg"
                 >
+                  <Link
+                    href="/saved"
+                    role="menuitem"
+                    className="block px-4 py-2 text-sm hover:bg-surface sm:hidden"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {t("nav.saved")}
+                  </Link>
                   <Link
                     href="/organizer/events"
                     role="menuitem"
