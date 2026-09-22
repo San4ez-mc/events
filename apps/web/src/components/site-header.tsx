@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
 import { useTheme } from "@/lib/theme-context";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export function SiteHeader() {
   const { user, logout, isLoading } = useAuth();
@@ -55,6 +56,8 @@ export function SiteHeader() {
           >
             {theme === "dark" ? "🌙" : theme === "light" ? "☀️" : "🖥️"}
           </button>
+
+          <NotificationBell />
 
           {!isLoading && !user && (
             <Link

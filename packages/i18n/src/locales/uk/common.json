@@ -177,6 +177,9 @@
     "errorSubmitting": "Не вдалося зареєструватися",
     "eventCancelled": "Подію скасовано організатором"
   },
+  "notifications": {
+    "markAllRead": "Позначити всі прочитаними"
+  },
   "organizerRegistrations": {
     "title": "Реєстрації",
     "viewRegistrations": "Реєстрації",

@@ -103,6 +103,7 @@ model User {
   eventInteractions       EventInteraction[]
   savedEvents             SavedEvent[]
   registrations           Registration[]
+  notifications           Notification[]
 
   @@map("users")
 }
@@ -839,4 +840,86 @@ model RegistrationAnswer {
 
   @@unique([registrationId, fieldId])
   @@map("event_registration_answers")
+}
+
+// ---------------------------------------------------------------------------
+// Notifications (§40-44, Phase 5).
+// ---------------------------------------------------------------------------
+
+enum NotificationType {
+  REGISTRATION_RECEIVED
+  REGISTRATION_APPROVED
+  REGISTRATION_REJECTED
+  PAYMENT_PENDING
+  PAYMENT_CONFIRMED
+  EVENT_CHANGED
+  EVENT_CANCELLED
+  EVENT_REMINDER_24H
+  EVENT_REMINDER_1H
+  EVENT_MIN_PARTICIPANTS_WARNING
+  ORGANIZER_NEW_EVENT
+  FRIEND_REQUEST
+  FRIEND_ACCEPTED
+  FRIEND_EVENT_REGISTERED
+  WAITLIST_SPOT_OPENED
+  REVIEW_REQUEST
+  CATEGORY_MERGED
+  DISTRICT_MERGED
+}
+
+enum NotificationChannel {
+  IN_APP
+  PUSH
+  EMAIL
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+/// §40's `notifications` — one row per user per event, independent of how
+/// many channels it goes out on (that's `NotificationDelivery`).
+model Notification {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        NotificationType
+  title       String
+  body        String
+  /// Structured context (e.g. {eventId, registrationId}) — lets the client
+  /// deep-link, and lets jobs dedup ("has this reminder already fired?")
+  /// without a separate tracking table.
+  payloadJson Json?
+
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  deliveries NotificationDelivery[]
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+/// §40's `notification_deliveries` — per-channel delivery attempt/outcome.
+model NotificationDelivery {
+  id             String       @id @default(uuid()) @db.Uuid
+  notificationId String       @db.Uuid
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  channel NotificationChannel
+  status  NotificationDeliveryStatus @default(PENDING)
+
+  providerMessageId String?
+  sentAt            DateTime?
+  failedAt          DateTime?
+  error             String?
+
+  createdAt DateTime @default(now())
+
+  @@index([notificationId])
+  @@map("notification_deliveries")
 }

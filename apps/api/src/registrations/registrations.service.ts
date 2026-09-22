@@ -5,16 +5,12 @@ import type { CursorPage } from "@kiro/types";
 import { PrismaService } from "../prisma/prisma.service";
 import { ApiException } from "../common/exceptions/api.exception";
 import { ForbiddenActionException, ResourceNotFoundException } from "../common/exceptions/common-exceptions";
+import { ACTIVE_REGISTRATION_STATUSES as ACTIVE_STATUSES } from "../common/constants/registration-active-statuses";
+import { NotificationsService } from "../notifications/notifications.service";
 import type { CreateRegistrationDto, RegistrationAnswerDto } from "./dto/create-registration.dto";
 import type { ListRegistrationsDto } from "./dto/list-registrations.dto";
 import type { RejectRegistrationDto } from "./dto/reject-registration.dto";
 import type { SetRegistrationFieldsDto } from "./dto/set-registration-fields.dto";
-
-/** §27 — statuses that occupy a capacity slot. PENDING counts too: an
- * approval-mode registration reserves its spot the moment it's created, so
- * approving it later never needs a second capacity check (and can't race
- * against a concurrent capacity-reached registration attempt). */
-const ACTIVE_STATUSES = ["PENDING", "REGISTERED", "PAYMENT_PENDING", "CONFIRMED"] as const;
 
 const REGISTRATION_INCLUDE = {
   answers: { include: { field: true } },
@@ -22,7 +18,10 @@ const REGISTRATION_INCLUDE = {
 
 @Injectable()
 export class RegistrationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   /**
    * §26/§27 — creates or re-activates (after a prior cancel/reject) a
@@ -31,7 +30,7 @@ export class RegistrationsService {
    * can't both read "1 spot left" and both take it.
    */
   async register(eventId: string, userId: string, dto: CreateRegistrationDto) {
-    return this.prisma.$transaction(async (tx) => {
+    const registration = await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${eventId}))`;
 
       const event = await tx.event.findUnique({
@@ -98,15 +97,31 @@ export class RegistrationsService {
         include: REGISTRATION_INCLUDE,
       });
     });
+
+    // Fired after the transaction commits, not inside it — a mid-transaction
+    // notification write uses a separate connection and wouldn't roll back
+    // if the transaction later failed.
+    const event = await this.prisma.event.findUnique({ where: { id: eventId }, select: { ownerId: true, title: true } });
+    if (event) {
+      await this.notifications.create({
+        userId: event.ownerId,
+        type: "REGISTRATION_RECEIVED",
+        title: "New registration",
+        body: `Someone just registered for "${event.title}".`,
+        payloadJson: { eventId, registrationId: registration.id },
+      });
+    }
+
+    return registration;
   }
 
   /** Attendee cancels their own registration; a freed active slot promotes the oldest waitlisted registrant. */
   async cancel(registrationId: string, userId: string) {
-    return this.prisma.$transaction(async (tx) => {
+    const { updated, promoted } = await this.prisma.$transaction(async (tx) => {
       const registration = await tx.registration.findUnique({ where: { id: registrationId } });
       if (!registration) throw new ResourceNotFoundException("Registration not found");
       if (registration.userId !== userId) throw new ForbiddenActionException();
-      if (registration.status === "CANCELLED") return registration;
+      if (registration.status === "CANCELLED") return { updated: registration, promoted: null };
 
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${registration.eventId}))`;
 
@@ -116,9 +131,12 @@ export class RegistrationsService {
         data: { status: "CANCELLED", cancelledAt: new Date() },
       });
 
-      if (wasActive) await this.promoteFromWaitlist(tx, registration.eventId);
-      return updated;
+      const promoted = wasActive ? await this.promoteFromWaitlist(tx, registration.eventId) : null;
+      return { updated, promoted };
     });
+
+    if (promoted) await this.notifyWaitlistPromoted(promoted);
+    return updated;
   }
 
   /** Organizer approves a PENDING registration (§27 — free+approval or paid+approval flow). */
@@ -127,15 +145,24 @@ export class RegistrationsService {
     if (registration.status !== "PENDING") {
       throw new ApiException("VALIDATION_ERROR", "Only a pending registration can be approved", 400);
     }
-    return this.prisma.registration.update({
+    const updated = await this.prisma.registration.update({
       where: { id: registrationId },
       data: { status: "REGISTERED", approvedAt: new Date() },
     });
+    const event = await this.prisma.event.findUnique({ where: { id: eventId }, select: { title: true } });
+    await this.notifications.create({
+      userId: updated.userId,
+      type: "REGISTRATION_APPROVED",
+      title: "You're in!",
+      body: `Your registration for "${event?.title ?? ""}" was approved.`,
+      payloadJson: { eventId, registrationId },
+    });
+    return updated;
   }
 
   /** Organizer rejects a PENDING registration; frees the capacity slot it reserved. */
   async reject(eventId: string, registrationId: string, organizerId: string, dto: RejectRegistrationDto) {
-    return this.prisma.$transaction(async (tx) => {
+    const { updated, promoted } = await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${eventId}))`;
       const registration = await this.getOwnedRegistration(eventId, registrationId, organizerId, tx);
       if (registration.status !== "PENDING") {
@@ -145,9 +172,20 @@ export class RegistrationsService {
         where: { id: registrationId },
         data: { status: "REJECTED", rejectedAt: new Date(), organizerPrivateNote: dto.note },
       });
-      await this.promoteFromWaitlist(tx, eventId);
-      return updated;
+      const promoted = await this.promoteFromWaitlist(tx, eventId);
+      return { updated, promoted };
     });
+
+    const event = await this.prisma.event.findUnique({ where: { id: eventId }, select: { title: true } });
+    await this.notifications.create({
+      userId: updated.userId,
+      type: "REGISTRATION_REJECTED",
+      title: "Registration update",
+      body: `Your registration for "${event?.title ?? ""}" wasn't approved.`,
+      payloadJson: { eventId, registrationId },
+    });
+    if (promoted) await this.notifyWaitlistPromoted(promoted);
+    return updated;
   }
 
   /** Attendee claims they've sent payment (UX §13's "Я оплатив"), for a paid event's REGISTERED registration. */
@@ -164,10 +202,19 @@ export class RegistrationsService {
     if (registration.status !== "REGISTERED") {
       throw new ApiException("VALIDATION_ERROR", "Only a registered attendee can mark payment as sent", 400);
     }
-    return this.prisma.registration.update({
+    const updated = await this.prisma.registration.update({
       where: { id: registrationId },
       data: { status: "PAYMENT_PENDING", paymentClickedAt: new Date() },
     });
+    // Notifies the organizer a payment is awaiting their confirmation, not the payer.
+    await this.notifications.create({
+      userId: registration.event.ownerId,
+      type: "PAYMENT_PENDING",
+      title: "Payment sent",
+      body: `A participant marked their payment as sent for "${registration.event.title}".`,
+      payloadJson: { eventId: registration.eventId, registrationId },
+    });
+    return updated;
   }
 
   /** Organizer confirms they received payment (UX §13). */
@@ -176,9 +223,29 @@ export class RegistrationsService {
     if (registration.status !== "PAYMENT_PENDING") {
       throw new ApiException("VALIDATION_ERROR", "Only a payment-pending registration can be confirmed", 400);
     }
-    return this.prisma.registration.update({
+    const updated = await this.prisma.registration.update({
       where: { id: registrationId },
       data: { status: "CONFIRMED", paymentConfirmedAt: new Date() },
+    });
+    const event = await this.prisma.event.findUnique({ where: { id: eventId }, select: { title: true } });
+    await this.notifications.create({
+      userId: updated.userId,
+      type: "PAYMENT_CONFIRMED",
+      title: "Payment confirmed",
+      body: `Your payment for "${event?.title ?? ""}" was confirmed. See you there!`,
+      payloadJson: { eventId, registrationId },
+    });
+    return updated;
+  }
+
+  private async notifyWaitlistPromoted(promoted: { id: string; userId: string; eventId: string }): Promise<void> {
+    const event = await this.prisma.event.findUnique({ where: { id: promoted.eventId }, select: { title: true } });
+    await this.notifications.create({
+      userId: promoted.userId,
+      type: "WAITLIST_SPOT_OPENED",
+      title: "A spot opened up!",
+      body: `A spot opened up for "${event?.title ?? ""}" — you're in.`,
+      payloadJson: { eventId: promoted.eventId, registrationId: promoted.id },
     });
   }
 
@@ -323,27 +390,34 @@ export class RegistrationsService {
     }
   }
 
-  /** Promotes the longest-waiting WAITLISTED registration into the normal flow after a slot frees up (UX §16). */
-  private async promoteFromWaitlist(tx: Prisma.TransactionClient, eventId: string): Promise<void> {
+  /**
+   * Promotes the longest-waiting WAITLISTED registration into the normal
+   * flow after a slot frees up (UX §16). Returns who got promoted so the
+   * caller can notify them once the transaction has actually committed.
+   */
+  private async promoteFromWaitlist(
+    tx: Prisma.TransactionClient,
+    eventId: string,
+  ): Promise<{ id: string; userId: string; eventId: string } | null> {
     const event = await tx.event.findUnique({ where: { id: eventId }, select: { capacity: true, approvalMode: true } });
-    if (!event?.capacity) return;
+    if (!event?.capacity) return null;
 
     const activeCount = await tx.registration.count({
       where: { eventId, status: { in: [...ACTIVE_STATUSES] } },
     });
-    if (activeCount >= event.capacity) return;
+    if (activeCount >= event.capacity) return null;
 
     const next = await tx.registration.findFirst({
       where: { eventId, status: "WAITLISTED" },
       orderBy: { createdAt: "asc" },
     });
-    if (!next) return;
+    if (!next) return null;
 
     await tx.registration.update({
       where: { id: next.id },
       data: { status: this.initialStatus(event.approvalMode) },
     });
-    // TODO(Phase 5): send a WAITLIST_SPOT_OPENED notification to next.userId.
+    return { id: next.id, userId: next.userId, eventId };
   }
 
   private async getOwnedRegistration(

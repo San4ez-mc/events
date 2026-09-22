@@ -260,7 +260,75 @@ Acceptance: "full attendee ↔ organizer registration flow works."
 ## Phase 5 — Notifications
 
 in-app, Expo push, reminders (24h/1h), event-changed, organizer notifications.
-**Не почато.**
+
+Acceptance: "event participant receives scheduled reminder."
+
+- [x] Prisma: `Notification` (§40, one row per user per event) +
+      `NotificationDelivery` (one row per channel attempt — IN_APP is
+      always immediately "SENT", a DB row is a delivered in-app
+      notification by definition; PUSH tracks real Expo API outcomes).
+- [x] `ExpoPushService` (§41): thin wrapper around Expo's push HTTP API,
+      isolated so `NotificationsService` doesn't need network mocking to
+      unit-test. Deactivates a `UserDevice` when Expo reports
+      `DeviceNotRegistered`. Best-effort — a push failure never blocks the
+      in-app notification, which is the delivery that actually matters
+      until the mobile app exists to receive push at all.
+- [x] `EventLifecycleScheduler` (§42/§43/§80), `@nestjs/schedule` cron every
+      10 minutes, each check idempotent via `existsForPayload` /
+      `updateMany` `where` guards so a missed or overlapping run never
+      double-sends:
+      - 24h/1h event reminders to every actively-registered attendee,
+        respecting `allowEventReminderNotifications`
+      - `PUBLISHED -> COMPLETED` once `endsAt` has passed (§80)
+      - one-time "under-subscribed" warning to the organizer once the
+        registration deadline passes with fewer than `minParticipants`
+        active registrations (UX §15) — never auto-cancels, matches spec
+        exactly ("Автоматично подія не скасовується")
+- [x] Wired into every relevant existing flow: new registration -> notify
+      organizer (`REGISTRATION_RECEIVED`); approve/reject -> notify
+      attendee; mark-paid -> notify organizer (`PAYMENT_PENDING`, i.e.
+      "awaiting your confirmation"); confirm-payment -> notify attendee
+      (`PAYMENT_CONFIRMED`); waitlist promotion -> notify the promoted
+      attendee; event update with `notifyParticipants=true` on a
+      significant field (§78) -> `EVENT_CHANGED` to every active
+      registrant; `POST /events/:id/cancel` -> `EVENT_CANCELLED` to every
+      active registrant (§44/§79). All fired *after* their owning
+      transaction commits, not inside it — a notification write uses a
+      separate DB connection and wouldn't roll back with the transaction.
+- [x] `GET /notifications` (mine, cursor-paginated), `GET
+      /notifications/unread-count`, `PATCH /notifications/:id/read`,
+      `PATCH /notifications/read-all`.
+- [x] Found and fixed a real dependency bug before it ever hit a test: the
+      current `@nestjs/schedule@12` is `"type": "module"` (ESM-only, no CJS
+      build), which crashes both `ts-jest` and (since this app's build
+      target is CommonJS) the compiled server itself — same class of issue
+      as the `file-type` ESM problem from Phase 1. Pinned to
+      `@nestjs/schedule@6.1.3` (last version supporting Nest 11 with a real
+      CJS build) instead.
+- [x] 8 new e2e tests (notifications.e2e-spec.ts) — 79/79 total across 10
+      suites passing. Covers every wired-in trigger above, list/unread-
+      count/mark-read/mark-all-read, and that a stranger can't mark someone
+      else's notification read.
+- [x] Web UI: a notification bell in the header (unread badge, dropdown
+      list, mark-read-on-click, mark-all-read, polled every 60s — no
+      real-time transport yet). Verified end-to-end in a real browser:
+      registering for an event as one user produced a live, correctly-
+      worded notification in the organizer's bell.
+- [ ] Deep-linking a notification to its specific event isn't built —
+      `payloadJson` only carries `eventId`/`registrationId`, not a slug, so
+      clicking currently routes to the relevant list page
+      (`/organizer/events` or `/my-registrations`) rather than the exact
+      event. A documented trim, not a silent gap.
+- [ ] Actual push delivery is unverifiable end-to-end — no mobile app
+      exists yet to register a `UserDevice`/receive a push, so
+      `ExpoPushService` has never been exercised against a real device.
+      The plumbing (request shape, `DeviceNotRegistered` handling) is
+      correct by inspection but not tested against Expo's live API.
+- [ ] EMAIL channel explicitly deferred, per spec ("Future: EMAIL").
+- [ ] Friend/subscription/category-merge/district-merge notification types
+      already exist in the schema (§42's job list) but have no trigger
+      yet — their features (Phase 6/10) don't exist to trigger them from.
+- [ ] Mobile screens — still not started.
 
 ## Phase 6 — Social
 

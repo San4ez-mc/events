@@ -3,6 +3,7 @@ import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_FILTER, APP_GUARD } from "@nestjs/core";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
+import { ScheduleModule } from "@nestjs/schedule";
 import { LoggerModule } from "nestjs-pino";
 import { validateEnv } from "./config/env.validation";
 import { ApiExceptionFilter } from "./common/filters/api-exception.filter";
@@ -24,6 +25,7 @@ import { ModerationModule } from "./moderation/moderation.module";
 import { DiscoveryModule } from "./discovery/discovery.module";
 import { SearchModule } from "./search/search.module";
 import { RegistrationsModule } from "./registrations/registrations.module";
+import { NotificationsModule } from "./notifications/notifications.module";
 
 @Module({
   imports: [
@@ -46,6 +48,8 @@ import { RegistrationsModule } from "./registrations/registrations.module";
     }),
     // §87 — global default; individual auth endpoints layer stricter @Throttle() limits.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
+    // §42 — powers EventLifecycleScheduler (reminders, auto-completion, under-subscribed warnings).
+    ScheduleModule.forRoot(),
     PrismaModule,
     MailModule,
     StorageModule,
@@ -61,6 +65,7 @@ import { RegistrationsModule } from "./registrations/registrations.module";
     DiscoveryModule,
     SearchModule,
     RegistrationsModule,
+    NotificationsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: ApiExceptionFilter },

@@ -177,6 +177,9 @@
     "errorSubmitting": "Couldn't register",
     "eventCancelled": "This event was cancelled by the organizer"
   },
+  "notifications": {
+    "markAllRead": "Mark all as read"
+  },
   "organizerRegistrations": {
     "title": "Registrations",
     "viewRegistrations": "Registrations",

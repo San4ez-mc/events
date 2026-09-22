@@ -10,6 +10,8 @@ import { ModerationService } from "../moderation/moderation.service";
 import { ApiException } from "../common/exceptions/api.exception";
 import { ForbiddenActionException, ResourceNotFoundException } from "../common/exceptions/common-exceptions";
 import { slugifyUnique } from "../common/utils/slugify";
+import { ACTIVE_REGISTRATION_STATUSES } from "../common/constants/registration-active-statuses";
+import { NotificationsService } from "../notifications/notifications.service";
 import type { CreateEventDto } from "./dto/create-event.dto";
 import type { UpdateEventDto } from "./dto/update-event.dto";
 import type { ListMyEventsDto } from "./dto/list-my-events.dto";
@@ -25,6 +27,7 @@ export class EventsService {
     private readonly creditsService: CreditsService,
     private readonly sensitiveContentService: SensitiveContentService,
     private readonly moderationService: ModerationService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /** §10 — creating a first event is what makes a user an "organizer" (not a role). */
@@ -46,10 +49,10 @@ export class EventsService {
   async update(eventId: string, userId: string, dto: UpdateEventDto) {
     const event = await this.getOwnedEvent(eventId, userId);
 
+    const touchesSignificantField = SIGNIFICANT_PUBLISHED_FIELDS.some(
+      (field) => (dto as Record<string, unknown>)[field] !== undefined,
+    );
     if (event.status === "PUBLISHED") {
-      const touchesSignificantField = SIGNIFICANT_PUBLISHED_FIELDS.some(
-        (field) => (dto as Record<string, unknown>)[field] !== undefined,
-      );
       if (touchesSignificantField && !dto.notifyParticipants) {
         throw new ApiException(
           "VALIDATION_ERROR",
@@ -104,9 +107,13 @@ export class EventsService {
       include: { media: true, category: true, city: true, district: true },
     });
 
-    // TODO(Phase 5): if touchesSignificantField, enqueue event.changed
-    // notifications to all registered participants instead of just allowing
-    // the write through once confirmed.
+    if (event.status === "PUBLISHED" && touchesSignificantField && dto.notifyParticipants) {
+      await this.notifyActiveRegistrants(eventId, {
+        type: "EVENT_CHANGED",
+        title: "Event details changed",
+        body: `The organizer updated the date, location, or link for "${updated.title}".`,
+      });
+    }
 
     return updated;
   }
@@ -241,9 +248,9 @@ export class EventsService {
 
   /**
    * §79 — cancels an event. Never deletes it. Existing registrations are
-   * left as-is (their own attendees decide whether to also cancel
-   * individually); this just stops new ones and would notify participants
-   * once Phase 5 exists to send that notification.
+   * left as-is status-wise (attendees decide whether to also cancel
+   * individually) — cancelling the event just stops new registrations and
+   * notifies everyone currently registered (§44).
    */
   async cancel(eventId: string, userId: string, reason: string | undefined) {
     const event = await this.getOwnedEvent(eventId, userId);
@@ -260,8 +267,34 @@ export class EventsService {
       where: { id: eventId },
       data: { status: "CANCELLED", cancelledAt: new Date(), cancellationReason: reason },
     });
-    // TODO(Phase 5): enqueue an EVENT_CANCELLED notification to every active registrant.
+    await this.notifyActiveRegistrants(eventId, {
+      type: "EVENT_CANCELLED",
+      title: "Event cancelled",
+      body: reason ? `"${cancelled.title}" was cancelled: ${reason}` : `"${cancelled.title}" was cancelled.`,
+    });
     return cancelled;
+  }
+
+  /** §44/§79 — notifies everyone with an active registration for an event, e.g. on cancellation or a significant change. */
+  private async notifyActiveRegistrants(
+    eventId: string,
+    notification: { type: "EVENT_CHANGED" | "EVENT_CANCELLED"; title: string; body: string },
+  ): Promise<void> {
+    const registrations = await this.prisma.registration.findMany({
+      where: { eventId, status: { in: [...ACTIVE_REGISTRATION_STATUSES] } },
+      select: { userId: true },
+    });
+    await Promise.all(
+      registrations.map(({ userId }) =>
+        this.notifications.create({
+          userId,
+          type: notification.type,
+          title: notification.title,
+          body: notification.body,
+          payloadJson: { eventId },
+        }),
+      ),
+    );
   }
 
   /** §69 — the minimum fields required to publish (drafts may be incomplete until this point). */
