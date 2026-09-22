@@ -42,6 +42,11 @@ export class EventsController {
     return this.eventsService.update(id, user.id, dto);
   }
 
+  @Post(":id/publish")
+  publish(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.eventsService.publish(id, user.id);
+  }
+
   /**
    * Public preview by slug. @Public() because published events must be
    * viewable without auth (§63) — the service itself still enforces that

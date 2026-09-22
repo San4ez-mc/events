@@ -468,6 +468,29 @@
         ]
       }
     },
+    "/api/v1/events/{id}/publish": {
+      "post": {
+        "operationId": "EventsController_publish",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "events"
+        ]
+      }
+    },
     "/api/v1/events/slug/{slug}": {
       "get": {
         "operationId": "EventsController_findBySlug",
@@ -488,6 +511,62 @@
         },
         "tags": [
           "events"
+        ]
+      }
+    },
+    "/api/v1/credits/balance": {
+      "get": {
+        "operationId": "CreditsController_getBalance",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "credits"
+        ]
+      }
+    },
+    "/api/v1/credits/ledger": {
+      "get": {
+        "operationId": "CreditsController_getLedger",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "credits"
+        ]
+      }
+    },
+    "/api/v1/credits/packages": {
+      "get": {
+        "operationId": "CreditsController_listPackages",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "credits"
+        ]
+      }
+    },
+    "/api/v1/credits/claim-free": {
+      "post": {
+        "operationId": "CreditsController_claimFree",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "credits"
         ]
       }
     },

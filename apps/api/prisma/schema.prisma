@@ -87,17 +87,19 @@ model User {
   updatedAt   DateTime  @updatedAt
   lastLoginAt DateTime?
 
-  socialLinks        UserSocialLink[]
-  preferences        UserPreferences?
-  devices            UserDevice[]
-  refreshTokens      RefreshToken[]
-  emailVerifications EmailVerificationToken[]
-  passwordResets     PasswordResetToken[]
-  auditLogs          AuditLog[]
-  districtsCreated   District[]               @relation("DistrictCreator")
-  categoriesCreated  Category[]               @relation("CategoryCreator")
-  events             Event[]
-  eventSeries        EventSeries[]
+  socialLinks             UserSocialLink[]
+  preferences             UserPreferences?
+  devices                 UserDevice[]
+  refreshTokens           RefreshToken[]
+  emailVerifications      EmailVerificationToken[]
+  passwordResets          PasswordResetToken[]
+  auditLogs               AuditLog[]
+  districtsCreated        District[]               @relation("DistrictCreator")
+  categoriesCreated       Category[]               @relation("CategoryCreator")
+  events                  Event[]
+  eventSeries             EventSeries[]
+  listingCreditEntries    ListingCreditLedger[]
+  moderationCasesResolved ModerationCase[]
 
   @@map("users")
 }
@@ -574,4 +576,89 @@ model EventMedia {
 
   @@index([eventId])
   @@map("event_media")
+}
+
+// ---------------------------------------------------------------------------
+// Listing credits & moderation (§48-55, Phase 2). Credit packages exist here
+// (needed by the free-grant flow and to show pricing) but purchasing them
+// is Phase 9 — no PlatformPaymentOrder table yet, nothing to spend money on.
+// ---------------------------------------------------------------------------
+
+enum ListingCreditType {
+  GRANT
+  PURCHASE
+  EVENT_PUBLICATION
+  REFUND
+  ADMIN_ADJUSTMENT
+  PROMO
+}
+
+/// Ledger, not a balance column (§48) — balance is always SUM(creditsDelta).
+/// Never UPDATE or DELETE a row here; every change is a new entry.
+model ListingCreditLedger {
+  id     String            @id @default(uuid()) @db.Uuid
+  userId String            @db.Uuid
+  user   User              @relation(fields: [userId], references: [id])
+  type   ListingCreditType
+
+  creditsDelta Int
+
+  /// e.g. "EVENT" + the event id, or "FREE_ORGANIZER_BONUS" + the user id —
+  /// used as an idempotency key so a grant/debit can't be double-applied.
+  sourceType String
+  sourceId   String?
+
+  description String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([sourceType, sourceId])
+  @@map("listing_credit_ledger")
+}
+
+model CreditPackage {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  credits   Int
+  price     Decimal  @db.Decimal(10, 2)
+  currency  Currency @default(UAH)
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+
+  @@map("credit_packages")
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ModerationReasonCode {
+  SENSITIVE_KEYWORDS
+  WAR_RELATED
+  ADULT_CONTENT
+  USER_REPORTED
+  MANUAL_REVIEW
+}
+
+model ModerationCase {
+  id         String @id @default(uuid()) @db.Uuid
+  targetType String
+  targetId   String
+
+  reasonCode ModerationReasonCode
+  details    String?
+
+  status ModerationStatus @default(PENDING)
+
+  createdAt         DateTime  @default(now())
+  resolvedAt        DateTime?
+  resolvedByAdminId String?   @db.Uuid
+  resolvedByAdmin   User?     @relation(fields: [resolvedByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([targetType, targetId])
+  @@index([status])
+  @@map("moderation_cases")
 }

@@ -4,6 +4,9 @@ import { PAGINATION } from "@kiro/config";
 import type { CursorPage } from "@kiro/types";
 import { PrismaService } from "../prisma/prisma.service";
 import { UsersService } from "../users/users.service";
+import { CreditsService } from "../credits/credits.service";
+import { SensitiveContentService } from "../moderation/sensitive-content.service";
+import { ModerationService } from "../moderation/moderation.service";
 import { ApiException } from "../common/exceptions/api.exception";
 import { ForbiddenActionException, ResourceNotFoundException } from "../common/exceptions/common-exceptions";
 import { slugifyUnique } from "../common/utils/slugify";
@@ -19,6 +22,9 @@ export class EventsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
+    private readonly creditsService: CreditsService,
+    private readonly sensitiveContentService: SensitiveContentService,
+    private readonly moderationService: ModerationService,
   ) {}
 
   /** §10 — creating a first event is what makes a user an "organizer" (not a role). */
@@ -158,6 +164,94 @@ export class EventsService {
     }
 
     return event;
+  }
+
+  /**
+   * §52/§55 — the publication transaction. Three outcomes:
+   *  - REJECT (hard-blocked content, §54): event -> REJECTED, no charge, no
+   *    moderation case (there's nothing to review — it's just not allowed).
+   *  - FLAG (e.g. war-related, §54): event -> PENDING_MODERATION, a
+   *    ModerationCase is opened, credit is NOT charged yet (§55 — reserved,
+   *    not consumed, until an admin approves in Phase 10).
+   *  - ALLOW: credit is debited and event -> PUBLISHED, atomically with the
+   *    status change (single transaction, §52).
+   * Idempotent either way: publishing an already-PUBLISHED event again is a
+   * no-op (§98 — a retried request must not double-charge).
+   */
+  async publish(eventId: string, userId: string) {
+    const event = await this.getOwnedEvent(eventId, userId);
+
+    if (event.status === "PUBLISHED") {
+      return this.prisma.event.findUniqueOrThrow({ where: { id: eventId } });
+    }
+    if (event.status !== "DRAFT") {
+      throw new ApiException(
+        "EVENT_NOT_PUBLISHABLE",
+        `Cannot publish an event with status ${event.status}`,
+        400,
+      );
+    }
+
+    this.assertPublishable(event);
+
+    const scan = this.sensitiveContentService.scan(event.title, event.description, event.rules);
+
+    if (scan.decision === "REJECT") {
+      await this.prisma.event.update({ where: { id: eventId }, data: { status: "REJECTED" } });
+      throw new ApiException(
+        "VALIDATION_ERROR",
+        "This event's content isn't allowed on Kiro (§54)",
+        400,
+      );
+    }
+
+    if (scan.decision === "FLAG") {
+      return this.prisma.$transaction(async (tx) => {
+        await tx.event.update({ where: { id: eventId }, data: { status: "PENDING_MODERATION" } });
+        await this.moderationService.openCase({
+          targetType: "EVENT",
+          targetId: eventId,
+          reasonCode: scan.reasonCode,
+          details: `Matched term: "${scan.matchedTerm}"`,
+        });
+        return tx.event.findUniqueOrThrow({ where: { id: eventId } });
+      });
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await this.creditsService.debitForPublication(tx, userId, eventId);
+      return tx.event.update({
+        where: { id: eventId },
+        data: { status: "PUBLISHED", publishedAt: new Date() },
+      });
+    });
+  }
+
+  /** §69 — the minimum fields required to publish (drafts may be incomplete until this point). */
+  private assertPublishable(event: {
+    title: string;
+    categoryId: string | null;
+    startsAt: Date | null;
+    description: string | null;
+    format: string;
+    cityId: string | null;
+    addressText: string | null;
+    onlineUrl: string | null;
+    priceType: string;
+  }): void {
+    const missing: string[] = [];
+    if (!event.title?.trim()) missing.push("title");
+    if (!event.categoryId) missing.push("categoryId");
+    if (!event.startsAt) missing.push("startsAt");
+    if (!event.description?.trim()) missing.push("description");
+    if (event.format === "OFFLINE" && !event.cityId) missing.push("cityId");
+    if (event.format === "ONLINE" && !event.onlineUrl) missing.push("onlineUrl");
+
+    if (missing.length > 0) {
+      throw new ApiException("VALIDATION_ERROR", "Event is missing required fields to publish", 400, {
+        _: missing,
+      });
+    }
   }
 
   private async getOwnedEvent(eventId: string, userId: string) {

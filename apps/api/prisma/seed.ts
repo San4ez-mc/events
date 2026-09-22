@@ -2,8 +2,10 @@
  * Seed script (§93). Run with `pnpm --filter @kiro/api seed`.
  *
  * Covers: super-admin user, system_settings, Ukraine geography (delegates to
- * import-ukraine-geo.ts, §94), and initial categories (§38). Credit packages
- * (§50) land with Phase 9 — the table doesn't exist yet.
+ * import-ukraine-geo.ts, §94), initial categories (§38), and listing credit
+ * packages (§50). Purchasing a package is still Phase 9 (no payment
+ * provider wired up) — this just seeds the prices so they exist for the
+ * free-credits/publish flow to reference and are never hardcoded client-side.
  */
 import { PrismaClient } from "@prisma/client";
 import * as argon2 from "argon2";
@@ -27,6 +29,7 @@ async function main() {
   await seedSystemSettings();
   await seedGeography();
   await seedCategories();
+  await seedCreditPackages();
 }
 
 async function seedSuperAdmin() {
@@ -123,6 +126,23 @@ async function upsertCategory(
     created += await upsertCategory(child, category.id, childSortOrder++);
   }
   return created;
+}
+
+async function seedCreditPackages() {
+  const packages = [
+    { name: "1 publication", credits: 1, price: 199, sortOrder: 0 },
+    { name: "5 publications", credits: 5, price: 799, sortOrder: 1 },
+    { name: "10 publications", credits: 10, price: 1499, sortOrder: 2 },
+  ];
+
+  for (const pkg of packages) {
+    await prisma.creditPackage.upsert({
+      where: { name: pkg.name },
+      create: { ...pkg, currency: "UAH" },
+      update: { credits: pkg.credits, price: pkg.price, sortOrder: pkg.sortOrder },
+    });
+  }
+  console.log(`[seed] Credit packages: ${await prisma.creditPackage.count()} total.`);
 }
 
 main()

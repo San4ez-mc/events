@@ -82,8 +82,42 @@ Acceptance: "organizer can create draft and preview an event."
 
 ## Phase 2 — Publication
 
-credits, перші 5 безкоштовних, publish flow, moderation, public/private,
-event status flow. **Не почато.**
+Acceptance: "user can publish a valid public event using one credit."
+
+- [x] Prisma: `ListingCreditLedger` (§48 — ledger, not a balance column),
+      `CreditPackage`, `ModerationCase`
+- [x] CreditsModule: `GET /credits/balance`, `GET /credits/ledger`,
+      `GET /credits/packages` (public — prices from the DB, §50),
+      `POST /credits/claim-free` (§36/§49 — explicit action, idempotent via
+      a sourceType+sourceId dedup key)
+- [x] SensitiveContentService (§54): keyword scan — hard-reject for illegal
+      goods/weapons-sale/explosives/sexual-services, flag-for-review for
+      war-related content. Found and fixed a real bug via a failing test:
+      JS regex `\b` is ASCII-only (defined via `\w`) even with the `u` flag,
+      so it silently never matches next to Cyrillic text — replaced with
+      `(?<![\p{L}\p{N}])`/`(?![\p{L}\p{N}])` lookarounds. Unit-tested.
+- [x] `POST /events/:id/publish` (§52/§55): validates the §69 minimum
+      fields, runs the content scan, then one of REJECT (event → REJECTED,
+      no charge) / FLAG (→ PENDING_MODERATION, ModerationCase opened, credit
+      *reserved* not consumed) / ALLOW (credit debited + → PUBLISHED,
+      atomically in one transaction). Debit uses `pg_advisory_xact_lock`
+      keyed per-user so two concurrent publish requests can't both read the
+      same balance and both succeed (found via reasoning about the same
+      class of race already fixed once in the web auth-refresh flow — see
+      "Known technical decisions" below). Idempotent: publishing an
+      already-published event again is a no-op, doesn't double-charge (§98).
+- [x] Seeded `credit_packages` (§50: 1/199₴, 5/799₴, 10/1499₴) on both
+      kiro_dev and kiro_test
+- [x] 43/43 e2e tests passing (added credits.e2e-spec.ts,
+      publish.e2e-spec.ts on top of the previous 4 suites) — covers missing-
+      fields validation, insufficient-credits, successful publish + exact
+      debit, publish idempotency, non-owner rejection, hard-reject content,
+      and flag-for-review content
+- [ ] Admin resolution of PENDING_MODERATION cases (approve → charge +
+      publish, reject → no charge) — that's Phase 10's admin queue; a
+      flagged event just sits PENDING_MODERATION until then, as intended
+- [ ] Not tested through the actual web UI yet (only via e2e/curl) — the
+      wizard's "preview" step doesn't have a publish button wired up yet
 
 ## Phase 3 — Discovery
 
@@ -167,3 +201,11 @@ audit — admin routes, phone-friendly UI. **Не почато.**
   reuse-detection (§9) — виправлено single-flight-дедуплікацією в
   `apps/web/src/lib/api-client.ts::refreshAccessToken()`. Актуально і для
   прода (дві вкладки/ретрай можуть так само зіткнутися), не лише для dev.
+- Той самий клас "конкурентні запити б'ються об idempotency/лічильник" —
+  тепер і на бекенді: `CreditsService.debitForPublication` серіалізує
+  публікації одного юзера через `pg_advisory_xact_lock(hashtext(userId))`
+  всередині транзакції, щоб два одночасні publish-запити не прочитали
+  однаковий баланс і обидва не пройшли перевірку. Технічна деталь:
+  `pg_advisory_xact_lock` повертає `void`, тож викликати його треба через
+  `$executeRaw`, не `$queryRaw` (останній намагається десеріалізувати
+  результат як типізовані рядки й падає на void-колонці).

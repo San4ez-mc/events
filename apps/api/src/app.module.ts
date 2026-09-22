@@ -19,6 +19,8 @@ import { GeographyModule } from "./geography/geography.module";
 import { CategoriesModule } from "./categories/categories.module";
 import { EventsModule } from "./events/events.module";
 import { EventMediaModule } from "./event-media/event-media.module";
+import { CreditsModule } from "./credits/credits.module";
+import { ModerationModule } from "./moderation/moderation.module";
 
 @Module({
   imports: [
@@ -51,6 +53,8 @@ import { EventMediaModule } from "./event-media/event-media.module";
     CategoriesModule,
     EventsModule,
     EventMediaModule,
+    CreditsModule,
+    ModerationModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: ApiExceptionFilter },
