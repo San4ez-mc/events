@@ -116,8 +116,12 @@ Acceptance: "user can publish a valid public event using one credit."
 - [ ] Admin resolution of PENDING_MODERATION cases (approve → charge +
       publish, reject → no charge) — that's Phase 10's admin queue; a
       flagged event just sits PENDING_MODERATION until then, as intended
-- [ ] Not tested through the actual web UI yet (only via e2e/curl) — the
-      wizard's "preview" step doesn't have a publish button wired up yet
+- [x] Wired into the web UI: the wizard's "preview" step now shows the
+      credit balance, a publish button, and status-aware feedback
+      (success/pending-moderation/rejected/insufficient-credits with a
+      "claim free credits" action). Verified end-to-end through a real
+      browser: register → create event → fill wizard → claim free credits →
+      publish → public event page live with an active registration CTA
 
 ## Phase 3 — Discovery
 

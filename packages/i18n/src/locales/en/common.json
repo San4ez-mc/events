@@ -108,10 +108,19 @@
       "mediaUpload": "Upload a file",
       "mediaEmpty": "No photos or video yet",
       "mediaLimitReached": "10 files max per event",
-      "previewHint": "This is how the event page will look. Publishing will be available later.",
+      "previewHint": "This is how the event page will look.",
       "openPreview": "Open public page",
       "saving": "Saving…",
-      "saved": "Saved"
+      "saved": "Saved",
+      "publish": "Publish",
+      "publishing": "Publishing…",
+      "publishSuccess": "Event published! It's now live at the link below.",
+      "publishPendingModeration": "Event sent for moderation. We'll let you know once it's reviewed.",
+      "publishRejected": "This event can't be published: its content doesn't meet platform guidelines.",
+      "publishError": "Couldn't publish the event",
+      "creditsBalance": "Listing credits",
+      "insufficientCredits": "Not enough credits to publish.",
+      "claimFreeCredits": "🎁 Take 5 free publications"
     }
   },
   "errors": {

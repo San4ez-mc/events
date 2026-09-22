@@ -6,6 +6,7 @@ import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
 import { ApiRequestError } from "@/lib/auth-context";
 import type { EventDetail, EventMedia } from "@/lib/event-types";
+import type { EventStatus } from "@kiro/types";
 import { Button } from "@/components/ui/button";
 import { StepBasics } from "./step-basics";
 import { StepDatePlace } from "./step-date-place";
@@ -81,6 +82,7 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
 
   const [eventId, setEventId] = useState<string | null>(initialEvent?.id ?? null);
   const [slug, setSlug] = useState<string | null>(initialEvent?.slug ?? null);
+  const [status, setStatus] = useState<EventStatus>(initialEvent?.status ?? "DRAFT");
   const [data, setData] = useState<WizardData>(initialEvent ? toWizardData(initialEvent) : EMPTY_WIZARD_DATA);
   const [media, setMedia] = useState<EventMedia[]>(initialEvent?.media ?? []);
   const [stepIndex, setStepIndex] = useState(0);
@@ -181,7 +183,9 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
           ))}
         {step === "datePlace" && <StepDatePlace data={data} onChange={handleChange} />}
         {step === "price" && <StepPrice data={data} onChange={handleChange} />}
-        {step === "preview" && slug && <StepPreview slug={slug} />}
+        {step === "preview" && slug && eventId && (
+          <StepPreview eventId={eventId} slug={slug} status={status} onStatusChange={setStatus} />
+        )}
       </div>
 
       {error && (
