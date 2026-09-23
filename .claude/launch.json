@@ -13,6 +13,13 @@
       "runtimeArgs": ["--filter", "@kiro/web", "dev"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "mobile-web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@kiro/mobile", "web"],
+      "port": 8081,
+      "autoPort": true
     }
   ]
 }
