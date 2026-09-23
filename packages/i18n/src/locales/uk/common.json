@@ -227,6 +227,98 @@
     "reviewsCountOne": "відгук",
     "reviewsCountMany": "відгуків"
   },
+  "admin": {
+    "accessDenied": "У вас немає доступу до адмін-панелі",
+    "nav": {
+      "dashboard": "Дашборд",
+      "moderation": "Модерація",
+      "reports": "Скарги",
+      "users": "Користувачі",
+      "events": "Події",
+      "categories": "Категорії",
+      "districts": "Райони",
+      "payments": "Платежі",
+      "credits": "Кредити",
+      "audit": "Журнал дій"
+    },
+    "dashboard": {
+      "title": "Адміністрування",
+      "totalUsers": "Усього користувачів",
+      "totalOrganizers": "Організаторів",
+      "totalRegistrations": "Реєстрацій",
+      "totalRevenue": "Дохід",
+      "openReports": "Відкритих скарг",
+      "pendingModeration": "Очікують модерації",
+      "eventsByStatus": "Події за статусом"
+    },
+    "moderation": {
+      "title": "Черга модерації",
+      "empty": "Немає нічого на розгляді",
+      "approve": "Схвалити",
+      "reject": "Відхилити"
+    },
+    "reports": {
+      "title": "Скарги",
+      "empty": "Немає скарг",
+      "resolve": "Вирішити",
+      "dismiss": "Відхилити",
+      "hideTarget": "Також приховати позначений контент",
+      "target": "Об'єкт"
+    },
+    "users": {
+      "title": "Користувачі",
+      "search": "Пошук за іменем або email",
+      "role": "Роль",
+      "status": "Статус",
+      "changeRole": "Змінити роль",
+      "setStatus": "Змінити статус",
+      "eventsCount": "Подій",
+      "registrationsCount": "Реєстрацій",
+      "memberSince": "На платформі з",
+      "lastLogin": "Останній вхід",
+      "never": "Ніколи"
+    },
+    "events": {
+      "title": "Події",
+      "filterStatus": "Фільтр за статусом",
+      "all": "Усі",
+      "owner": "Організатор",
+      "editTitle": "Назва",
+      "cancelReason": "Причина скасування (необов'язково)",
+      "cancel": "Примусово скасувати"
+    },
+    "categories": {
+      "title": "Злиття категорій",
+      "sourceId": "ID початкової категорії",
+      "targetId": "ID цільової категорії",
+      "merge": "Злити"
+    },
+    "districts": {
+      "title": "Злиття районів",
+      "sourceId": "ID початкового району",
+      "targetId": "ID цільового району",
+      "merge": "Злити"
+    },
+    "payments": {
+      "title": "Платежі",
+      "confirmManual": "Підтвердити"
+    },
+    "credits": {
+      "title": "Коригування кредитів",
+      "userId": "ID користувача",
+      "delta": "Кількість (від'ємне — списати)",
+      "description": "Причина",
+      "adjust": "Застосувати",
+      "newBalance": "Новий баланс"
+    },
+    "audit": {
+      "title": "Журнал дій",
+      "empty": "Поки що нічого не зафіксовано",
+      "action": "Дія",
+      "entity": "Сутність",
+      "actor": "Хто"
+    }
+  },
   "reviews": {
     "title": "Відгуки",
     "empty": "Ще немає відгуків",

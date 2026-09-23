@@ -1,10 +1,16 @@
 import { Injectable } from "@nestjs/common";
+import type { UserRole, UserStatus } from "@kiro/types";
+import { PAGINATION } from "@kiro/config";
+import type { CursorPage } from "@kiro/types";
 import { PrismaService } from "../prisma/prisma.service";
+import { ApiException } from "../common/exceptions/api.exception";
 import { ResourceNotFoundException } from "../common/exceptions/common-exceptions";
 import { EVENT_CARD_INCLUDE } from "../common/utils/event-card-include";
 import { FriendsService } from "../friends/friends.service";
+import { AuditLogService } from "../audit/audit-log.service";
 import type { UpdateProfileDto } from "./dto/update-profile.dto";
 import type { UpdateUserPreferencesDto } from "./dto/update-user-preferences.dto";
+import type { AdminListUsersDto } from "./dto/admin-list-users.dto";
 
 const PUBLIC_PROFILE_SELECT = {
   id: true,
@@ -21,6 +27,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly friendsService: FriendsService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async getFullProfile(userId: string) {
@@ -137,5 +144,104 @@ export class UsersService {
       data: { organizerActivatedAt: new Date() },
     });
     return true;
+  }
+
+  /** Phase 10's `/admin/users` — search by name/nickname/email, filter by role/status. */
+  async adminList(query: AdminListUsersDto): Promise<CursorPage<unknown>> {
+    const limit = Math.min(query.limit ?? PAGINATION.defaultLimit, PAGINATION.maxLimit);
+    const users = await this.prisma.user.findMany({
+      where: {
+        role: query.role,
+        status: query.status,
+        ...(query.search
+          ? {
+              OR: [
+                { name: { contains: query.search, mode: "insensitive" } },
+                { nickname: { contains: query.search, mode: "insensitive" } },
+                { email: { contains: query.search, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit + 1,
+      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        nickname: true,
+        avatarUrl: true,
+        role: true,
+        status: true,
+        createdAt: true,
+        organizerActivatedAt: true,
+      },
+    });
+
+    const hasMore = users.length > limit;
+    const items = hasMore ? users.slice(0, limit) : users;
+    return { items, nextCursor: hasMore ? (items[items.length - 1] as { id: string }).id : null, hasMore };
+  }
+
+  async adminGetOne(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        nickname: true,
+        avatarUrl: true,
+        role: true,
+        status: true,
+        createdAt: true,
+        organizerActivatedAt: true,
+        lastLoginAt: true,
+      },
+    });
+    if (!user) throw new ResourceNotFoundException("User not found");
+
+    const [eventsCount, registrationsCount] = await Promise.all([
+      this.prisma.event.count({ where: { ownerId: userId } }),
+      this.prisma.registration.count({ where: { userId } }),
+    ]);
+
+    return { ...user, eventsCount, registrationsCount };
+  }
+
+  /** Suspend/unsuspend/block — not a role change, so ADMIN (not just SUPER_ADMIN) can do this (§73). */
+  async adminSetStatus(adminId: string, userId: string, status: UserStatus): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { status: true } });
+    if (!user) throw new ResourceNotFoundException("User not found");
+
+    await this.prisma.user.update({ where: { id: userId }, data: { status } });
+    await this.auditLog.record({
+      actorUserId: adminId,
+      action: "USER_STATUS_CHANGE",
+      entityType: "User",
+      entityId: userId,
+      before: { status: user.status },
+      after: { status },
+    });
+  }
+
+  /** Role changes are SUPER_ADMIN-only (§73) — enforced at the controller, not repeated here. */
+  async adminSetRole(adminId: string, userId: string, role: UserRole): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    if (!user) throw new ResourceNotFoundException("User not found");
+    if (userId === adminId && role !== "SUPER_ADMIN") {
+      throw new ApiException("VALIDATION_ERROR", "You can't demote your own account", 400);
+    }
+
+    await this.prisma.user.update({ where: { id: userId }, data: { role } });
+    await this.auditLog.record({
+      actorUserId: adminId,
+      action: "USER_ROLE_CHANGE",
+      entityType: "User",
+      entityId: userId,
+      before: { role: user.role },
+      after: { role },
+    });
   }
 }

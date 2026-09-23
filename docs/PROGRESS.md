@@ -565,7 +565,77 @@ adapters, webhooks, idempotency.
 ## Phase 10 — Admin
 
 users/events/moderation/reports/categories/district-merge/credits/payments/
-audit — admin routes, phone-friendly UI. **Не почато.**
+audit — admin routes, phone-friendly UI.
+
+- [x] Prisma: `Report` (§39 — reporter/targetType/targetId/reason/status,
+      distinct from `ModerationCase`: a report is always human-filed, a
+      moderation case is always the automatic pre-publish scan). `AuditLog`,
+      `ModerationCase`, and the `mergedInto{Category,District}Id` +
+      `MERGED` status fields all already existed from earlier phases'
+      groundwork — this phase is exactly what was still missing: the admin
+      surface that actually *acts* on them.
+- [x] `AuditModule` (`@Global()`, like `OrganizerModule`): one
+      `AuditLogService.record()` call from every admin mutation this phase
+      adds (§74 — "every admin mutation must create audit_log"), each with a
+      before/after snapshot.
+- [x] `ReportsModule`: `POST /reports` (any user files one) +
+      `/admin/reports` (list/resolve — resolving a REVIEW report can also
+      flip it to `HIDDEN`, finally closing the gap Phase 8 documented and
+      deferred).
+- [x] `AdminModule` — one cohesive module for every `/admin/*` route
+      (§72), RBAC applied per-controller via `@Roles` (§73): MODERATOR gets
+      moderation + reports only; ADMIN gets those plus users/events/
+      categories/districts/credits/payments/audit/analytics; role changes
+      (`PATCH /admin/users/:id/role`) are further restricted to SUPER_ADMIN,
+      which also can't demote its own last account by accident.
+      - **Moderation**: `EventsService.approveModeration`/
+        `rejectModeration` (new — mirrors `publish`'s existing ALLOW
+        branch) finally resolve the `PENDING_MODERATION` state Phase 1's
+        publish flow has produced since day one; approving debits the
+        reserved credit and notifies the organizer, rejecting charges
+        nothing (§55).
+      - **Events**: `EventsService.update`/`cancel` were split into a
+        shared `applyUpdate`/`applyCancel` plus two entry points — the
+        owner-gated original and a new `adminUpdate`/`adminCancel` with no
+        ownership check — so admin edits get full parity with the owner's
+        edit form for free, not a re-implemented subset.
+      - **Category/district merge** (§76/§77): repoints every event (and,
+        for categories, subscription) from source to target inside one
+        transaction, keeps the source row (`MERGED` + `mergedInto*Id`,
+        never hard-deleted since it may still be referenced historically),
+        and notifies affected event owners via the already-existing
+        `CATEGORY_MERGED`/`DISTRICT_MERGED` notification types.
+      - **Credits**: `CreditsService.adminAdjust` — a manual grant/
+        deduction, always a fresh ledger row (never an edited balance),
+        always audited.
+      - **Payments**: reuses Phase 9's `PaymentsService` — `listAll` (new)
+        plus the manual-IBAN confirm endpoint Phase 9 already built and
+        gated for exactly this admin surface.
+- [x] 14 new e2e tests (RBAC per role, a real flagged event through
+      approve/reject with the credit reservation verified both ways, filing
+      + resolving a report that hides a review, category/district merge
+      repointing real events, credits adjustment, payments listing, audit
+      log, analytics) — 148/148 total across 20 suites passing.
+- [x] Web UI: `/admin/*` (dashboard, moderation queue, reports, users +
+      detail, events + detail/edit/cancel, category/district merge, payments,
+      credits, audit log) behind a phone-friendly horizontally-scrolling tab
+      strip (`app/admin/layout.tsx`) that redirects non-admins — the real
+      gate is server-side RBAC, this is just UX. Verified live end-to-end:
+      registered an account, promoted it to SUPER_ADMIN directly via
+      Prisma (there's no self-serve path to admin, by design), and drove
+      the dashboard/users/audit-log/payments pages against real data
+      accumulated across this session's earlier phases — a suspend action
+      taken through the actual UI was confirmed in both the database and
+      the audit log.
+- [ ] Category/district merge pages only list ACTIVE ones (the public
+      listing endpoints they reuse) — a PENDING category (the ones most
+      needing admin attention) has to be merged by ID even though it won't
+      appear in the on-page list. The ID-input form still works for any id;
+      an admin-only "list including PENDING" endpoint is the fix, not built
+      given the effort budget for this phase.
+- [ ] No admin UI for reviewing/approving PENDING (user-submitted)
+      categories/districts themselves — only merging existing ones.
+- [ ] Mobile screens — still not started.
 
 ## Наскрізне (не прив'язане до однієї фази)
 

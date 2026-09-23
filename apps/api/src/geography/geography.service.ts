@@ -1,10 +1,17 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { ApiException } from "../common/exceptions/api.exception";
 import { ResourceNotFoundException } from "../common/exceptions/common-exceptions";
+import { AuditLogService } from "../audit/audit-log.service";
+import { NotificationsService } from "../notifications/notifications.service";
 
 @Injectable()
 export class GeographyService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLog: AuditLogService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   listRegions() {
     return this.prisma.region.findMany({
@@ -48,5 +55,61 @@ export class GeographyService {
       where: { cityId, status: "ACTIVE" },
       orderBy: { nameUk: "asc" },
     });
+  }
+
+  /** §77 — same behavior as category merge (§76): never hard-delete, repoint events, notify owners. */
+  async mergeDistrict(adminId: string, sourceId: string, targetDistrictId: string) {
+    if (sourceId === targetDistrictId) {
+      throw new ApiException("VALIDATION_ERROR", "A district can't be merged into itself", 400);
+    }
+
+    const [source, target] = await Promise.all([
+      this.prisma.district.findUnique({ where: { id: sourceId } }),
+      this.prisma.district.findUnique({ where: { id: targetDistrictId } }),
+    ]);
+    if (!source) throw new ResourceNotFoundException("District not found");
+    if (!target || target.status === "MERGED") {
+      throw new ApiException("VALIDATION_ERROR", "Target district not found or itself merged", 400);
+    }
+    if (source.cityId !== target.cityId) {
+      throw new ApiException("VALIDATION_ERROR", "Can only merge districts within the same city", 400);
+    }
+
+    const affectedEvents = await this.prisma.event.findMany({
+      where: { districtId: sourceId },
+      select: { id: true, ownerId: true, title: true },
+      distinct: ["ownerId"],
+    });
+
+    const merged = await this.prisma.$transaction(async (tx) => {
+      await tx.event.updateMany({ where: { districtId: sourceId }, data: { districtId: targetDistrictId } });
+      return tx.district.update({
+        where: { id: sourceId },
+        data: { status: "MERGED", mergedIntoDistrictId: targetDistrictId },
+      });
+    });
+
+    await this.auditLog.record({
+      actorUserId: adminId,
+      action: "DISTRICT_MERGE",
+      entityType: "District",
+      entityId: sourceId,
+      before: { status: source.status, mergedIntoDistrictId: source.mergedIntoDistrictId },
+      after: { status: "MERGED", mergedIntoDistrictId: targetDistrictId },
+    });
+
+    await Promise.all(
+      affectedEvents.map((event) =>
+        this.notifications.create({
+          userId: event.ownerId,
+          type: "DISTRICT_MERGED",
+          title: "A district you used was merged",
+          body: `"${source.nameUk}" was merged into "${target.nameUk}". Your event "${event.title}" now uses the new district.`,
+          payloadJson: { sourceDistrictId: sourceId, targetDistrictId },
+        }),
+      ),
+    );
+
+    return merged;
   }
 }

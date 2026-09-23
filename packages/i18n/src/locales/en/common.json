@@ -227,6 +227,98 @@
     "reviewsCountOne": "review",
     "reviewsCountMany": "reviews"
   },
+  "admin": {
+    "accessDenied": "You don't have access to the admin panel",
+    "nav": {
+      "dashboard": "Dashboard",
+      "moderation": "Moderation",
+      "reports": "Reports",
+      "users": "Users",
+      "events": "Events",
+      "categories": "Categories",
+      "districts": "Districts",
+      "payments": "Payments",
+      "credits": "Credits",
+      "audit": "Audit log"
+    },
+    "dashboard": {
+      "title": "Admin",
+      "totalUsers": "Total users",
+      "totalOrganizers": "Organizers",
+      "totalRegistrations": "Registrations",
+      "totalRevenue": "Revenue",
+      "openReports": "Open reports",
+      "pendingModeration": "Pending moderation",
+      "eventsByStatus": "Events by status"
+    },
+    "moderation": {
+      "title": "Moderation queue",
+      "empty": "Nothing pending",
+      "approve": "Approve",
+      "reject": "Reject"
+    },
+    "reports": {
+      "title": "Reports",
+      "empty": "No reports",
+      "resolve": "Resolve",
+      "dismiss": "Dismiss",
+      "hideTarget": "Also hide the reported content",
+      "target": "Target"
+    },
+    "users": {
+      "title": "Users",
+      "search": "Search by name or email",
+      "role": "Role",
+      "status": "Status",
+      "changeRole": "Change role",
+      "setStatus": "Set status",
+      "eventsCount": "Events",
+      "registrationsCount": "Registrations",
+      "memberSince": "Member since",
+      "lastLogin": "Last login",
+      "never": "Never"
+    },
+    "events": {
+      "title": "Events",
+      "filterStatus": "Filter by status",
+      "all": "All",
+      "owner": "Organizer",
+      "editTitle": "Title",
+      "cancelReason": "Cancellation reason (optional)",
+      "cancel": "Force cancel"
+    },
+    "categories": {
+      "title": "Category merge",
+      "sourceId": "Source category ID",
+      "targetId": "Target category ID",
+      "merge": "Merge"
+    },
+    "districts": {
+      "title": "District merge",
+      "sourceId": "Source district ID",
+      "targetId": "Target district ID",
+      "merge": "Merge"
+    },
+    "payments": {
+      "title": "Payments",
+      "confirmManual": "Confirm"
+    },
+    "credits": {
+      "title": "Adjust credits",
+      "userId": "User ID",
+      "delta": "Amount (negative to deduct)",
+      "description": "Reason",
+      "adjust": "Apply",
+      "newBalance": "New balance"
+    },
+    "audit": {
+      "title": "Audit log",
+      "empty": "Nothing logged yet",
+      "action": "Action",
+      "entity": "Entity",
+      "actor": "By"
+    }
+  },
   "reviews": {
     "title": "Reviews",
     "empty": "No reviews yet",

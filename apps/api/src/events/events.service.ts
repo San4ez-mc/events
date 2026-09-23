@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { Prisma } from "@prisma/client";
+import type { Event, Prisma } from "@prisma/client";
 import { PAGINATION } from "@kiro/config";
 import type { CursorPage } from "@kiro/types";
 import { PrismaService } from "../prisma/prisma.service";
@@ -52,7 +52,18 @@ export class EventsService {
 
   async update(eventId: string, userId: string, dto: UpdateEventDto) {
     const event = await this.getOwnedEvent(eventId, userId);
+    return this.applyUpdate(event, dto);
+  }
 
+  /** Phase 10's `/admin/events/:id` — same field set and validation as the owner path, just no ownership gate. */
+  async adminUpdate(eventId: string, dto: UpdateEventDto) {
+    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw new ResourceNotFoundException("Event not found");
+    return this.applyUpdate(event, dto);
+  }
+
+  private async applyUpdate(event: Event, dto: UpdateEventDto) {
+    const eventId = event.id;
     const touchesSignificantField = SIGNIFICANT_PUBLISHED_FIELDS.some(
       (field) => (dto as Record<string, unknown>)[field] !== undefined,
     );
@@ -265,6 +276,18 @@ export class EventsService {
    */
   async cancel(eventId: string, userId: string, reason: string | undefined) {
     const event = await this.getOwnedEvent(eventId, userId);
+    return this.applyCancel(event, reason);
+  }
+
+  /** Phase 10's `/admin/events/:id/cancel` — same effect, no ownership gate. */
+  async adminCancel(eventId: string, reason: string | undefined) {
+    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw new ResourceNotFoundException("Event not found");
+    return this.applyCancel(event, reason);
+  }
+
+  private async applyCancel(event: Event, reason: string | undefined) {
+    const eventId = event.id;
     if (event.status === "CANCELLED") return event;
     if (event.status !== "PUBLISHED" && event.status !== "PENDING_MODERATION") {
       throw new ApiException(
@@ -284,6 +307,68 @@ export class EventsService {
       body: reason ? `"${cancelled.title}" was cancelled: ${reason}` : `"${cancelled.title}" was cancelled.`,
     });
     return cancelled;
+  }
+
+  /**
+   * §53/§55, Phase 10's admin moderation queue. Mirrors `publish`'s ALLOW
+   * branch (debit -> PUBLISHED) — the credit was only ever reserved, never
+   * consumed, while the event sat PENDING_MODERATION.
+   */
+  async approveModeration(eventId: string, adminId: string) {
+    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw new ResourceNotFoundException("Event not found");
+    if (event.status !== "PENDING_MODERATION") {
+      throw new ApiException("VALIDATION_ERROR", `Cannot approve an event with status ${event.status}`, 400);
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await this.creditsService.debitForPublication(tx, event.ownerId, eventId);
+      const published = await tx.event.update({
+        where: { id: eventId },
+        data: { status: "PUBLISHED", publishedAt: new Date() },
+      });
+      await tx.moderationCase.updateMany({
+        where: { targetType: "EVENT", targetId: eventId, status: "PENDING" },
+        data: { status: "APPROVED", resolvedAt: new Date(), resolvedByAdminId: adminId },
+      });
+      return published;
+    });
+
+    await this.notifications.create({
+      userId: event.ownerId,
+      type: "EVENT_CHANGED",
+      title: "Event approved",
+      body: `"${updated.title}" passed moderation and is now published.`,
+      payloadJson: { eventId },
+    });
+    return updated;
+  }
+
+  /** No credit is charged — it was only ever reserved (§55). */
+  async rejectModeration(eventId: string, adminId: string) {
+    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw new ResourceNotFoundException("Event not found");
+    if (event.status !== "PENDING_MODERATION") {
+      throw new ApiException("VALIDATION_ERROR", `Cannot reject an event with status ${event.status}`, 400);
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const rejected = await tx.event.update({ where: { id: eventId }, data: { status: "REJECTED" } });
+      await tx.moderationCase.updateMany({
+        where: { targetType: "EVENT", targetId: eventId, status: "PENDING" },
+        data: { status: "REJECTED", resolvedAt: new Date(), resolvedByAdminId: adminId },
+      });
+      return rejected;
+    });
+
+    await this.notifications.create({
+      userId: event.ownerId,
+      type: "EVENT_CHANGED",
+      title: "Event rejected",
+      body: `"${updated.title}" didn't pass moderation and wasn't published.`,
+      payloadJson: { eventId },
+    });
+    return updated;
   }
 
   /**

@@ -117,6 +117,8 @@ model User {
   eventInvitationsReceived EventInvitation[]        @relation("EventInvitationInvitee")
   reviewsAuthored          EventReview[]
   platformPaymentOrders    PlatformPaymentOrder[]
+  reportsFiled             Report[]                 @relation("ReportReporter")
+  reportsAssigned          Report[]                 @relation("ReportAssignee")
 
   @@map("users")
 }
@@ -715,6 +717,47 @@ model ModerationCase {
   @@index([targetType, targetId])
   @@index([status])
   @@map("moderation_cases")
+}
+
+enum ReportTargetType {
+  EVENT
+  USER
+  REVIEW
+}
+
+enum ReportStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+/// §39 — a user flagging an event/user/review for admin attention. Distinct
+/// from `ModerationCase`, which is the automatic pre-publish content scan
+/// (§53-55); a report is always human-initiated and always resolved by hand
+/// (Phase 10's `/admin/reports`).
+model Report {
+  id         String @id @default(uuid()) @db.Uuid
+  reporterId String @db.Uuid
+  reporter   User   @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  targetType ReportTargetType
+  targetId   String
+
+  reason      String
+  description String?
+
+  status ReportStatus @default(OPEN)
+
+  assignedAdminId String? @db.Uuid
+  assignedAdmin   User?   @relation("ReportAssignee", fields: [assignedAdminId], references: [id], onDelete: SetNull)
+
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@index([targetType, targetId])
+  @@index([status])
+  @@map("reports")
 }
 
 // ---------------------------------------------------------------------------

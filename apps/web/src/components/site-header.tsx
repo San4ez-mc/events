@@ -132,6 +132,16 @@ export function SiteHeader() {
                   >
                     {t("nav.myEvents")}
                   </Link>
+                  {["MODERATOR", "ADMIN", "SUPER_ADMIN"].includes(user.role) && (
+                    <Link
+                      href="/admin"
+                      role="menuitem"
+                      className="block px-4 py-2 text-sm hover:bg-surface"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      {t("nav.admin")}
+                    </Link>
+                  )}
                   <button
                     type="button"
                     role="menuitem"

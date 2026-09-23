@@ -10,5 +10,6 @@ import { ManualIbanAdapter } from "./providers/manual-iban.adapter";
   imports: [CreditsModule],
   controllers: [PaymentsController],
   providers: [PaymentsService, WayForPayAdapter, MonoAdapter, ManualIbanAdapter],
+  exports: [PaymentsService],
 })
 export class PaymentsModule {}

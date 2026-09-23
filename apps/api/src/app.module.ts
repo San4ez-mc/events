@@ -35,6 +35,9 @@ import { EventSeriesModule } from "./event-series/event-series.module";
 import { InvitationsModule } from "./invitations/invitations.module";
 import { ReviewsModule } from "./reviews/reviews.module";
 import { PaymentsModule } from "./payments/payments.module";
+import { AuditModule } from "./audit/audit.module";
+import { ReportsModule } from "./reports/reports.module";
+import { AdminModule } from "./admin/admin.module";
 
 @Module({
   imports: [
@@ -84,6 +87,9 @@ import { PaymentsModule } from "./payments/payments.module";
     InvitationsModule,
     ReviewsModule,
     PaymentsModule,
+    AuditModule,
+    ReportsModule,
+    AdminModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: ApiExceptionFilter },

@@ -72,6 +72,15 @@ export class PaymentsService {
     });
   }
 
+  /** Phase 10's `/admin/payments` — every order, any user. */
+  async listAll() {
+    return this.prisma.platformPaymentOrder.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 200,
+      include: { package: true, user: { select: { id: true, name: true, nickname: true, email: true } } },
+    });
+  }
+
   /**
    * §51 — verify-then-trust. The webhook body is attacker-controlled input
    * until `verifyWebhook` passes; only then is `parseWebhook`'s result acted

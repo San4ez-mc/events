@@ -1,15 +1,21 @@
 import { Injectable } from "@nestjs/common";
+import { randomUUID } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { SYSTEM_SETTING_DEFAULTS, SystemSettingKey } from "@kiro/types";
 import { PrismaService } from "../prisma/prisma.service";
 import { ApiException } from "../common/exceptions/api.exception";
+import { AuditLogService } from "../audit/audit-log.service";
 
 const FREE_BONUS_SOURCE_TYPE = "FREE_ORGANIZER_BONUS";
 export const EVENT_PUBLICATION_SOURCE_TYPE = "EVENT";
+const ADMIN_ADJUSTMENT_SOURCE_TYPE = "ADMIN_ADJUSTMENT";
 
 @Injectable()
 export class CreditsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLog: AuditLogService,
+  ) {}
 
   async getBalance(userId: string): Promise<number> {
     const result = await this.prisma.listingCreditLedger.aggregate({
@@ -146,6 +152,31 @@ export class CreditsService {
         description: "Credit package purchase",
       },
     });
+  }
+
+  /** Phase 10's `/admin/credits` — a manual grant or deduction, always audited, always a fresh ledger row (never editing the balance directly). */
+  async adminAdjust(adminId: string, userId: string, delta: number, description: string): Promise<number> {
+    await this.prisma.listingCreditLedger.create({
+      data: {
+        userId,
+        type: "ADMIN_ADJUSTMENT",
+        creditsDelta: delta,
+        sourceType: ADMIN_ADJUSTMENT_SOURCE_TYPE,
+        sourceId: randomUUID(),
+        description,
+      },
+    });
+    const balance = await this.getBalance(userId);
+
+    await this.auditLog.record({
+      actorUserId: adminId,
+      action: "CREDIT_ADJUSTMENT",
+      entityType: "User",
+      entityId: userId,
+      after: { delta, description, newBalance: balance },
+    });
+
+    return balance;
   }
 
   private async getFreeCreditsAmount(): Promise<number> {
