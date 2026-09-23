@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
-import { api } from "@/lib/api-client";
+import { api, getAccessToken } from "@/lib/api-client";
 import type { CursorPage, EventSummary } from "@/lib/event-types";
 import { Button } from "@/components/ui/button";
 
@@ -26,6 +26,7 @@ export default function OrganizerEventsPage() {
 
   const [events, setEvents] = useState<EventSummary[] | null>(null);
   const [error, setError] = useState(false);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -48,6 +49,24 @@ export default function OrganizerEventsPage() {
       cancelled = true;
     };
   }, [authLoading, user, router]);
+
+  async function duplicate(eventId: string) {
+    const token = getAccessToken();
+    if (!token) return;
+    setDuplicatingId(eventId);
+    try {
+      const res = await fetch(`/api/v1/events/${eventId}/duplicate`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const created = (await res.json()) as EventSummary;
+        router.push(`/organizer/events/${created.id}/edit`);
+      }
+    } finally {
+      setDuplicatingId(null);
+    }
+  }
 
   if (authLoading || (!user && !error)) {
     return <LoadingState />;
@@ -106,14 +125,50 @@ export default function OrganizerEventsPage() {
                   </p>
                 </div>
               </Link>
-              {event.status === "PUBLISHED" && (
+              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                {event.status === "PUBLISHED" && (
+                  <>
+                    <Link
+                      href={`/organizer/events/${event.id}/registrations`}
+                      className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-background"
+                    >
+                      {t("organizerRegistrations.viewRegistrations")}
+                    </Link>
+                    <Link
+                      href={`/organizer/events/${event.id}/stats`}
+                      className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-background"
+                    >
+                      {t("organizerTools.stats")}
+                    </Link>
+                    <Link
+                      href={`/organizer/events/${event.id}/invite`}
+                      className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-background"
+                    >
+                      {t("organizerTools.invite")}
+                    </Link>
+                  </>
+                )}
                 <Link
-                  href={`/organizer/events/${event.id}/registrations`}
-                  className="shrink-0 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-background"
+                  href={`/organizer/events/${event.id}/series`}
+                  className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-background"
                 >
-                  {t("organizerRegistrations.viewRegistrations")}
+                  {t("organizerTools.series")}
                 </Link>
-              )}
+                <Link
+                  href={`/organizer/events/${event.id}/collaborators`}
+                  className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-background"
+                >
+                  {t("organizerTools.collaborators")}
+                </Link>
+                <Button
+                  variant="secondary"
+                  className="!min-h-0 px-3 py-1.5 text-xs"
+                  loading={duplicatingId === event.id}
+                  onClick={() => void duplicate(event.id)}
+                >
+                  {t("organizerTools.duplicate")}
+                </Button>
+              </div>
             </li>
           ))}
         </ul>

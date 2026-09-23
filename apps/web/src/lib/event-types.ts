@@ -1,9 +1,12 @@
 import type {
   ApprovalMode,
+  CollaboratorPermission,
   EventFormat,
+  EventInvitationStatus,
   EventPriceType,
   EventStatus,
   EventVisibility,
+  RecurrenceType,
   RegistrationFieldType,
   RegistrationStatus,
 } from "@kiro/types";
@@ -47,6 +50,7 @@ export interface EventSummary {
   price: string | null;
   currency: string;
   createdAt: string;
+  seriesId: string | null;
   media: EventMedia[];
 }
 
@@ -130,4 +134,65 @@ export interface EventCard extends EventSummary {
   category: { id: string; nameUk: string; nameEn: string } | null;
   city: { id: string; nameUk: string; nameEn: string } | null;
   district: { id: string; nameUk: string } | null;
+}
+
+/** Phase 7 — co-organizers (§30). */
+export interface Collaborator {
+  id: string;
+  eventId: string;
+  userId: string;
+  permissions: CollaboratorPermission[];
+  createdAt: string;
+  user: {
+    id: string;
+    name: string | null;
+    nickname: string | null;
+    avatarUrl: string | null;
+    email: string;
+  };
+}
+
+/** Phase 7 — GET /events/:id/stats (§35 — organizer analytics). */
+export interface EventStats {
+  registrations: number;
+  confirmed: number;
+  cancellations: number;
+  paymentClicks: number;
+  saves: number;
+}
+
+/** Phase 7 — recurring events (§29). One occurrence is a normal, independent Event row. */
+export interface EventSeries {
+  id: string;
+  ownerId: string;
+  recurrenceType: RecurrenceType;
+  recurrenceRuleJson: unknown;
+  templateEventId: string;
+  createdAt: string;
+}
+
+export type EventOccurrence = EventSummary;
+
+export interface CreateSeriesResult {
+  series: EventSeries;
+  occurrences: EventOccurrence[];
+}
+
+/** Phase 7 — invite previous participants of other events (§31). */
+export interface InvitationCandidate {
+  id: string;
+  name: string | null;
+  nickname: string | null;
+  avatarUrl: string | null;
+  email: string;
+}
+
+export interface EventInvitation {
+  id: string;
+  eventId: string;
+  inviterUserId: string;
+  inviteeUserId: string;
+  status: EventInvitationStatus;
+  createdAt: string;
+  event: { id: string; slug: string; title: string; startsAt: string | null };
 }

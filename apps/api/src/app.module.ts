@@ -29,6 +29,10 @@ import { NotificationsModule } from "./notifications/notifications.module";
 import { FriendsModule } from "./friends/friends.module";
 import { SubscriptionsModule } from "./subscriptions/subscriptions.module";
 import { NotesModule } from "./notes/notes.module";
+import { OrganizerModule } from "./organizer/organizer.module";
+import { CollaboratorsModule } from "./collaborators/collaborators.module";
+import { EventSeriesModule } from "./event-series/event-series.module";
+import { InvitationsModule } from "./invitations/invitations.module";
 
 @Module({
   imports: [
@@ -72,6 +76,10 @@ import { NotesModule } from "./notes/notes.module";
     FriendsModule,
     SubscriptionsModule,
     NotesModule,
+    OrganizerModule,
+    CollaboratorsModule,
+    EventSeriesModule,
+    InvitationsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: ApiExceptionFilter },

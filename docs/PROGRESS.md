@@ -393,7 +393,60 @@ private notes.
 ## Phase 7 — Organizer
 
 dashboard/статистика, co-organizers, invite previous participants, recurring
-events, duplicate event. **Не почато.**
+events, duplicate event.
+
+- [x] Prisma: `EventCollaborator` (§30 — `userId`+`eventId` unique,
+      `CollaboratorPermission[]` as a native Postgres array), `EventInvitation`
+      (§31 — dual relation for inviter/invitee, unique per
+      eventId+inviteeUserId). Migration `20260922122705_organizer_tools_phase7`.
+- [x] `OrganizerModule` (`@Global()`): `EventAccessService` —
+      `assertOwner`/`assertPermission`, the single place every
+      owner-or-collaborator check now goes through. Owner always
+      short-circuit-approves before any collaborator-permission lookup, so
+      every pre-existing owner-only e2e test kept passing unchanged (widening,
+      not narrowing).
+- [x] `CollaboratorsModule` (§30): list/add(upsert)/update/remove, all
+      owner-only (no permission can substitute for managing collaborators
+      themselves). `EventsService`/`RegistrationsService` now check granular
+      permissions (`EDIT_EVENT`, `MANAGE_REGISTRATIONS`) via
+      `EventAccessService` instead of a hardcoded `ownerId` comparison.
+- [x] `EventSeriesModule` (§29): `POST events/:id/series` turns a draft into a
+      recurring template + generates occurrences via a pure, testable
+      `generateOccurrenceDates()` (all 7 `RecurrenceType` values, capped at 52
+      occurrences). Each occurrence is copied as a fully independent `Event`
+      row (own id/DRAFT status/registration fields) — never one event with an
+      array of dates. `GET event-series/:id/occurrences` to list them.
+- [x] `InvitationsModule` (§31/§71): search past participants of the
+      organizer's own events (excludes already-registered/already-invited),
+      invite (upserts, notifies `ORGANIZER_NEW_EVENT`), invitee
+      accept/decline (`invitations/mine` + `:id/accept|decline`) — accepting
+      only records interest, it doesn't auto-register them.
+- [x] `EventsService.duplicate` (§28): copies an event (always to a fresh
+      DRAFT, own media/registrationFields, no participants/stats/series
+      linkage) and `.getStats` (§35): on-demand
+      registrations/confirmed/cancellations/paymentClicks/saves counts.
+      Deliberately not a full analytics-events + daily-aggregate pipeline —
+      documented in code as an MVP-scale trade-off; `views`/
+      `conversionViewToRegistration` are omitted rather than faked, since
+      there's no page-view tracking yet.
+- [x] 19 new e2e tests (collaborators/event-series/invitations/
+      organizer-tools specs) — 117/117 total across 17 suites passing.
+- [x] Web UI: `/organizer/events/:id/collaborators` (add by user ID,
+      per-permission checkboxes, remove), `/organizer/events/:id/series`
+      (create + list occurrences), `/organizer/events/:id/stats`,
+      `/organizer/events/:id/invite` (search + invite past participants),
+      `/invitations` (accept/decline, linked from the nav dropdown), a
+      "Дублювати" button on `/organizer/events`. Verified live against the
+      real API (register → draft event → create series → add collaborator →
+      duplicate → stats), not just typechecked.
+- [ ] Invite-candidate search has no debounce (fires on every keystroke) —
+      fine at current scale, worth revisiting if this becomes a public/high-
+      traffic surface.
+- [ ] No UI to cancel/unlink a whole series at once (only creating one and
+      viewing its occurrences) — each occurrence is an independent event, so
+      the existing per-event cancel/delete already covers it, just not in
+      bulk.
+- [ ] Mobile screens — still not started.
 
 ## Phase 8 — Reviews
 

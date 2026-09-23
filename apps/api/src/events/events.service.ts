@@ -8,11 +8,12 @@ import { CreditsService } from "../credits/credits.service";
 import { SensitiveContentService } from "../moderation/sensitive-content.service";
 import { ModerationService } from "../moderation/moderation.service";
 import { ApiException } from "../common/exceptions/api.exception";
-import { ForbiddenActionException, ResourceNotFoundException } from "../common/exceptions/common-exceptions";
+import { ResourceNotFoundException } from "../common/exceptions/common-exceptions";
 import { slugifyUnique } from "../common/utils/slugify";
 import { ACTIVE_REGISTRATION_STATUSES } from "../common/constants/registration-active-statuses";
 import { NotificationsService } from "../notifications/notifications.service";
 import { FriendsService } from "../friends/friends.service";
+import { EventAccessService } from "../organizer/event-access.service";
 import type { CreateEventDto } from "./dto/create-event.dto";
 import type { UpdateEventDto } from "./dto/update-event.dto";
 import type { ListMyEventsDto } from "./dto/list-my-events.dto";
@@ -30,6 +31,7 @@ export class EventsService {
     private readonly moderationService: ModerationService,
     private readonly notifications: NotificationsService,
     private readonly friendsService: FriendsService,
+    private readonly eventAccess: EventAccessService,
   ) {}
 
   /** §10 — creating a first event is what makes a user an "organizer" (not a role). */
@@ -278,6 +280,116 @@ export class EventsService {
   }
 
   /**
+   * §19/§70 — `POST /events/:id/duplicate`. Copies content (title,
+   * description, media, category, rules, pricing, registration fields);
+   * never copies participants, reviews, views/stats, or payment status. The
+   * copy always starts as a fresh DRAFT with its own id/slug/credit.
+   */
+  async duplicate(eventId: string, userId: string) {
+    const source = await this.eventAccess.assertPermission(eventId, userId, "EDIT_EVENT");
+    const [media, registrationFields] = await Promise.all([
+      this.prisma.eventMedia.findMany({ where: { eventId }, orderBy: { sortOrder: "asc" } }),
+      this.prisma.registrationField.findMany({ where: { eventId }, orderBy: { sortOrder: "asc" } }),
+    ]);
+
+    const slug = await this.generateUniqueSlug(source.title);
+
+    return this.prisma.$transaction(async (tx) => {
+      const copy = await tx.event.create({
+        data: {
+          ownerId: source.ownerId,
+          slug,
+          title: source.title,
+          description: source.description,
+          categoryId: source.categoryId,
+          language: source.language,
+          format: source.format,
+          cityId: source.cityId,
+          districtId: source.districtId,
+          addressText: source.addressText,
+          addressDetails: source.addressDetails as Prisma.InputJsonValue,
+          googlePlaceId: source.googlePlaceId,
+          latitude: source.latitude,
+          longitude: source.longitude,
+          onlineUrl: source.onlineUrl,
+          capacity: source.capacity,
+          minParticipants: source.minParticipants,
+          approvalMode: source.approvalMode,
+          ageRestriction: source.ageRestriction,
+          rules: source.rules,
+          priceType: source.priceType,
+          price: source.price,
+          currency: source.currency,
+          paymentUrl: source.paymentUrl,
+          // Explicitly DRAFT with no publishedAt/cancelledAt/seriesId — a duplicate starts clean (§70).
+        },
+      });
+
+      if (media.length > 0) {
+        // References the same already-processed derivatives rather than
+        // re-uploading/re-processing — they're immutable, so sharing them
+        // across two events is safe.
+        await tx.eventMedia.createMany({
+          data: media.map((m) => ({
+            eventId: copy.id,
+            type: m.type,
+            originalUrl: m.originalUrl,
+            displayUrl: m.displayUrl,
+            thumbnailUrl: m.thumbnailUrl,
+            width: m.width,
+            height: m.height,
+            durationSeconds: m.durationSeconds,
+            sortOrder: m.sortOrder,
+            focalX: m.focalX,
+            focalY: m.focalY,
+            moderationStatus: m.moderationStatus,
+          })),
+        });
+      }
+
+      if (registrationFields.length > 0) {
+        await tx.registrationField.createMany({
+          data: registrationFields.map((f) => ({
+            eventId: copy.id,
+            label: f.label,
+            type: f.type,
+            required: f.required,
+            optionsJson: f.optionsJson as Prisma.InputJsonValue,
+            sortOrder: f.sortOrder,
+          })),
+        });
+      }
+
+      return tx.event.findUniqueOrThrow({
+        where: { id: copy.id },
+        include: { media: { orderBy: { sortOrder: "asc" } }, category: true, city: true, district: true },
+      });
+    });
+  }
+
+  /**
+   * §46/§47's dashboard metrics, computed on demand rather than via a
+   * separate analytics-events + daily-aggregate pipeline (that's real
+   * infrastructure this MVP doesn't have yet — COUNT queries against
+   * already-indexed foreign keys are cheap at current scale). `views` and
+   * `conversionViewToRegistration` are omitted rather than faked: nothing
+   * records page views yet.
+   */
+  async getStats(eventId: string, userId: string) {
+    await this.eventAccess.assertPermission(eventId, userId, "VIEW_ANALYTICS");
+
+    const [registrations, confirmed, cancellations, paymentClicks, saves] = await Promise.all([
+      this.prisma.registration.count({ where: { eventId, status: { in: [...ACTIVE_REGISTRATION_STATUSES] } } }),
+      this.prisma.registration.count({ where: { eventId, status: "CONFIRMED" } }),
+      this.prisma.registration.count({ where: { eventId, status: "CANCELLED" } }),
+      this.prisma.registration.count({ where: { eventId, paymentClickedAt: { not: null } } }),
+      this.prisma.savedEvent.count({ where: { eventId } }),
+    ]);
+
+    return { registrations, confirmed, cancellations, paymentClicks, saves };
+  }
+
+  /**
    * §34/UX §4's "👥 N твої друзі йдуть" — only counts actually-going statuses
    * (not PENDING, which just means "applied, not yet approved"), and only
    * for an authenticated viewer with accepted friends.
@@ -352,13 +464,9 @@ export class EventsService {
     }
   }
 
+  /** §30 — the owner or a collaborator with EDIT_EVENT can edit/publish/cancel. */
   private async getOwnedEvent(eventId: string, userId: string) {
-    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
-    if (!event) throw new ResourceNotFoundException("Event not found");
-    // Phase 7 adds co-organizers (event_collaborators) with scoped
-    // permissions — until then, only the owner can edit.
-    if (event.ownerId !== userId) throw new ForbiddenActionException();
-    return event;
+    return this.eventAccess.assertPermission(eventId, userId, "EDIT_EVENT");
   }
 
   private async generateUniqueSlug(title: string): Promise<string> {

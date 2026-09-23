@@ -53,6 +53,16 @@ export class EventsController {
     return this.eventsService.cancel(id, user.id, dto.reason);
   }
 
+  @Post(":id/duplicate")
+  duplicate(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.eventsService.duplicate(id, user.id);
+  }
+
+  @Get(":id/stats")
+  getStats(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.eventsService.getStats(id, user.id);
+  }
+
   /**
    * Public preview by slug. @Public() because published events must be
    * viewable without auth (§63) — the service itself still enforces that

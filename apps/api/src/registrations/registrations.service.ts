@@ -7,6 +7,7 @@ import { ApiException } from "../common/exceptions/api.exception";
 import { ForbiddenActionException, ResourceNotFoundException } from "../common/exceptions/common-exceptions";
 import { ACTIVE_REGISTRATION_STATUSES as ACTIVE_STATUSES } from "../common/constants/registration-active-statuses";
 import { NotificationsService } from "../notifications/notifications.service";
+import { EventAccessService } from "../organizer/event-access.service";
 import type { CreateRegistrationDto, RegistrationAnswerDto } from "./dto/create-registration.dto";
 import type { ListRegistrationsDto } from "./dto/list-registrations.dto";
 import type { RejectRegistrationDto } from "./dto/reject-registration.dto";
@@ -21,6 +22,7 @@ export class RegistrationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly eventAccess: EventAccessService,
   ) {}
 
   /**
@@ -263,9 +265,7 @@ export class RegistrationsService {
     organizerId: string,
     query: ListRegistrationsDto,
   ): Promise<CursorPage<unknown>> {
-    const event = await this.prisma.event.findUnique({ where: { id: eventId }, select: { ownerId: true } });
-    if (!event) throw new ResourceNotFoundException("Event not found");
-    if (event.ownerId !== organizerId) throw new ForbiddenActionException();
+    await this.eventAccess.assertPermission(eventId, organizerId, "MANAGE_REGISTRATIONS");
 
     const limit = Math.min(query.limit ?? PAGINATION.defaultLimit, PAGINATION.maxLimit);
     const registrations = await this.prisma.registration.findMany({
@@ -305,9 +305,7 @@ export class RegistrationsService {
 
   /** §25 — organizer replaces the whole custom-question set in one call. */
   async setFields(eventId: string, organizerId: string, dto: SetRegistrationFieldsDto): Promise<RegistrationField[]> {
-    const event = await this.prisma.event.findUnique({ where: { id: eventId }, select: { ownerId: true } });
-    if (!event) throw new ResourceNotFoundException("Event not found");
-    if (event.ownerId !== organizerId) throw new ForbiddenActionException();
+    await this.eventAccess.assertPermission(eventId, organizerId, "EDIT_EVENT");
 
     return this.prisma.$transaction(async (tx) => {
       const keepIds = dto.fields.filter((f) => f.id).map((f) => f.id!);
@@ -430,8 +428,9 @@ export class RegistrationsService {
     if (!registration || registration.eventId !== eventId) {
       throw new ResourceNotFoundException("Registration not found");
     }
-    const event = await tx.event.findUnique({ where: { id: eventId }, select: { ownerId: true } });
-    if (!event || event.ownerId !== organizerId) throw new ForbiddenActionException();
+    // Permission check runs against the outer connection, not `tx` — fine
+    // for a read-only authorization check even when called mid-transaction.
+    await this.eventAccess.assertPermission(eventId, organizerId, "MANAGE_REGISTRATIONS");
     return registration;
   }
 }

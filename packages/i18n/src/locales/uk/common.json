@@ -217,6 +217,76 @@
     "empty": "Ще ніхто не зареєструвався",
     "capacity": "Місць зайнято"
   },
+  "organizerTools": {
+    "duplicate": "Дублювати",
+    "collaborators": "Співорганізатори",
+    "stats": "Статистика",
+    "series": "Повторення",
+    "invite": "Запросити"
+  },
+  "organizerCollaborators": {
+    "title": "Співорганізатори",
+    "empty": "Ще немає співорганізаторів — додайте когось, хто допоможе з подією",
+    "addTitle": "Додати співорганізатора",
+    "userId": "ID користувача",
+    "userIdPlaceholder": "Вставте ID користувача",
+    "permissions": "Права",
+    "add": "Додати",
+    "save": "Зберегти",
+    "remove": "Прибрати",
+    "permission": {
+      "EDIT_EVENT": "Редагувати подію",
+      "MANAGE_REGISTRATIONS": "Керувати реєстраціями",
+      "MANAGE_PAYMENTS": "Керувати оплатами",
+      "SEND_NOTIFICATIONS": "Надсилати сповіщення",
+      "MANAGE_CHAT": "Керувати чатом",
+      "INVITE_PREVIOUS_PARTICIPANTS": "Запрошувати минулих учасників",
+      "VIEW_ANALYTICS": "Переглядати статистику"
+    }
+  },
+  "organizerStats": {
+    "title": "Статистика",
+    "registrations": "Реєстрацій",
+    "confirmed": "Підтверджено",
+    "cancellations": "Скасувань",
+    "paymentClicks": "Кліків з оплати",
+    "saves": "Збережень"
+  },
+  "organizerSeries": {
+    "title": "Зробити повторюваною",
+    "description": "Перетворіть цю чернетку на серію повторюваних подій. Кожне повторення створюється як окрема незалежна чернетка.",
+    "recurrenceType": "Повторюється",
+    "interval": "Кожні N (необов'язково)",
+    "count": "Кількість повторень (макс. 52)",
+    "until": "Зупинити після дати (необов'язково)",
+    "create": "Створити серію",
+    "occurrencesTitle": "Повторення",
+    "alreadyInSeries": "Ця подія вже є частиною серії.",
+    "needsStartDate": "Спершу вкажіть дату початку, щоб зробити подію повторюваною.",
+    "recurrenceTypeOptions": {
+      "DAILY": "Щодня",
+      "EVERY_N_DAYS": "Кожні N днів",
+      "WEEKLY": "Щотижня",
+      "EVERY_N_WEEKS": "Кожні N тижнів",
+      "SPECIFIC_WEEKDAY": "Певний день тижня",
+      "SPECIFIC_DAY_OF_MONTH": "Певний день місяця",
+      "EVERY_N_MONTHS": "Кожні N місяців"
+    }
+  },
+  "organizerInvite": {
+    "title": "Запросити минулих учасників",
+    "search": "Пошук",
+    "searchPlaceholder": "Пошук за іменем або email",
+    "empty": "Немає відповідних минулих учасників",
+    "invite": "Запросити",
+    "invited": "Запрошено"
+  },
+  "invitations": {
+    "title": "Мої запрошення",
+    "empty": "Немає активних запрошень",
+    "accept": "Прийняти",
+    "decline": "Відхилити"
+  },
   "errors": {
     "VALIDATION_ERROR": "Перевірте правильність введених даних",
     "AUTH_REQUIRED": "Потрібно увійти в акаунт",

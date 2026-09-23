@@ -110,8 +110,11 @@ model User {
   blocksReceived          UserBlock[]       @relation("UserBlockBlocked")
   privateNotesAuthored    PrivateUserNote[] @relation("PrivateNoteAuthor")
   privateNotesAbout       PrivateUserNote[] @relation("PrivateNoteTarget")
-  subscriptions           Subscription[]    @relation("SubscriptionUser")
-  subscribersAsOrganizer  Subscription[]    @relation("SubscriptionOrganizer")
+  subscriptions           Subscription[]      @relation("SubscriptionUser")
+  subscribersAsOrganizer  Subscription[]      @relation("SubscriptionOrganizer")
+  eventCollaborations     EventCollaborator[]
+  eventInvitationsSent    EventInvitation[]   @relation("EventInvitationInviter")
+  eventInvitationsReceived EventInvitation[]  @relation("EventInvitationInvitee")
 
   @@map("users")
 }
@@ -568,6 +571,8 @@ model Event {
   registrations      Registration[]
   subscriptions      Subscription[]
   privateNotes       PrivateUserNote[]
+  collaborators      EventCollaborator[]
+  invitations        EventInvitation[]
 
   @@index([ownerId])
   @@index([categoryId])
@@ -1046,4 +1051,70 @@ model Subscription {
   @@index([userId, scope])
   @@index([organizerId, scope])
   @@map("subscriptions")
+}
+
+// ---------------------------------------------------------------------------
+// Organizer tools (§29-30, §70-71, Phase 7): co-organizers, recurring
+// events, duplicating an event, inviting past participants.
+// ---------------------------------------------------------------------------
+
+enum CollaboratorRole {
+  OWNER
+  MANAGER
+}
+
+enum CollaboratorPermission {
+  EDIT_EVENT
+  MANAGE_REGISTRATIONS
+  MANAGE_PAYMENTS
+  SEND_NOTIFICATIONS
+  MANAGE_CHAT
+  INVITE_PREVIOUS_PARTICIPANTS
+  VIEW_ANALYTICS
+}
+
+/// §30's `event_collaborators`. The owner ("Owner один") is `Event.ownerId`
+/// itself, never a row here — this table only holds MANAGER collaborators
+/// ("Managers декілька"), each with its own granular permission set.
+model EventCollaborator {
+  id      String @id @default(uuid()) @db.Uuid
+  eventId String @db.Uuid
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId  String @db.Uuid
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role        CollaboratorRole         @default(MANAGER)
+  permissions CollaboratorPermission[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+  @@map("event_collaborators")
+}
+
+enum EventInvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+/// §71's `event_invitations` — organizer invites someone who registered for
+/// one of their past events to a new one.
+model EventInvitation {
+  id            String @id @default(uuid()) @db.Uuid
+  eventId       String @db.Uuid
+  event         Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  inviterUserId String @db.Uuid
+  inviter       User   @relation("EventInvitationInviter", fields: [inviterUserId], references: [id], onDelete: Cascade)
+  inviteeUserId String @db.Uuid
+  invitee       User   @relation("EventInvitationInvitee", fields: [inviteeUserId], references: [id], onDelete: Cascade)
+
+  status EventInvitationStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, inviteeUserId])
+  @@index([inviteeUserId, status])
+  @@map("event_invitations")
 }

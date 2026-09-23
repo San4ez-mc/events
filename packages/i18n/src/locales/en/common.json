@@ -217,6 +217,76 @@
     "empty": "No one has registered yet",
     "capacity": "Spots filled"
   },
+  "organizerTools": {
+    "duplicate": "Duplicate",
+    "collaborators": "Collaborators",
+    "stats": "Stats",
+    "series": "Recurring",
+    "invite": "Invite"
+  },
+  "organizerCollaborators": {
+    "title": "Collaborators",
+    "empty": "No collaborators yet — add someone to help run this event",
+    "addTitle": "Add a collaborator",
+    "userId": "User ID",
+    "userIdPlaceholder": "Paste their user ID",
+    "permissions": "Permissions",
+    "add": "Add",
+    "save": "Save",
+    "remove": "Remove",
+    "permission": {
+      "EDIT_EVENT": "Edit event",
+      "MANAGE_REGISTRATIONS": "Manage registrations",
+      "MANAGE_PAYMENTS": "Manage payments",
+      "SEND_NOTIFICATIONS": "Send notifications",
+      "MANAGE_CHAT": "Manage chat",
+      "INVITE_PREVIOUS_PARTICIPANTS": "Invite past participants",
+      "VIEW_ANALYTICS": "View analytics"
+    }
+  },
+  "organizerStats": {
+    "title": "Stats",
+    "registrations": "Registrations",
+    "confirmed": "Confirmed",
+    "cancellations": "Cancellations",
+    "paymentClicks": "Payment clicks",
+    "saves": "Saves"
+  },
+  "organizerSeries": {
+    "title": "Make it recurring",
+    "description": "Turn this draft into a series of repeating events. Each occurrence is created as its own independent draft.",
+    "recurrenceType": "Repeats",
+    "interval": "Every N (optional)",
+    "count": "Number of occurrences (max 52)",
+    "until": "Stop after date (optional)",
+    "create": "Create series",
+    "occurrencesTitle": "Occurrences",
+    "alreadyInSeries": "This event is already part of a series.",
+    "needsStartDate": "Set a start date before turning this into a series.",
+    "recurrenceTypeOptions": {
+      "DAILY": "Daily",
+      "EVERY_N_DAYS": "Every N days",
+      "WEEKLY": "Weekly",
+      "EVERY_N_WEEKS": "Every N weeks",
+      "SPECIFIC_WEEKDAY": "Specific weekday",
+      "SPECIFIC_DAY_OF_MONTH": "Specific day of month",
+      "EVERY_N_MONTHS": "Every N months"
+    }
+  },
+  "organizerInvite": {
+    "title": "Invite past participants",
+    "search": "Search",
+    "searchPlaceholder": "Search by name or email",
+    "empty": "No matching past participants",
+    "invite": "Invite",
+    "invited": "Invited"
+  },
+  "invitations": {
+    "title": "My invitations",
+    "empty": "No pending invitations",
+    "accept": "Accept",
+    "decline": "Decline"
+  },
   "errors": {
     "VALIDATION_ERROR": "Please check the fields you entered",
     "AUTH_REQUIRED": "You need to sign in",
