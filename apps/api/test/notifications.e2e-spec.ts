@@ -28,6 +28,7 @@ describe("Notifications (e2e)", () => {
   });
 
   afterAll(async () => {
+    await prisma.userDevice.deleteMany({ where: { user: { email: { startsWith: testEmailPrefix } } } });
     await prisma.notification.deleteMany({ where: { user: { email: { startsWith: testEmailPrefix } } } });
     await prisma.registrationAnswer.deleteMany({ where: { field: { event: { owner: { email: { startsWith: testEmailPrefix } } } } } });
     await prisma.registration.deleteMany({ where: { event: { owner: { email: { startsWith: testEmailPrefix } } } } });
@@ -259,5 +260,47 @@ describe("Notifications (e2e)", () => {
   it("requires authentication", async () => {
     await request(app.getHttpServer()).get("/api/v1/notifications").expect(401);
     await request(app.getHttpServer()).get("/api/v1/notifications/unread-count").expect(401);
+  });
+
+  describe("device registration (§41)", () => {
+    it("registers a device, re-registering the same token refreshes it instead of duplicating", async () => {
+      const { token, userId } = await registerUser();
+      const pushToken = `ExponentPushToken[${Date.now()}]`;
+
+      await request(app.getHttpServer())
+        .post("/api/v1/notifications/devices")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ pushToken, platform: "IOS" })
+        .expect(204);
+
+      await request(app.getHttpServer())
+        .post("/api/v1/notifications/devices")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ pushToken, platform: "IOS" })
+        .expect(204);
+
+      const devices = await prisma.userDevice.findMany({ where: { userId, pushToken } });
+      expect(devices).toHaveLength(1);
+      expect(devices[0]!.active).toBe(true);
+    });
+
+    it("unregistering deactivates the device without deleting its history", async () => {
+      const { token, userId } = await registerUser();
+      const pushToken = `ExponentPushToken[${Date.now()}-2]`;
+
+      await request(app.getHttpServer())
+        .post("/api/v1/notifications/devices")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ pushToken, platform: "ANDROID" })
+        .expect(204);
+
+      await request(app.getHttpServer())
+        .delete(`/api/v1/notifications/devices/${pushToken}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(204);
+
+      const device = await prisma.userDevice.findUniqueOrThrow({ where: { userId_pushToken: { userId, pushToken } } });
+      expect(device.active).toBe(false);
+    });
   });
 });

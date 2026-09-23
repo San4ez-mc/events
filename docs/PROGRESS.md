@@ -640,9 +640,30 @@ audit — admin routes, phone-friendly UI.
 ## Наскрізне (не прив'язане до однієї фази)
 
 - [x] `/`, `/login`, `/register`, `/forgot-password`, `/events/[slug]`,
-      `/organizer/events*` — [ ] `/search`, `/profile/*`, `/admin/*` (later phases)
-- [ ] Реальні екрани на mobile (bottom tabs: Discover/Search/Create/Notifications/Profile)
-      + Expo push реєстрація токенів
+      `/organizer/events*`, `/search`, `/profile/*` (`/users/[id]`),
+      `/admin/*` — усі веб-сторінки з ТЗ вже є.
+- [x] **Mobile** (Expo Router, apps/mobile): реальні екрани замінили
+      порожній scaffold — 5 bottom tabs за §64 (Discover/Search/My
+      Events/Notifications/Profile), логін/реєстрація (токени в
+      SecureStore, §9), swipe-стрічка Discover (§65/§66, жест на базі
+      вбудованого RN `Animated`/`PanResponder`, без reanimated-ворклетів,
+      які тут неможливо перевірити без реального пристрою), деталі події з
+      повним registration-стейтом (кастомні поля, approval/waitlist/оплата
+      — портовано з веб-версії RegistrationWidget), Expo push реєстрація
+      токенів (`POST/DELETE /notifications/devices` — цього ендпоінта
+      бракувало на бекенді, додано зараз, разом з e2e-тестами; 150/150
+      бекенд-тестів проходять). Typecheck+lint чисто на всьому мобільному
+      коді. Диск C: на хості майже скінчився під час роботи над цим
+      (0 байт вільно, не пов'язано з репо — на проєкт це не впливало,
+      `npx tsc`/`npm` тимчасово падали з ENOSPC); звільнив, що безпечно
+      міг (кеш `.next`, npm/pnpm-кеші), решта — поза межами репо,
+      користувача повідомлено. **Живий браузер/симулятор для самого
+      mobile-застосунку (Expo web) ще не перевірено** — команда `expo
+      start --web` впала через той самий диск-інцидент і ще не була
+      повторена; логіка коду перевірена (backend-контракти протестовано
+      e2e, всі i18n-ключі звірено скриптом), але UI-рендер наживо — ні.
+      Створення/керування подіями на mobile свідомо залишено веб-only
+      (нема в §64's nav) — задокументований трейд-офф.
   Реальна деплой-конфігурація на VPS (nginx vhost, systemd/PM2, MinIO) —
 - [ ] порти й план вже задокументовано в `docs/VPS_ACCESS.md`, сам деплой ще не робився
 - [ ] App Store / Play Store: bundle ID/applicationId (зараз **заглушка**

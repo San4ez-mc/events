@@ -6,6 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ResourceNotFoundException, ForbiddenActionException } from "../common/exceptions/common-exceptions";
 import { ExpoPushService } from "./expo-push.service";
 import type { ListNotificationsDto } from "./dto/list-notifications.dto";
+import type { RegisterDeviceDto } from "./dto/register-device.dto";
 
 /** §40-41 — creates the in-app notification row + attempts delivery on every requested channel. */
 @Injectable()
@@ -123,5 +124,27 @@ export class NotificationsService {
       select: { id: true },
     });
     return existing != null;
+  }
+
+  /**
+   * §41 — upserts by (userId, pushToken): the mobile client calls this on
+   * every app start, so a re-registration of the same token just refreshes
+   * `lastSeenAt` and flips it back to `active` (it may have been deactivated
+   * by a prior Expo push failure) rather than erroring or duplicating.
+   */
+  async registerDevice(userId: string, pushToken: string, platform: RegisterDeviceDto["platform"]): Promise<void> {
+    await this.prisma.userDevice.upsert({
+      where: { userId_pushToken: { userId, pushToken } },
+      create: { userId, pushToken, platform, active: true },
+      update: { active: true, lastSeenAt: new Date(), platform },
+    });
+  }
+
+  /** Called on logout so a shared/reset device stops receiving this account's pushes. */
+  async unregisterDevice(userId: string, pushToken: string): Promise<void> {
+    await this.prisma.userDevice.updateMany({
+      where: { userId, pushToken },
+      data: { active: false },
+    });
   }
 }
