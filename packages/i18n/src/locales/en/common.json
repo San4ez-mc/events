@@ -192,13 +192,30 @@
     "share": "Share profile",
     "linkCopied": "Link copied",
     "upcomingEvents": "Upcoming events",
+    "pastEvents": "Past events",
     "blocked": "This profile isn't available",
     "pendingSent": "Request sent",
     "pendingReceived": "Sent you a request",
     "follow": "Follow",
     "following": "Following",
     "friendsGoingOne": "friend is going",
-    "friendsGoingMany": "friends are going"
+    "friendsGoingMany": "friends are going",
+    "noRating": "No ratings yet",
+    "reviewsCountOne": "review",
+    "reviewsCountMany": "reviews"
+  },
+  "reviews": {
+    "title": "Reviews",
+    "empty": "No reviews yet",
+    "leaveReview": "Leave a review",
+    "rating": "Rating",
+    "textLabel": "Your review (optional)",
+    "submit": "Submit",
+    "edit": "Edit your review",
+    "delete": "Delete",
+    "yourReview": "Your review",
+    "submitError": "Couldn't submit your review — you may not be eligible to review this event",
+    "noRating": "No ratings yet"
   },
   "friends": {
     "title": "Friends",

@@ -92,12 +92,22 @@ export function PublicProfileContent() {
 
       {profile.bio && <p className="mb-6 whitespace-pre-wrap text-sm">{profile.bio}</p>}
 
-      <div className="mb-6 flex gap-6 text-sm text-muted">
+      <div className="mb-6 flex flex-wrap gap-6 text-sm text-muted">
         <span>
           <strong className="text-foreground">{profile.friendCount}</strong> {t("profile.friends")}
         </span>
         <span>
           <strong className="text-foreground">{profile.eventsCreatedCount}</strong> {t("profile.eventsCreated")}
+        </span>
+        <span>
+          {profile.ratingAverage != null ? (
+            <>
+              ⭐ <strong className="text-foreground">{profile.ratingAverage.toFixed(1)}</strong> (
+              {profile.reviewsCount} {profile.reviewsCount === 1 ? t("profile.reviewsCountOne") : t("profile.reviewsCountMany")})
+            </>
+          ) : (
+            t("profile.noRating")
+          )}
         </span>
       </div>
 
@@ -119,10 +129,21 @@ export function PublicProfileContent() {
       )}
 
       {profile.upcomingEvents.length > 0 && (
-        <section>
+        <section className="mb-8">
           <h2 className="mb-3 text-sm font-semibold">{t("profile.upcomingEvents")}</h2>
           <div className="flex flex-col gap-2">
             {profile.upcomingEvents.map((event) => (
+              <EventResultRow key={event.id} event={event} locale={locale} t={t} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {profile.pastEvents.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-sm font-semibold">{t("profile.pastEvents")}</h2>
+          <div className="flex flex-col gap-2">
+            {profile.pastEvents.map((event) => (
               <EventResultRow key={event.id} event={event} locale={locale} t={t} />
             ))}
           </div>

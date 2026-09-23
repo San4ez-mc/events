@@ -450,7 +450,59 @@ events, duplicate event.
 
 ## Phase 8 — Reviews
 
-post-event review, organizer aggregate rating. **Не почато.**
+post-event review, organizer aggregate rating.
+
+- [x] Prisma: `EventReview` (§37 — unique eventId+authorUserId, `rating`
+      1..5, optional `text`, `ReviewStatus`). Deliberately no
+      `organizer_rating_summary` cache table (§38 explicitly allows but
+      doesn't require one) — the aggregate is computed on read from
+      PUBLISHED reviews via a single AVG+COUNT query, the same
+      on-demand-over-cached trade-off already made for Phase 7's
+      `EventsService.getStats`.
+- [x] `ReviewsModule` (§37/§81): `POST events/:id/reviews` is create-or-update
+      (a second submission from the same author replaces the first rather
+      than erroring, matching the unique constraint), `GET events/:id/reviews`
+      (public, published only), `DELETE reviews/:id` (author-only retraction).
+      Eligibility is re-checked server-side on every write, never trusted
+      from the client (§81): event must be COMPLETED, the author must have
+      had a REGISTERED/CONFIRMED/ATTENDED registration
+      (`REVIEW_ELIGIBLE_REGISTRATION_STATUSES`, already defined in
+      `@kiro/types`), the organizer can't review their own event, and the
+      review window (`reviewWindowDays` system setting, default 7 — same
+      settings-with-fallback pattern as `DEFAULT_REMINDER_HOURS`) must not
+      have closed.
+- [x] `EventLifecycleScheduler.completeFinishedEvents` (§80, previously a
+      `TODO(Phase 8)` stub): now also fires a `REVIEW_REQUEST` notification
+      to every eligible registrant of an event right as it completes,
+      idempotent via the same `existsForPayload` guard as the reminder jobs.
+- [x] `GET events/slug/:slug` now includes `reviewSummary: {average, count}`
+      for that event; `GET users/:id/profile` now includes the organizer's
+      live `ratingAverage`/`reviewsCount` (§38 — never a stored/manual value)
+      plus a `pastEvents` list (their own COMPLETED events) alongside the
+      existing `upcomingEvents`.
+- [x] Bug found and fixed while building this: the public event page
+      404'd for anyone but the owner once an event transitioned to
+      COMPLETED (`findBySlugForPreview` only treated `PUBLISHED` as publicly
+      visible) — reviews would have been unreachable on the one page they're
+      shown. Fixed to treat COMPLETED as public too, since it's just
+      PUBLISHED's terminal state; covered by the reviews e2e spec, no
+      regression in the other 117 pre-existing e2e tests.
+- [x] 7 new e2e tests (reviews spec: window/eligibility/self-review/rating-
+      range/upsert/delete + the profile and event-summary numbers) — 124/124
+      total across 18 suites passing.
+- [x] Web UI: a `ReviewsSection` on the public event page (rating summary,
+      published reviews list, a star-rating + text form shown once the event
+      is COMPLETED, edit-by-resubmitting, delete own review) and the
+      organizer's public profile now shows their live rating + a past-events
+      section. Verified live end-to-end against the real API (register two
+      accounts → publish → register → force-complete via Prisma, same as the
+      e2e helper, since there's no API to skip the scheduler → submit a
+      5★ review through the actual form → reload → rating/past-events show
+      correctly on both the event page and the organizer's profile).
+- [ ] No organizer-side moderation (hide/remove someone else's review) —
+      `ReviewStatus.HIDDEN`/`REMOVED` exist on the model for this, but acting
+      on them is Phase 10's admin surface, not this one's.
+- [ ] Mobile screens — still not started.
 
 ## Phase 9 — Kiro payments
 

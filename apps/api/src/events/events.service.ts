@@ -164,7 +164,9 @@ export class EventsService {
    * (public or link-only — both are reachable by direct URL per §39) are
    * visible to anyone; unpublished ones are visible only to their owner,
    * which is what makes this safe to also serve as the "preview my draft"
-   * view (§115 Phase 1 acceptance criterion).
+   * view (§115 Phase 1 acceptance criterion). COMPLETED counts as publicly
+   * visible too — it's just PUBLISHED's terminal state (§80), and Phase 8
+   * reviews need the page reachable after the event ends.
    */
   async findBySlugForPreview(slug: string, requesterId: string | undefined) {
     const event = await this.prisma.event.findUnique({
@@ -179,14 +181,19 @@ export class EventsService {
     });
     if (!event) throw new ResourceNotFoundException("Event not found");
 
-    if (event.status !== "PUBLISHED" && event.ownerId !== requesterId) {
+    const publiclyVisibleStatuses: (typeof event.status)[] = ["PUBLISHED", "COMPLETED"];
+    if (!publiclyVisibleStatuses.includes(event.status) && event.ownerId !== requesterId) {
       // Deliberately the same NOT_FOUND as a missing event — don't leak the
       // existence of someone else's draft via a 403 (§10: never trust the
       // frontend to hide this; the backend must actively refuse to reveal it).
       throw new ResourceNotFoundException("Event not found");
     }
 
-    return { ...event, friendsGoing: await this.getFriendsGoing(event.id, requesterId) };
+    return {
+      ...event,
+      friendsGoing: await this.getFriendsGoing(event.id, requesterId),
+      reviewSummary: await this.getReviewSummary(event.id),
+    };
   }
 
   /**
@@ -413,6 +420,16 @@ export class EventsService {
       count,
       previews: registrations.map((r) => ({ id: r.user.id, name: r.user.name ?? r.user.nickname, avatarUrl: r.user.avatarUrl })),
     };
+  }
+
+  /** §37 — this event's own rating, shown on its public page. Distinct from §38's organizer-wide aggregate (`UsersService.getPublicProfile`). */
+  private async getReviewSummary(eventId: string): Promise<{ average: number | null; count: number }> {
+    const result = await this.prisma.eventReview.aggregate({
+      where: { eventId, status: "PUBLISHED" },
+      _avg: { rating: true },
+      _count: true,
+    });
+    return { average: result._avg.rating, count: result._count };
   }
 
   /** §44/§79 — notifies everyone with an active registration for an event, e.g. on cancellation or a significant change. */

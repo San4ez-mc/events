@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import { SYSTEM_SETTING_DEFAULTS, SystemSettingKey } from "@kiro/types";
+import { REVIEW_ELIGIBLE_REGISTRATION_STATUSES, SYSTEM_SETTING_DEFAULTS, SystemSettingKey } from "@kiro/types";
 import { PrismaService } from "../prisma/prisma.service";
 import { ACTIVE_REGISTRATION_STATUSES } from "../common/constants/registration-active-statuses";
 import { NotificationsService } from "./notifications.service";
@@ -77,14 +77,39 @@ export class EventLifecycleScheduler {
     }
   }
 
-  /** §80 — PUBLISHED -> COMPLETED once the event has ended. */
+  /** §80 — PUBLISHED -> COMPLETED once the event has ended, then §81's review-request nudge to every eligible registrant. */
   private async completeFinishedEvents(): Promise<void> {
-    await this.prisma.event.updateMany({
+    const justCompleted = await this.prisma.event.findMany({
       where: { status: "PUBLISHED", endsAt: { lt: new Date() } },
-      data: { status: "COMPLETED", completedAt: new Date() },
+      select: { id: true, title: true },
     });
-    // TODO(Phase 8): once reviews exist, create REVIEW_REQUEST notifications
-    // for each eligible registrant of events that just completed.
+    if (justCompleted.length === 0) return;
+
+    const completedAt = new Date();
+    await this.prisma.event.updateMany({
+      where: { id: { in: justCompleted.map((e) => e.id) } },
+      data: { status: "COMPLETED", completedAt },
+    });
+
+    for (const event of justCompleted) {
+      const registrations = await this.prisma.registration.findMany({
+        where: { eventId: event.id, status: { in: [...REVIEW_ELIGIBLE_REGISTRATION_STATUSES] } },
+        select: { userId: true },
+      });
+
+      for (const { userId } of registrations) {
+        const alreadySent = await this.notifications.existsForPayload(userId, "REVIEW_REQUEST", "eventId", event.id);
+        if (alreadySent) continue;
+
+        await this.notifications.create({
+          userId,
+          type: "REVIEW_REQUEST",
+          title: "How was it?",
+          body: `Leave a review for "${event.title}".`,
+          payloadJson: { eventId: event.id },
+        });
+      }
+    }
   }
 
   /** UX §15 — warns the organizer once, after the registration deadline passes with too few active registrations. */

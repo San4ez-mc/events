@@ -83,6 +83,20 @@ export interface EventDetail extends EventSummary {
   district: { id: string; nameUk: string } | null;
   registrationFields: RegistrationField[];
   friendsGoing: { count: number; previews: { id: string; name: string | null; avatarUrl: string | null }[] };
+  reviewSummary: { average: number | null; count: number };
+}
+
+/** Phase 8 — post-event reviews (§37). */
+export interface EventReview {
+  id: string;
+  eventId: string;
+  authorUserId: string;
+  rating: number;
+  text: string | null;
+  status: "PUBLISHED" | "HIDDEN" | "REMOVED";
+  createdAt: string;
+  updatedAt: string;
+  author: { id: string; name: string | null; nickname: string | null; avatarUrl: string | null };
 }
 
 export interface RegistrationAnswer {

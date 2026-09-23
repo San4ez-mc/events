@@ -3,6 +3,7 @@ import { getT } from "@/lib/i18n-server";
 import type { EventDetail } from "@/lib/event-types";
 import { RegistrationWidget } from "@/components/registration/registration-widget";
 import { FollowButton } from "@/components/social/follow-button";
+import { ReviewsSection } from "@/components/reviews/reviews-section";
 
 /**
  * Shared presentational component for the public event page — used by both
@@ -20,7 +21,7 @@ export function EventPage({ event, locale }: { event: EventDetail; locale: Suppo
 
   return (
     <article className="mx-auto max-w-2xl px-4 pb-24 pt-6">
-      {event.status !== "PUBLISHED" && (
+      {event.status !== "PUBLISHED" && event.status !== "COMPLETED" && (
         <div className="mb-4 rounded-md border border-[var(--accent-from)] bg-surface px-4 py-2 text-sm">
           {locale === "uk" ? "Це попередній перегляд — подія ще не опублікована." : "This is a preview — the event isn't published yet."}
         </div>
@@ -92,6 +93,8 @@ export function EventPage({ event, locale }: { event: EventDetail; locale: Suppo
           <p className="whitespace-pre-wrap text-sm text-muted">{event.rules}</p>
         </section>
       )}
+
+      <ReviewsSection eventId={event.id} eventStatus={event.status} reviewSummary={event.reviewSummary} />
 
       <RegistrationWidget event={event} />
     </article>

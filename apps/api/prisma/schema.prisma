@@ -87,34 +87,35 @@ model User {
   updatedAt   DateTime  @updatedAt
   lastLoginAt DateTime?
 
-  socialLinks             UserSocialLink[]
-  preferences             UserPreferences?
-  devices                 UserDevice[]
-  refreshTokens           RefreshToken[]
-  emailVerifications      EmailVerificationToken[]
-  passwordResets          PasswordResetToken[]
-  auditLogs               AuditLog[]
-  districtsCreated        District[]               @relation("DistrictCreator")
-  categoriesCreated       Category[]               @relation("CategoryCreator")
-  events                  Event[]
-  eventSeries             EventSeries[]
-  listingCreditEntries    ListingCreditLedger[]
-  moderationCasesResolved ModerationCase[]
-  eventInteractions       EventInteraction[]
-  savedEvents             SavedEvent[]
-  registrations           Registration[]
-  notifications           Notification[]
-  friendshipsSent         Friendship[]      @relation("FriendshipRequester")
-  friendshipsReceived     Friendship[]      @relation("FriendshipAddressee")
-  blocksMade              UserBlock[]       @relation("UserBlockBlocker")
-  blocksReceived          UserBlock[]       @relation("UserBlockBlocked")
-  privateNotesAuthored    PrivateUserNote[] @relation("PrivateNoteAuthor")
-  privateNotesAbout       PrivateUserNote[] @relation("PrivateNoteTarget")
-  subscriptions           Subscription[]      @relation("SubscriptionUser")
-  subscribersAsOrganizer  Subscription[]      @relation("SubscriptionOrganizer")
-  eventCollaborations     EventCollaborator[]
-  eventInvitationsSent    EventInvitation[]   @relation("EventInvitationInviter")
-  eventInvitationsReceived EventInvitation[]  @relation("EventInvitationInvitee")
+  socialLinks              UserSocialLink[]
+  preferences              UserPreferences?
+  devices                  UserDevice[]
+  refreshTokens            RefreshToken[]
+  emailVerifications       EmailVerificationToken[]
+  passwordResets           PasswordResetToken[]
+  auditLogs                AuditLog[]
+  districtsCreated         District[]               @relation("DistrictCreator")
+  categoriesCreated        Category[]               @relation("CategoryCreator")
+  events                   Event[]
+  eventSeries              EventSeries[]
+  listingCreditEntries     ListingCreditLedger[]
+  moderationCasesResolved  ModerationCase[]
+  eventInteractions        EventInteraction[]
+  savedEvents              SavedEvent[]
+  registrations            Registration[]
+  notifications            Notification[]
+  friendshipsSent          Friendship[]             @relation("FriendshipRequester")
+  friendshipsReceived      Friendship[]             @relation("FriendshipAddressee")
+  blocksMade               UserBlock[]              @relation("UserBlockBlocker")
+  blocksReceived           UserBlock[]              @relation("UserBlockBlocked")
+  privateNotesAuthored     PrivateUserNote[]        @relation("PrivateNoteAuthor")
+  privateNotesAbout        PrivateUserNote[]        @relation("PrivateNoteTarget")
+  subscriptions            Subscription[]           @relation("SubscriptionUser")
+  subscribersAsOrganizer   Subscription[]           @relation("SubscriptionOrganizer")
+  eventCollaborations      EventCollaborator[]
+  eventInvitationsSent     EventInvitation[]        @relation("EventInvitationInviter")
+  eventInvitationsReceived EventInvitation[]        @relation("EventInvitationInvitee")
+  reviewsAuthored          EventReview[]
 
   @@map("users")
 }
@@ -147,8 +148,8 @@ model UserPreferences {
 
   preferredDistrictIds String[]     @default([])
   preferredCategoryIds String[]     @default([])
-  preferredFormat       EventFormat?
-  freeOnly              Boolean      @default(false)
+  preferredFormat      EventFormat?
+  freeOnly             Boolean      @default(false)
 
   allowPush                        Boolean @default(true)
   allowEmail                       Boolean @default(true)
@@ -573,6 +574,7 @@ model Event {
   privateNotes       PrivateUserNote[]
   collaborators      EventCollaborator[]
   invitations        EventInvitation[]
+  reviews            EventReview[]
 
   @@index([ownerId])
   @@index([categoryId])
@@ -784,12 +786,12 @@ model RegistrationField {
   eventId String @db.Uuid
   event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
-  label    String
-  type     RegistrationFieldType
-  required Boolean               @default(false)
+  label       String
+  type        RegistrationFieldType
+  required    Boolean               @default(false)
   /// Option labels for SELECT/MULTISELECT, e.g. ["Beginner","Intermediate","Advanced"].
   optionsJson Json?
-  sortOrder   Int                @default(0)
+  sortOrder   Int                   @default(0)
 
   createdAt DateTime @default(now())
 
@@ -852,10 +854,10 @@ model Registration {
 /// so answers stay individually queryable/exportable per the spec's explicit
 /// warning against collapsing a whole form into unstructured JSON.
 model RegistrationAnswer {
-  id             String       @id @default(uuid()) @db.Uuid
-  registrationId String       @db.Uuid
-  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
-  fieldId        String       @db.Uuid
+  id             String            @id @default(uuid()) @db.Uuid
+  registrationId String            @db.Uuid
+  registration   Registration      @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  fieldId        String            @db.Uuid
   field          RegistrationField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
 
   valueJson Json
@@ -1117,4 +1119,41 @@ model EventInvitation {
   @@unique([eventId, inviteeUserId])
   @@index([inviteeUserId, status])
   @@map("event_invitations")
+}
+
+// ---------------------------------------------------------------------------
+// Reviews (§37-38, §80-81, Phase 8): post-event review, organizer rating.
+// ---------------------------------------------------------------------------
+
+enum ReviewStatus {
+  PUBLISHED
+  HIDDEN
+  REMOVED
+}
+
+/// §37's `event_reviews`. Only allowed once the event is COMPLETED and the
+/// author had an eligible registration (§81) — enforced in ReviewsService,
+/// not the DB. The organizer's aggregate rating (§38) is deliberately NOT
+/// stored here or in a cache table: it's computed on read from PUBLISHED
+/// rows, the same on-demand-over-cached trade-off already made for
+/// EventsService.getStats (Phase 7) — simpler, never stale, and cheap enough
+/// at this scale (one AVG+COUNT query).
+model EventReview {
+  id           String @id @default(uuid()) @db.Uuid
+  eventId      String @db.Uuid
+  event        Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  authorUserId String @db.Uuid
+  author       User   @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  rating Int /// 1..5, enforced in ReviewsService
+  text   String? @db.Text
+
+  status ReviewStatus @default(PUBLISHED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, authorUserId])
+  @@index([eventId, status])
+  @@map("event_reviews")
 }

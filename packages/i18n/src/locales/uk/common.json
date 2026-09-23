@@ -192,13 +192,30 @@
     "share": "Поділитися профілем",
     "linkCopied": "Посилання скопійовано",
     "upcomingEvents": "Майбутні події",
+    "pastEvents": "Минулі події",
     "blocked": "Цей профіль недоступний",
     "pendingSent": "Запит надіслано",
     "pendingReceived": "Надіслав(-ла) вам запит",
     "follow": "Стежити",
     "following": "Стежите",
     "friendsGoingOne": "твій друг йде",
-    "friendsGoingMany": "твоїх друзів йдуть"
+    "friendsGoingMany": "твоїх друзів йдуть",
+    "noRating": "Ще немає оцінок",
+    "reviewsCountOne": "відгук",
+    "reviewsCountMany": "відгуків"
+  },
+  "reviews": {
+    "title": "Відгуки",
+    "empty": "Ще немає відгуків",
+    "leaveReview": "Залишити відгук",
+    "rating": "Оцінка",
+    "textLabel": "Ваш відгук (необов'язково)",
+    "submit": "Надіслати",
+    "edit": "Редагувати відгук",
+    "delete": "Видалити",
+    "yourReview": "Ваш відгук",
+    "submitError": "Не вдалося надіслати відгук — можливо, ви не маєте права залишити відгук на цю подію",
+    "noRating": "Ще немає оцінок"
   },
   "friends": {
     "title": "Друзі",

@@ -33,6 +33,7 @@ import { OrganizerModule } from "./organizer/organizer.module";
 import { CollaboratorsModule } from "./collaborators/collaborators.module";
 import { EventSeriesModule } from "./event-series/event-series.module";
 import { InvitationsModule } from "./invitations/invitations.module";
+import { ReviewsModule } from "./reviews/reviews.module";
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { InvitationsModule } from "./invitations/invitations.module";
     CollaboratorsModule,
     EventSeriesModule,
     InvitationsModule,
+    ReviewsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: ApiExceptionFilter },

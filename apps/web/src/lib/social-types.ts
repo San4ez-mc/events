@@ -28,6 +28,10 @@ export interface PublicProfile {
   friendCount: number;
   eventsCreatedCount: number;
   upcomingEvents: EventCard[];
+  /** Phase 8 (§30/§38) — organizer's own completed events + their live aggregate rating. */
+  pastEvents: EventCard[];
+  ratingAverage: number | null;
+  reviewsCount: number;
   relationshipStatus: RelationshipStatus;
 }
 

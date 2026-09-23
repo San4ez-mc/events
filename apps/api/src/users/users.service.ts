@@ -69,7 +69,7 @@ export class UsersService {
     const hideSocialLinks = user.preferences?.hideSocialLinks ?? false;
     const hideUpcomingEvents = user.preferences?.hideUpcomingEvents ?? false;
 
-    const [friendCount, eventsCreatedCount, upcomingEvents] = await Promise.all([
+    const [friendCount, eventsCreatedCount, upcomingEvents, pastEvents, ratingSummary] = await Promise.all([
       this.prisma.friendship.count({
         where: { status: "ACCEPTED", OR: [{ requesterId: targetUserId }, { addresseeId: targetUserId }] },
       }),
@@ -82,6 +82,23 @@ export class UsersService {
             take: 10,
             include: EVENT_CARD_INCLUDE,
           }),
+      // UX §30 — "минулі події" on the organizer profile card. Same visibility
+      // toggle as upcoming events: both are "events this person organizes".
+      hideUpcomingEvents
+        ? Promise.resolve([])
+        : this.prisma.event.findMany({
+            where: { ownerId: targetUserId, status: "COMPLETED" },
+            orderBy: { startsAt: "desc" },
+            take: 10,
+            include: EVENT_CARD_INCLUDE,
+          }),
+      // §38 — organizer rating is never a stored/manual value, always the
+      // live average of their own COMPLETED events' PUBLISHED reviews.
+      this.prisma.eventReview.aggregate({
+        where: { status: "PUBLISHED", event: { ownerId: targetUserId } },
+        _avg: { rating: true },
+        _count: true,
+      }),
     ]);
 
     return {
@@ -95,6 +112,9 @@ export class UsersService {
       friendCount,
       eventsCreatedCount,
       upcomingEvents,
+      pastEvents,
+      ratingAverage: ratingSummary._avg.rating,
+      reviewsCount: ratingSummary._count,
       relationshipStatus,
     };
   }
