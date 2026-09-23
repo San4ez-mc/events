@@ -128,6 +128,6 @@ const styles = StyleSheet.create({
   header: { color: colors.foreground, fontSize: 22, fontWeight: "700", marginBottom: spacing.md },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   empty: { color: colors.muted },
-  stack: { flex: 1, justifyContent: "center" },
+  stack: { flex: 1, alignItems: "center" },
   actions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.lg },
 });

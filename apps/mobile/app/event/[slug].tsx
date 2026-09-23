@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl * 2, gap: spacing.md },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
-  cover: { width: "100%", aspectRatio: 3 / 4, borderRadius: radius.lg, backgroundColor: colors.surface },
+  cover: { width: "100%", height: 260, borderRadius: radius.lg, backgroundColor: colors.surface },
   coverPlaceholder: {},
   title: { color: colors.foreground, fontSize: 24, fontWeight: "700" },
   metaRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
