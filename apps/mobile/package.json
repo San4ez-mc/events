@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@expo/log-box": "^57.0.4",
     "@expo/metro-runtime": "~57.0.16",
     "@expo/vector-icons": "^15.1.1",
     "@kiro/api-client": "workspace:*",
@@ -13,6 +14,7 @@
     "expo-constants": "~57.0.19",
     "expo-device": "~57.0.2",
     "expo-linking": "~57.0.10",
+    "expo-modules-core": "~57.0.18",
     "expo-notifications": "~57.0.20",
     "expo-router": "~57.0.22",
     "expo-secure-store": "~57.0.4",
@@ -30,6 +32,7 @@
     "@kiro/eslint-config": "workspace:*",
     "@kiro/tsconfig": "workspace:*",
     "@types/react": "~19.2.2",
+    "babel-preset-expo": "~57.0.12",
     "eslint": "^9.18.0",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.20.0"
