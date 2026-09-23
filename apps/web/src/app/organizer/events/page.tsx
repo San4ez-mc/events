@@ -74,11 +74,16 @@ export default function OrganizerEventsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">{t("nav.myEvents")}</h1>
-        <Link href="/organizer/events/new">
-          <Button>{t("nav.create")}</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/credits">
+            <Button variant="secondary">{t("events.wizard.buyCredits")}</Button>
+          </Link>
+          <Link href="/organizer/events/new">
+            <Button>{t("nav.create")}</Button>
+          </Link>
+        </div>
       </div>
 
       {error && (

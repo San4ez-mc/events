@@ -95,9 +95,14 @@ export function StepPreview({ eventId, slug, status, onStatusChange }: StepPrevi
                 {error.message}
               </p>
               {error.code === "INSUFFICIENT_LISTING_CREDITS" && (
-                <Button variant="secondary" onClick={handleClaimFree} loading={claiming}>
-                  {t("events.wizard.claimFreeCredits")}
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="secondary" onClick={handleClaimFree} loading={claiming}>
+                    {t("events.wizard.claimFreeCredits")}
+                  </Button>
+                  <Link href="/credits" target="_blank">
+                    <Button variant="secondary">{t("events.wizard.buyCredits")}</Button>
+                  </Link>
+                </div>
               )}
             </div>
           )}

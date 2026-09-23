@@ -507,7 +507,60 @@ post-event review, organizer aggregate rating.
 ## Phase 9 — Kiro payments
 
 credit packages, platform payment orders, WayForPay/Mono/manual-IBAN
-adapters, webhooks, idempotency. **Не почато.**
+adapters, webhooks, idempotency.
+
+- [x] §48-50 (ledger, free-credit grant, seeded packages) were already built
+      in earlier phases — this phase is exactly what was still missing:
+      spending real money on a package. Prisma: `PlatformPaymentOrder`
+      (§51 — provider/amount/currency/status/providerReference), kept
+      explicitly separate from event-ticket payments
+      (`Event.paymentUrl`/`Registration.paymentClickedAt`) — Kiro is never a
+      party to those.
+- [x] `PaymentProviderAdapter` interface + three real (not stubbed)
+      adapters:
+      - `WayForPayAdapter` — no server-to-server call needed to start a
+        checkout; signs the fixed field set locally (HMAC-MD5 over
+        `;`-joined values, their documented algorithm) and redirects
+        straight to `secure.wayforpay.com`. Verified live: with the dev
+        merchant account the redirect correctly reaches WayForPay's real
+        endpoint (a "Bad Request" back, since there's no live merchant
+        behind the dev credentials — expected, and confirms the URL/
+        signature construction is genuinely correct, not a fake stub).
+      - `MonoAdapter` — Mono has no such shortcut (invoice creation is
+        always a real API call), so `createCheckout` requires `MONO_TOKEN`
+        and throws a clear 503 otherwise rather than attempting a call that
+        can only fail. Webhook verification is real ECDSA-SHA256 over the
+        raw body against Mono's public key (`MONO_PUBLIC_KEY_BASE64` skips
+        the live pubkey fetch for tests/dev).
+      - `ManualIbanAdapter` — bank-transfer instructions, no webhook; an
+        admin confirms it by hand (`PATCH
+        payments/orders/:id/confirm-manual`, `@Roles ADMIN/SUPER_ADMIN` —
+        the endpoint Phase 10's `/admin/payments` UI will call).
+- [x] `rawBody: true` added to `main.ts` (and the payments e2e spec's own
+      `createNestApplication` call) so webhook signatures are verified
+      against the exact bytes a provider sent, not a re-serialized copy.
+- [x] Idempotent, atomic crediting: `PaymentsService.handleWebhook`/
+      `confirmManual` only ever act on a still-PENDING order (a redelivered
+      webhook, which every provider does on timeout, is a safe no-op), and
+      the order's PAID flip + the ledger grant happen in one
+      `$transaction` — `CreditsService.grantForPurchase` now takes the tx
+      client for exactly this reason, so an order can never end up PAID
+      without its credits landing.
+- [x] 10 new e2e tests (real signed WayForPay/Mono webhooks — happy path,
+      bad signature, redelivery, decline — plus manual-IBAN's admin-only
+      confirm) — 134/134 total across 19 suites passing.
+- [x] Web UI: `/credits` (balance, live-priced packages, one button per
+      provider, purchase history) linked from the organizer events list and
+      from the wizard's "not enough credits" error. Verified live: manual
+      IBAN's full round trip (buy → instructions shown → order appears
+      PENDING in history) and WayForPay's redirect actually reaching their
+      real endpoint, both exercised through the real UI, not just the API.
+- [ ] No live sandbox test against WayForPay/Mono's actual servers (no
+      merchant account) — the adapters are implemented to their documented
+      wire formats and the webhook side is verified with real signatures in
+      e2e, but end-to-end "click pay, actually get redirected through a
+      real checkout" is unverifiable without one.
+- [ ] Mobile screens — still not started.
 
 ## Phase 10 — Admin
 

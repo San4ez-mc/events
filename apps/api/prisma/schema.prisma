@@ -116,6 +116,7 @@ model User {
   eventInvitationsSent     EventInvitation[]        @relation("EventInvitationInviter")
   eventInvitationsReceived EventInvitation[]        @relation("EventInvitationInvitee")
   reviewsAuthored          EventReview[]
+  platformPaymentOrders    PlatformPaymentOrder[]
 
   @@map("users")
 }
@@ -631,8 +632,8 @@ model EventMedia {
 
 // ---------------------------------------------------------------------------
 // Listing credits & moderation (§48-55, Phase 2). Credit packages exist here
-// (needed by the free-grant flow and to show pricing) but purchasing them
-// is Phase 9 — no PlatformPaymentOrder table yet, nothing to spend money on.
+// (needed by the free-grant flow and to show pricing); purchasing them is
+// Phase 9's PlatformPaymentOrder, defined further below.
 // ---------------------------------------------------------------------------
 
 enum ListingCreditType {
@@ -676,6 +677,8 @@ model CreditPackage {
   currency  Currency @default(UAH)
   active    Boolean  @default(true)
   sortOrder Int      @default(0)
+
+  paymentOrders PlatformPaymentOrder[]
 
   @@map("credit_packages")
 }
@@ -1156,4 +1159,55 @@ model EventReview {
   @@unique([eventId, authorUserId])
   @@index([eventId, status])
   @@map("event_reviews")
+}
+
+// ---------------------------------------------------------------------------
+// Kiro payments (§51, Phase 9): buying listing-credit packages with real
+// money. Deliberately a separate system from event-ticket payments
+// (Event.paymentUrl, Registration.paymentClickedAt/paymentConfirmedAt) —
+// Kiro is never a party to those, only to this.
+// ---------------------------------------------------------------------------
+
+enum PaymentProvider {
+  WAYFORPAY
+  MONO
+  MANUAL_IBAN
+}
+
+enum PlatformPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+/// §51's `platform_payment_orders`. Crediting the ledger on PAID happens in
+/// the same transaction as this status flip (PaymentsService.markPaid) —
+/// idempotent via a `listing_credit_ledger` row keyed on sourceId=order.id,
+/// same pattern as the event-publication debit and the free-credit grant.
+model PlatformPaymentOrder {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id])
+
+  packageId String        @db.Uuid
+  package   CreditPackage @relation(fields: [packageId], references: [id])
+
+  provider PaymentProvider
+  amount   Decimal               @db.Decimal(10, 2)
+  currency Currency              @default(UAH)
+  status   PlatformPaymentStatus @default(PENDING)
+
+  /// The provider's own id/reference for this payment (WayForPay's
+  /// orderReference echo, Mono's invoiceId) — set once known, used to match
+  /// an incoming webhook back to this order.
+  providerReference String?
+
+  createdAt DateTime  @default(now())
+  paidAt    DateTime?
+
+  @@index([userId])
+  @@index([provider, providerReference])
+  @@map("platform_payment_orders")
 }

@@ -116,6 +116,38 @@ export class CreditsService {
     });
   }
 
+  /**
+   * §51 — credits a purchase once its `PlatformPaymentOrder` is confirmed
+   * PAID. Takes the same transaction client as the order's own status
+   * update (PaymentsService) so a payment can never end up marked PAID
+   * without its credits landing, or vice versa. Idempotent the same way as
+   * the other ledger writers: sourceType "PLATFORM_PAYMENT_ORDER" +
+   * sourceId=orderId means a re-delivered webhook (providers retry on a
+   * non-2xx or timeout) can never double-credit.
+   */
+  async grantForPurchase(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    credits: number,
+    orderId: string,
+  ): Promise<void> {
+    const existing = await tx.listingCreditLedger.findFirst({
+      where: { userId, sourceType: "PLATFORM_PAYMENT_ORDER", sourceId: orderId },
+    });
+    if (existing) return;
+
+    await tx.listingCreditLedger.create({
+      data: {
+        userId,
+        type: "PURCHASE",
+        creditsDelta: credits,
+        sourceType: "PLATFORM_PAYMENT_ORDER",
+        sourceId: orderId,
+        description: "Credit package purchase",
+      },
+    });
+  }
+
   private async getFreeCreditsAmount(): Promise<number> {
     const setting = await this.prisma.systemSetting.findUnique({
       where: { key: SystemSettingKey.NEW_ORGANIZER_FREE_CREDITS },

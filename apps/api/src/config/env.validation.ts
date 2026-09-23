@@ -39,6 +39,25 @@ const envSchema = z.object({
   SMTP_FROM: z.string().default("Kiro <no-reply@kiro.local>"),
 
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
+
+  // §51 — payment provider credentials. Each is optional (dev/staging
+  // default): with no credentials set, an adapter still produces a
+  // correctly-signed checkout URL/webhook flow against a dev secret, so the
+  // whole order lifecycle stays testable end-to-end without a live merchant
+  // account — the same "works for real once credentials are added" posture
+  // as MailService's SMTP fallback.
+  WAYFORPAY_MERCHANT_ACCOUNT: z.string().default("kiro_dev_merchant"),
+  WAYFORPAY_MERCHANT_SECRET: z.string().default("dev-wayforpay-secret"),
+  WAYFORPAY_MERCHANT_DOMAIN: z.string().default("kiro.local"),
+
+  MONO_TOKEN: z.string().optional(),
+  // Overrides the live GET https://api.monobank.ua/api/merchant/pubkey fetch
+  // — set in tests/dev so webhook-signature verification never needs network
+  // access; in production, leave unset and the real key is fetched + cached.
+  MONO_PUBLIC_KEY_BASE64: z.string().optional(),
+
+  MANUAL_IBAN: z.string().default("UA000000000000000000000000000"),
+  MANUAL_IBAN_RECIPIENT: z.string().default("Kiro TOV"),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

@@ -122,8 +122,31 @@
       "publishError": "Не вдалося опублікувати подію",
       "creditsBalance": "Кредитів на публікацію",
       "insufficientCredits": "Недостатньо кредитів для публікації.",
-      "claimFreeCredits": "🎁 Забрати 5 безкоштовних публікацій"
+      "claimFreeCredits": "🎁 Забрати 5 безкоштовних публікацій",
+      "buyCredits": "Купити ще кредитів"
     }
+  },
+  "credits": {
+    "title": "Купити кредити на публікацію",
+    "balance": "Ваш баланс",
+    "creditsUnit": "кредитів",
+    "buy": "Купити",
+    "payWith": {
+      "WAYFORPAY": "Оплатити через WayForPay",
+      "MONO": "Оплатити через Mono",
+      "MANUAL_IBAN": "Банківський переказ"
+    },
+    "instructionsTitle": "Реквізити для переказу",
+    "history": "Історія покупок",
+    "historyEmpty": "Ще немає покупок",
+    "status": {
+      "PENDING": "Очікує оплати",
+      "PAID": "Оплачено",
+      "FAILED": "Не вдалося",
+      "CANCELLED": "Скасовано",
+      "REFUNDED": "Повернено"
+    },
+    "error": "Не вдалося розпочати оплату"
   },
   "discover": {
     "loading": "Завантажуємо стрічку…",

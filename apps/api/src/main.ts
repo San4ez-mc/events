@@ -8,7 +8,10 @@ import type { EnvConfig } from "./config/env.validation";
 import { configureApp } from "./bootstrap";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // rawBody: true — needed so Payments' webhook handlers (Mono/WayForPay)
+  // can verify a signature computed over the exact bytes the provider sent,
+  // not a re-serialized copy of the parsed body.
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
   app.useLogger(app.get(Logger));
 
   const configService = app.get(ConfigService<EnvConfig, true>);
