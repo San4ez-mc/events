@@ -10,10 +10,10 @@ cd /var/www/kiro
 pnpm install --frozen-lockfile --filter "@kiro/api..." --filter "@kiro/web..."
 pnpm --filter @kiro/api prisma:generate
 pnpm --filter @kiro/api prisma:deploy      # applies committed migrations only
-pnpm --filter @kiro/api build
 
-# API_URL is baked into Next's rewrites at build time
-API_URL=http://127.0.0.1:5100 pnpm --filter @kiro/web build
+# turbo builds the shared @kiro/* packages first (dependsOn ^build).
+# API_URL is baked into Next's rewrites at build time.
+API_URL=http://127.0.0.1:5100 pnpm exec turbo run build --filter=@kiro/api --filter=@kiro/web
 
 pm2 startOrReload infrastructure/deploy/ecosystem.config.cjs --update-env
 pm2 save
