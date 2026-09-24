@@ -6,7 +6,8 @@ set -euo pipefail
 
 cd /var/www/kiro
 
-pnpm install --frozen-lockfile
+# API + web (and the workspace packages they use); skip the mobile app's deps
+pnpm install --frozen-lockfile --filter "@kiro/api..." --filter "@kiro/web..."
 pnpm --filter @kiro/api prisma:generate
 pnpm --filter @kiro/api prisma:deploy      # applies committed migrations only
 pnpm --filter @kiro/api build
