@@ -667,7 +667,12 @@ audit — admin routes, phone-friendly UI.
   Реальна деплой-конфігурація на VPS (nginx vhost, systemd/PM2, MinIO) —
 - [ ] порти й план — `docs/VPS_ACCESS.md`; конфіги (PM2, nginx, deploy.sh) і
       покрокова інструкція — `infrastructure/deploy/` та `docs/DEPLOY.md`,
-      `apps/mobile/eas.json` для APK. **Сам деплой на VPS ще не виконано.**
+      `apps/mobile/eas.json` для APK. **Задеплоєно 2026-09-24**: БД `kiro`,
+      бакет MinIO `kiro`, PM2 (`kiro-api` :5100, `kiro-web` :5101), nginx
+      vhost + Let's Encrypt для `kiro.fineko.space` (діє до 2026-12-23,
+      автооновлення certbot). Оновлення: `git pull && bash
+      infrastructure/deploy/deploy.sh` на сервері. Лишилось власникові:
+      збірка APK (потрібен акаунт expo.dev) і Google Play.
 - [ ] App Store / Play Store: bundle ID/applicationId (зараз **заглушка**
       `com.kiro.app` — навмисно не фіналізований, узгодити перед реальним
       submit), Apple Developer + Google Play акаунти (створює власник —
