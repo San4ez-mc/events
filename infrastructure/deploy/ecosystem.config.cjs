@@ -5,7 +5,7 @@ module.exports = {
     {
       name: "kiro-api",
       cwd: "/var/www/kiro/apps/api",
-      script: "dist/main.js",
+      script: "dist/src/main.js",
       env: { NODE_ENV: "production", PORT: "5100" },
       max_memory_restart: "600M",
     },
