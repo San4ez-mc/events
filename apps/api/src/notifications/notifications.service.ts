@@ -5,6 +5,7 @@ import type { CursorPage, NotificationType } from "@kiro/types";
 import { PrismaService } from "../prisma/prisma.service";
 import { ResourceNotFoundException, ForbiddenActionException } from "../common/exceptions/common-exceptions";
 import { ExpoPushService } from "./expo-push.service";
+import { localizeNotification } from "./notification-i18n";
 import type { ListNotificationsDto } from "./dto/list-notifications.dto";
 import type { RegisterDeviceDto } from "./dto/register-device.dto";
 
@@ -29,12 +30,14 @@ export class NotificationsService {
     body: string;
     payloadJson?: Record<string, unknown>;
   }): Promise<void> {
+    const recipient = await this.prisma.user.findUnique({ where: { id: params.userId }, select: { locale: true } });
+    const text = localizeNotification(recipient?.locale, params.title, params.body);
     const notification = await this.prisma.notification.create({
       data: {
         userId: params.userId,
         type: params.type,
-        title: params.title,
-        body: params.body,
+        title: text.title,
+        body: text.body,
         payloadJson: params.payloadJson as Prisma.InputJsonValue | undefined,
       },
     });
@@ -43,7 +46,7 @@ export class NotificationsService {
       data: { notificationId: notification.id, channel: "IN_APP", status: "SENT", sentAt: new Date() },
     });
 
-    await this.sendPush(params.userId, notification.id, params.title, params.body, params.payloadJson);
+    await this.sendPush(params.userId, notification.id, text.title, text.body, params.payloadJson);
   }
 
   /**
