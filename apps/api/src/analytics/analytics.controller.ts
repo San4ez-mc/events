@@ -24,6 +24,7 @@ import type { Request } from "express";
 import { Public } from "../common/decorators/public.decorator";
 import { TokenService } from "../auth/token.service";
 import { AnalyticsService } from "./analytics.service";
+import { FeatureFlagsService } from "../flags/feature-flags.service";
 
 /** Actions a client may report itself; SAVE / REGISTERED / CANCELLED / PAYMENT_LINK_CLICK are recorded server-side. */
 const CLIENT_ACTIONS = [
