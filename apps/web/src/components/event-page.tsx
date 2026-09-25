@@ -52,9 +52,7 @@ export function EventPage({
     <article className="mx-auto max-w-2xl px-4 pb-24 pt-6">
       {event.status !== "PUBLISHED" && event.status !== "COMPLETED" && (
         <div className="mb-4 rounded-md border border-[var(--accent-from)] bg-surface px-4 py-2 text-sm">
-          {locale === "uk"
-            ? "Це попередній перегляд — подія ще не опублікована."
-            : "This is a preview — the event isn't published yet."}
+          {t("events.page.previewBanner")}
         </div>
       )}
 
@@ -206,7 +204,7 @@ export function EventPage({
       {event.rules && (
         <section className="mb-8">
           <h2 className="mb-2 text-sm font-semibold">
-            {locale === "uk" ? "Правила" : "Rules"}
+            {t("events.page.rules")}
           </h2>
           <p className="whitespace-pre-wrap text-sm text-muted">
             {event.rules}

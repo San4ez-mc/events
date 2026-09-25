@@ -108,7 +108,9 @@
       "eventsHosted": "events hosted",
       "viewProfile": "View profile",
       "paidDisclaimer": "Kiro is a platform for discovering and publishing events. Payment for participation and refunds are handled directly between the participant and the organizer.",
-      "faq": "FAQ"
+      "faq": "FAQ",
+      "previewBanner": "This is a preview — the event isn't published yet.",
+      "rules": "Rules"
     },
     "wizard": {
       "stepBasics": "Basics",

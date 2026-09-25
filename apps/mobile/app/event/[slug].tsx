@@ -336,7 +336,7 @@ export default function EventDetailScreen() {
 
       {event.rules && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{locale === "uk" ? "Правила" : "Rules"}</Text>
+          <Text style={styles.sectionTitle}>{t("events.page.rules")}</Text>
           <Text style={styles.meta}>{event.rules}</Text>
         </View>
       )}
