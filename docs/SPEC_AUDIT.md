@@ -301,3 +301,9 @@ Implemented since the table above was written (code in `main`; not yet deployed 
 All new migrations were generated with `prisma migrate diff` (no DB needed) and have NOT yet been applied/tested against
 Postgres — the VPS was unreachable. `deploy.sh` applies them on deploy; the new e2e tests in `spec-gaps.e2e-spec.ts`
 (notifications, FAQ, ticket types) have not been run yet.
+
+### D3. Mobile parity (final pass)
+
+Mobile now also has: follow organizer with category chips, edit event (same steps as creation; participants are
+notified on date/place changes), onboarding after registration. Still missing on mobile: credits purchase (needs
+payment-provider credentials), admin screens.
