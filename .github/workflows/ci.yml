@@ -78,6 +78,56 @@ jobs:
   web-e2e:
     runs-on: ubuntu-latest
     needs: lint-typecheck-test
-    if: false # TODO(Phase 3+): enable once apps/web has real pages to test (§99, Playwright)
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: kiro
+          POSTGRES_PASSWORD: kiro
+          POSTGRES_DB: kiro_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PORT: 3100
+      E2E_BASE_URL: http://localhost:3000
     steps:
-      - run: echo "placeholder — Playwright E2E lands with the first real web flow"
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Prepare database
+        run: |
+          PGPASSWORD=kiro psql -h localhost -U kiro -d kiro_test -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
+          pnpm --filter @kiro/types --filter @kiro/config build
+          pnpm --filter @kiro/api exec prisma migrate deploy
+          pnpm --filter @kiro/api seed
+      - name: Build API and web
+        run: pnpm exec turbo run build --filter=@kiro/api --filter=@kiro/web
+      - name: Start API and web
+        run: |
+          (cd apps/api && node dist/src/main.js > /tmp/api.log 2>&1 &)
+          (cd apps/web && pnpm start > /tmp/web.log 2>&1 &)
+          npx --yes wait-on http://localhost:3100/api/v1/health http://localhost:3000 --timeout 90000
+      - name: Install browsers
+        run: pnpm --filter @kiro/web exec playwright install --with-deps chromium
+      - name: Run Playwright
+        run: pnpm --filter @kiro/web test:e2e:browser
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+            /tmp/api.log
+            /tmp/web.log

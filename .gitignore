@@ -55,3 +55,7 @@ android/
 
 # local credentials notes (never commit)
 google clients.txt
+
+# Playwright
+apps/web/playwright-report/
+apps/web/test-results/
