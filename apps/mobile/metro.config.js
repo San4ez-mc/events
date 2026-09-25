@@ -23,4 +23,14 @@ config.resolver.nodeModulesPaths = [
 config.resolver.disableHierarchicalLookup = true;
 config.resolver.unstable_enableSymlinks = true;
 
+// @kiro/types' package.json points at dist/ (built by turbo for the API), which does not exist on a clean EAS
+// checkout. The app imports runtime values from it (discovery filters), so resolve it from source instead.
+const defaultResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === "@kiro/types") {
+    return { type: "sourceFile", filePath: path.resolve(monorepoRoot, "packages/types/src/index.ts") };
+  }
+  return (defaultResolveRequest ?? context.resolveRequest)(context, moduleName, platform);
+};
+
 module.exports = config;
