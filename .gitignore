@@ -59,3 +59,8 @@ google clients.txt
 # Playwright
 apps/web/playwright-report/
 apps/web/test-results/
+
+# Local secret notes (never commit)
+mail.txt
+secrets.txt
+.secrets/
