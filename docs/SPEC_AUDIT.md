@@ -259,3 +259,28 @@ MVP checklist (§119): attendee flows are D on web; on mobile missing: subscribe
 | 23 | Feature flags + monitoring: `system_settings`-backed flags (EMAIL_NOTIFICATIONS, SOCIAL_LOGIN, ...), Sentry hooks in API/web/mobile, disk/backup monitoring. | M |
 | 24 | Replace hand-written `*-types.ts` and raw `fetch` in web/mobile with the generated `@kiro/api-client`. | L |
 | 25 | External-account items (not code): Apple Sign-In and iOS build/TestFlight, Play Store listing, Expo push credentials, Google Maps key, WayForPay/Mono merchant credentials, SMTP provider, Sentry project. | S (each) |
+
+## D. Status update after the audit (25.09.2026)
+
+Implemented since the table above was written (code in `main`; not yet deployed because the VPS was unreachable):
+
+| Remaining-work item | State |
+|---|---|
+| #1 organizer advanced settings | DONE on web (wizard step "Додатково": visibility, deadline, 18+, rules, payment link, custom questions); mobile: visibility, 18+, rules, payment link (no deadline / question builder yet) |
+| #2 event actions | DONE web + mobile (Save, Share, Report, Follow; mobile also reviews). Sticky CTA / FAQ not done |
+| #3 subscriber + friend notifications | DONE (respects `allowSubscription…`/`allowFriendActivity…`) |
+| #4 deep links | Config DONE (intent filters, associated domains, `/events` + `/users` routes, well-known routes). Needs `ANDROID_SHA256_CERTS` and `APPLE_TEAM_ID` env to become valid |
+| #5 rate limits | DONE on auth, friend requests, reports, event create/publish, media/avatar upload, search |
+| #6 audit log | DONE for admin event edit/cancel, moderation, categories, reviews, flags |
+| #7 category admin | DONE (list, approve, rename, hide/archive, merge). User-created districts: not done |
+| #8 mobile parity | Public profile, friends, reviews, follow, organizer manage (stats + approve/reject/payment) DONE. Still missing: subscribe-with-category, credits purchase, edit event, admin |
+| #9 server-side i18n | Notifications localised (uk/en). Emails: pending SMTP |
+| #11 18+ | Registration enforces birth date/minors; feed hides 18+ from minors. Search not filtered |
+| #14 onboarding | DONE on web (`/welcome`); mobile not done |
+| #15 Playwright | Scaffold + smoke/account specs + CI job (unverified until first CI run) |
+| #17 admin reviews/analytics | DONE (reviews moderation page; dashboard funnel + top events) |
+| #18 profile | Web profile page + avatar upload + social links editor DONE; username slug, OTP, friends-only privacy not done |
+| #21 ranking | DONE (popularity, availability, friends going, budget fit, blocked-user exclusion, `availableOnly` filter) |
+| #23 feature flags | DONE (`system_settings` flags, public `/config/flags`, admin toggle; enforced for Google login, chat, places, analytics). Sentry not done |
+| #10 SMTP | Waiting for provider credentials |
+| #12, #13, #19, #20, #22, #24 | Not started (need schema migrations / large refactors) |
