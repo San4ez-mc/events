@@ -134,6 +134,13 @@ export default function MyEventsScreen() {
               </Text>
               {item.status && <Text style={styles.status}>{t(STATUS_LABEL_KEYS[item.status] ?? item.status)}</Text>}
               {tab === "mine" && <Text style={styles.status}>{item.event.status}</Text>}
+              {tab === "mine" && (
+                <Pressable onPress={() => router.push(`/manage/${item.event.id}`)} hitSlop={8}>
+                  <Text style={[styles.status, { textDecorationLine: "underline" }]}>
+                    {t("organizerRegistrations.viewRegistrations")} · {t("organizerTools.stats")}
+                  </Text>
+                </Pressable>
+              )}
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.muted} />
           </Pressable>

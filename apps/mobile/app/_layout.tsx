@@ -28,6 +28,7 @@ export default function RootLayout() {
               <Stack.Screen name="event/[slug]" options={{ title: "" }} />
               <Stack.Screen name="users/[id]" options={{ title: "" }} />
               <Stack.Screen name="friends" options={{ title: "" }} />
+              <Stack.Screen name="manage/[id]" options={{ title: "" }} />
             </Stack>
           </AuthProvider>
         </LocaleProvider>
