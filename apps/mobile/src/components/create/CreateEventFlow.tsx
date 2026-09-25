@@ -44,6 +44,10 @@ interface Form {
   capacity: string;
   minParticipants: string;
   approvalMode: "AUTO" | "ORGANIZER_APPROVAL";
+  visibility: "PUBLIC" | "PRIVATE";
+  adultsOnly: boolean;
+  rules: string;
+  paymentUrl: string;
 }
 
 const STEPS = 5;
@@ -77,6 +81,10 @@ const INITIAL: Form = {
   capacity: "",
   minParticipants: "",
   approvalMode: "AUTO",
+  visibility: "PUBLIC",
+  adultsOnly: false,
+  rules: "",
+  paymentUrl: "",
 };
 
 async function authed(path: string, init: RequestInit = {}) {
@@ -178,6 +186,10 @@ export function CreateEventFlow() {
         capacity: form.capacity ? Number(form.capacity) : undefined,
         minParticipants: form.minParticipants ? Number(form.minParticipants) : undefined,
         approvalMode: form.approvalMode,
+        visibility: form.visibility,
+        ageRestriction: form.adultsOnly ? 18 : 0,
+        rules: form.rules.trim() || undefined,
+        paymentUrl: form.priceType === "PAID" && form.paymentUrl.trim() ? form.paymentUrl.trim() : undefined,
       };
     }
     return {};
@@ -455,9 +467,14 @@ export function CreateEventFlow() {
               />
             </Section>
             {form.priceType === "PAID" && (
-              <Field label={t("events.wizard.priceAmount")}>
-                <TextInput value={form.price} onChangeText={(v) => set({ price: v.replace(/[^0-9.]/g, "") })} style={styles.input} keyboardType="decimal-pad" placeholder="350" placeholderTextColor={colors.muted} />
-              </Field>
+              <>
+                <Field label={t("events.wizard.priceAmount")}>
+                  <TextInput value={form.price} onChangeText={(v) => set({ price: v.replace(/[^0-9.]/g, "") })} style={styles.input} keyboardType="decimal-pad" placeholder="350" placeholderTextColor={colors.muted} />
+                </Field>
+                <Field label={t("events.wizard.paymentUrl")}>
+                  <TextInput value={form.paymentUrl} onChangeText={(v) => set({ paymentUrl: v })} style={styles.input} autoCapitalize="none" keyboardType="url" placeholder="https://" placeholderTextColor={colors.muted} />
+                </Field>
+              </>
             )}
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
@@ -481,6 +498,29 @@ export function CreateEventFlow() {
                 onChange={(v) => set({ approvalMode: v })}
               />
             </Section>
+            <Section title={t("events.wizard.visibility")}>
+              <Chips
+                value={form.visibility}
+                options={[
+                  { value: "PUBLIC" as const, label: t("events.wizard.visibilityPublic") },
+                  { value: "PRIVATE" as const, label: t("events.wizard.visibilityLink") },
+                ]}
+                onChange={(v) => set({ visibility: v })}
+              />
+            </Section>
+            <Section title={t("events.wizard.adultsOnly")}>
+              <Chips
+                value={form.adultsOnly ? "yes" : "no"}
+                options={[
+                  { value: "no" as const, label: t("common.no") },
+                  { value: "yes" as const, label: "18+" },
+                ]}
+                onChange={(v) => set({ adultsOnly: v === "yes" })}
+              />
+            </Section>
+            <Field label={t("events.wizard.rules")}>
+              <TextInput value={form.rules} onChangeText={(v) => set({ rules: v })} style={[styles.input, styles.multiline]} multiline maxLength={10000} placeholderTextColor={colors.muted} />
+            </Field>
           </>
         )}
 
