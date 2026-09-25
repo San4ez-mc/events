@@ -37,7 +37,9 @@ export default function OrganizerEventsPage() {
 
     let cancelled = false;
     (async () => {
-      const res = await api.GET("/api/v1/events/mine", { params: { query: {} } });
+      const res = await api.GET("/api/v1/events/mine", {
+        params: { query: {} },
+      });
       if (cancelled) return;
       if (res.error || !res.data) {
         setError(true);
@@ -87,7 +89,10 @@ export default function OrganizerEventsPage() {
       </div>
 
       {error && (
-        <ErrorState onRetry={() => window.location.reload()} message={t("common.somethingWentWrong")} />
+        <ErrorState
+          onRetry={() => window.location.reload()}
+          message={t("common.somethingWentWrong")}
+        />
       )}
 
       {!error && events === null && <LoadingState />}
@@ -104,8 +109,14 @@ export default function OrganizerEventsPage() {
       {!error && events !== null && events.length > 0 && (
         <ul className="flex flex-col gap-3">
           {events.map((event) => (
-            <li key={event.id} className="flex items-center gap-2 rounded-lg border border-border p-4 hover:bg-surface">
-              <Link href={`/organizer/events/${event.id}/edit`} className="flex min-w-0 flex-1 items-center gap-4">
+            <li
+              key={event.id}
+              className="flex flex-col gap-3 rounded-lg border border-border p-4 hover:bg-surface"
+            >
+              <Link
+                href={`/organizer/events/${event.id}/edit`}
+                className="flex min-w-0 flex-1 items-center gap-4"
+              >
                 <div className="h-16 w-12 shrink-0 overflow-hidden rounded bg-surface">
                   {event.media[0] && (
                     // eslint-disable-next-line @next/next/no-img-element -- external MinIO URLs, not worth Next/Image config for Phase 1
@@ -130,7 +141,7 @@ export default function OrganizerEventsPage() {
                   </p>
                 </div>
               </Link>
-              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+              <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
                 {event.status === "PUBLISHED" && (
                   <>
                     <Link
@@ -194,7 +205,13 @@ function LoadingState() {
   );
 }
 
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+function ErrorState({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
   const { t } = useTranslations();
   return (
     <div className="rounded-lg border border-border p-8 text-center">
