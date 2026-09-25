@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import sharp from "sharp";
+import { extractVideoThumbnail } from "./video-thumbnail";
 import { fromBuffer as fileTypeFromBuffer } from "file-type";
 import { DEFAULT_MEDIA_LIMITS, MAX_EVENT_MEDIA_FILES } from "@kiro/config";
 import { PrismaService } from "../prisma/prisma.service";
@@ -151,14 +152,20 @@ export class EventMediaService {
   }
 
   /**
-   * No video transcoding/thumbnail-frame-extraction in Phase 1 (would need
-   * ffmpeg) — original is served directly as both original and display, and
-   * thumbnailUrl points at the same file. Revisit once a worker process
-   * exists to do this off the request path.
+   * No transcoding — the original is served as both original and display. The thumbnail is a poster frame
+   * extracted with ffmpeg when it is installed (see video-thumbnail.ts), otherwise it points at the video itself.
    */
   private async storeVideo(eventId: string, buffer: Buffer, ext: string, mime: string, sortOrder: number) {
     const key = this.storage.buildKey(`events/${eventId}/video`, `video.${ext}`);
     const { url } = await this.storage.putObject(key, buffer, mime);
+
+    // Poster frame (best-effort): falls back to the video URL when ffmpeg isn't available.
+    let thumbnailUrl = url;
+    const poster = await extractVideoThumbnail(buffer, ext);
+    if (poster) {
+      const thumbKey = this.storage.buildKey(`events/${eventId}/video-thumb`, "thumb.jpg");
+      thumbnailUrl = (await this.storage.putObject(thumbKey, poster, "image/jpeg")).url;
+    }
 
     return this.prisma.eventMedia.create({
       data: {
@@ -166,7 +173,7 @@ export class EventMediaService {
         type: "VIDEO",
         originalUrl: url,
         displayUrl: url,
-        thumbnailUrl: url,
+        thumbnailUrl,
         sortOrder,
         moderationStatus: "APPROVED",
       },
