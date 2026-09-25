@@ -20,7 +20,7 @@ export function EventResultRow({
 
   return (
     <Link
-      href={`/events/${event.slug}`}
+      href={`/events/${event.slug}?src=search`}
       className="flex gap-3 rounded-lg border border-border p-3 hover:bg-surface"
     >
       <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-surface">

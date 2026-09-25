@@ -53,10 +53,17 @@ export function StepBasics({ data, onChange }: StepProps) {
           className="rounded-md border border-border bg-background px-3 py-2 text-sm"
         >
           <option value="">{t("events.wizard.categoryPlaceholder")}</option>
-          {categories === null && <option disabled>{t("common.loading")}</option>}
+          {categories === null && (
+            <option disabled>{t("common.loading")}</option>
+          )}
           {categories?.map((category) => (
-            <optgroup key={category.id} label={locale === "uk" ? category.nameUk : category.nameEn}>
-              <option value={category.id}>{locale === "uk" ? category.nameUk : category.nameEn}</option>
+            <optgroup
+              key={category.id}
+              label={locale === "uk" ? category.nameUk : category.nameEn}
+            >
+              <option value={category.id}>
+                {locale === "uk" ? category.nameUk : category.nameEn}
+              </option>
               {category.children.map((child) => (
                 <option key={child.id} value={child.id}>
                   &nbsp;&nbsp;{locale === "uk" ? child.nameUk : child.nameEn}

@@ -1,4 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { ChatModule } from "./chat/chat.module";
+import { AnalyticsModule } from "./analytics/analytics.module";
+import { PlacesModule } from "./places/places.module";
 import { SocialProofModule } from "./common/social-proof/social-proof.module";
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
@@ -65,6 +68,9 @@ import { AdminModule } from "./admin/admin.module";
     ScheduleModule.forRoot(),
     PrismaModule,
     SocialProofModule,
+    PlacesModule,
+    ChatModule,
+    AnalyticsModule,
     MailModule,
     StorageModule,
     AuthModule,

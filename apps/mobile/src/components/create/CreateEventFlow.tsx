@@ -9,6 +9,7 @@ import { useTranslations } from "../../lib/locale-context";
 import { Button } from "../ui/Button";
 import { ScreenHeader } from "../ui/ScreenHeader";
 import { Chips, SearchPicker, Section, type Option } from "../discover/FiltersSheet";
+import { AddressAutocomplete } from "./AddressAutocomplete";
 import { colors, radius, spacing } from "../../lib/theme";
 
 interface Named {
@@ -34,6 +35,9 @@ interface Form {
   cityId: string | null;
   districtId: string | null;
   addressText: string;
+  googlePlaceId: string | null;
+  latitude: number | null;
+  longitude: number | null;
   onlineUrl: string;
   priceType: "FREE" | "PAID";
   price: string;
@@ -64,6 +68,9 @@ const INITIAL: Form = {
   cityId: null,
   districtId: null,
   addressText: "",
+  googlePlaceId: null,
+  latitude: null,
+  longitude: null,
   onlineUrl: "",
   priceType: "FREE",
   price: "",
@@ -153,7 +160,14 @@ export function CreateEventFlow() {
         startsAt: start?.toISOString(),
         endsAt: start ? new Date(start.getTime() + hours * 3_600_000).toISOString() : undefined,
         ...(form.format === "OFFLINE"
-          ? { cityId: form.cityId ?? undefined, districtId: form.districtId ?? undefined, addressText: form.addressText.trim() || undefined }
+          ? {
+              cityId: form.cityId ?? undefined,
+              districtId: form.districtId ?? undefined,
+              addressText: form.addressText.trim() || undefined,
+              googlePlaceId: form.googlePlaceId ?? undefined,
+              latitude: form.latitude ?? undefined,
+              longitude: form.longitude ?? undefined,
+            }
           : { onlineUrl: form.onlineUrl.trim() || undefined }),
       };
     }
@@ -417,7 +431,7 @@ export function CreateEventFlow() {
                   </Section>
                 )}
                 <Field label={t("events.wizard.addressText")}>
-                  <TextInput value={form.addressText} onChangeText={(v) => set({ addressText: v })} placeholder={t("events.wizard.addressPlaceholder")} placeholderTextColor={colors.muted} style={styles.input} />
+                  <AddressAutocomplete value={form.addressText} onPick={(place) => set(place)} placeholder={t("events.wizard.addressPlaceholder")} />
                 </Field>
               </>
             ) : (

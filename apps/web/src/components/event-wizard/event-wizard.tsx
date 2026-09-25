@@ -26,6 +26,9 @@ function toWizardData(event: EventDetail): WizardData {
     cityId: event.cityId,
     districtId: event.districtId,
     addressText: event.addressText ?? "",
+    googlePlaceId: event.googlePlaceId ?? null,
+    latitude: event.latitude != null ? Number(event.latitude) : null,
+    longitude: event.longitude != null ? Number(event.longitude) : null,
     onlineUrl: event.onlineUrl ?? "",
     priceType: event.priceType,
     price: event.price ?? "",
@@ -57,12 +60,19 @@ function toUpdatePayload(data: WizardData): Record<string, unknown> {
     payload.cityId = data.cityId ?? undefined;
     payload.districtId = data.districtId ?? undefined;
     payload.addressText = data.addressText || undefined;
+    payload.googlePlaceId = data.googlePlaceId ?? undefined;
+    if (data.latitude !== null && data.longitude !== null) {
+      payload.latitude = data.latitude;
+      payload.longitude = data.longitude;
+    }
   } else {
     payload.onlineUrl = data.onlineUrl || undefined;
   }
-  if (data.priceType === "PAID" && data.price) payload.price = Number(data.price);
+  if (data.priceType === "PAID" && data.price)
+    payload.price = Number(data.price);
   if (data.capacity) payload.capacity = Number(data.capacity);
-  if (data.minParticipants) payload.minParticipants = Number(data.minParticipants);
+  if (data.minParticipants)
+    payload.minParticipants = Number(data.minParticipants);
   return payload;
 }
 
@@ -80,10 +90,16 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
   const { t } = useTranslations();
   const router = useRouter();
 
-  const [eventId, setEventId] = useState<string | null>(initialEvent?.id ?? null);
+  const [eventId, setEventId] = useState<string | null>(
+    initialEvent?.id ?? null,
+  );
   const [slug, setSlug] = useState<string | null>(initialEvent?.slug ?? null);
-  const [status, setStatus] = useState<EventStatus>(initialEvent?.status ?? "DRAFT");
-  const [data, setData] = useState<WizardData>(initialEvent ? toWizardData(initialEvent) : EMPTY_WIZARD_DATA);
+  const [status, setStatus] = useState<EventStatus>(
+    initialEvent?.status ?? "DRAFT",
+  );
+  const [data, setData] = useState<WizardData>(
+    initialEvent ? toWizardData(initialEvent) : EMPTY_WIZARD_DATA,
+  );
   const [media, setMedia] = useState<EventMedia[]>(initialEvent?.media ?? []);
   const [stepIndex, setStepIndex] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -142,7 +158,11 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
       setSlug((patchBody as EventDetail).slug);
       return true;
     } catch (err) {
-      setError(err instanceof ApiRequestError ? t(`errors.${err.code}`) : t("common.somethingWentWrong"));
+      setError(
+        err instanceof ApiRequestError
+          ? t(`errors.${err.code}`)
+          : t("common.somethingWentWrong"),
+      );
       return false;
     } finally {
       setSaving(false);
@@ -165,7 +185,11 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
           <li
             key={s}
             className={`rounded-full px-3 py-1 ${
-              i === stepIndex ? "accent-gradient text-white" : i < stepIndex ? "bg-surface text-muted" : "text-muted"
+              i === stepIndex
+                ? "accent-gradient text-white"
+                : i < stepIndex
+                  ? "bg-surface text-muted"
+                  : "text-muted"
             }`}
           >
             {t(STEP_LABEL_KEYS[s])}
@@ -174,17 +198,30 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
       </ol>
 
       <div className="mb-8">
-        {step === "basics" && <StepBasics data={data} onChange={handleChange} />}
+        {step === "basics" && (
+          <StepBasics data={data} onChange={handleChange} />
+        )}
         {step === "media" &&
           (eventId ? (
-            <StepMedia eventId={eventId} media={media} onMediaChange={setMedia} />
+            <StepMedia
+              eventId={eventId}
+              media={media}
+              onMediaChange={setMedia}
+            />
           ) : (
             <p className="text-sm text-muted">{t("common.loading")}</p>
           ))}
-        {step === "datePlace" && <StepDatePlace data={data} onChange={handleChange} />}
+        {step === "datePlace" && (
+          <StepDatePlace data={data} onChange={handleChange} />
+        )}
         {step === "price" && <StepPrice data={data} onChange={handleChange} />}
         {step === "preview" && slug && eventId && (
-          <StepPreview eventId={eventId} slug={slug} status={status} onStatusChange={setStatus} />
+          <StepPreview
+            eventId={eventId}
+            slug={slug}
+            status={status}
+            onStatusChange={setStatus}
+          />
         )}
       </div>
 
@@ -203,7 +240,9 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
             {t("common.next")}
           </Button>
         ) : (
-          <Button onClick={() => router.push("/organizer/events")}>{t("common.done")}</Button>
+          <Button onClick={() => router.push("/organizer/events")}>
+            {t("common.done")}
+          </Button>
         )}
       </div>
     </div>

@@ -428,7 +428,20 @@
     "confirmed": "Підтверджено",
     "cancellations": "Скасувань",
     "paymentClicks": "Кліків з оплати",
-    "saves": "Збережень"
+    "saves": "Збережень",
+    "impressions": "Покази картки",
+    "views": "Відкриття сторінки",
+    "shares": "Поширення",
+    "conversion": "Конверсія: перегляд → реєстрація",
+    "sources": "Звідки приходять",
+    "noViewsYet": "Поки що немає переглядів.",
+    "dailyViews": "Перегляди по днях (30 днів)",
+    "sourceSwipe": "Свайп",
+    "sourceSearch": "Пошук",
+    "sourceDirect": "Пряме посилання",
+    "sourceProfile": "Профіль",
+    "sourceThreads": "Threads",
+    "sourceOther": "Інше"
   },
   "organizerSeries": {
     "title": "Зробити повторюваною",
@@ -475,6 +488,7 @@
     "INVALID_CREDENTIALS": "Невірний email або пароль",
     "INVALID_GOOGLE_TOKEN": "Не вдалося увійти через Google. Спробуйте ще раз.",
     "SOCIAL_LOGIN_DISABLED": "Вхід через Google тимчасово недоступний",
+    "PLACES_UNAVAILABLE": "Пошук адрес тимчасово недоступний. Введіть адресу вручну.",
     "EMAIL_ALREADY_REGISTERED": "Цей email вже зареєстровано",
     "EMAIL_NOT_VERIFIED": "Підтвердіть email, щоб продовжити",
     "INVALID_OR_EXPIRED_TOKEN": "Посилання недійсне або застаріло",
@@ -580,5 +594,13 @@
     },
     "open": "Мої події",
     "openHint": "Майбутні, заявки, збережені, минулі"
+  },
+  "chat": {
+    "title": "Чат події",
+    "empty": "Поки що тихо. Напишіть першими!",
+    "placeholder": "Повідомлення…",
+    "send": "Надіслати",
+    "delete": "Видалити",
+    "participantsOnly": "Чат доступний підтвердженим учасникам"
   }
 }

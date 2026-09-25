@@ -11,6 +11,9 @@ export interface WizardData {
   cityId: string | null;
   districtId: string | null;
   addressText: string;
+  googlePlaceId: string | null;
+  latitude: number | null;
+  longitude: number | null;
   onlineUrl: string;
   priceType: EventPriceType;
   price: string;
@@ -29,6 +32,9 @@ export const EMPTY_WIZARD_DATA: WizardData = {
   cityId: null,
   districtId: null,
   addressText: "",
+  googlePlaceId: null,
+  latitude: null,
+  longitude: null,
   onlineUrl: "",
   priceType: "FREE",
   price: "",

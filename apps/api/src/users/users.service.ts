@@ -45,7 +45,11 @@ export class UsersService {
     const user = await this.prisma.user.update({
       where: { id: userId },
       // A changed number is no longer verified.
-      data: dto.phone !== undefined ? { ...dto, phoneVerifiedAt: null } : dto,
+      data: {
+        ...dto,
+        birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
+        ...(dto.phone !== undefined ? { phoneVerifiedAt: null } : {}),
+      },
     });
     const { passwordHash: _passwordHash, ...safe } = user;
     return safe;

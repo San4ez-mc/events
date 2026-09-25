@@ -67,6 +67,7 @@ export interface RegistrationField {
 export interface EventDetail extends EventSummary {
   social?: SocialProof;
   addressLocked?: boolean;
+  googlePlaceId?: string | null;
   latitude?: string | null;
   longitude?: string | null;
   organizer?: {
@@ -199,6 +200,12 @@ export interface EventStats {
   cancellations: number;
   paymentClicks: number;
   saves: number;
+  impressions?: number;
+  views?: number;
+  shares?: number;
+  viewsBySource?: Record<string, number>;
+  conversionViewToRegistration?: number | null;
+  daily?: { date: string; impressions: number; views: number; registrations: number }[];
 }
 
 /** Phase 7 — recurring events (§29). One occurrence is a normal, independent Event row. */

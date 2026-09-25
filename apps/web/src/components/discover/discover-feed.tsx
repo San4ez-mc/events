@@ -19,6 +19,7 @@ import type { CursorPage, EventCard as EventCardData } from "@/lib/event-types";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "./event-card";
 import { DiscoverFilters, type DiscoveryFilters } from "./discover-filters";
+import { track } from "@/lib/analytics";
 import { EMPTY_FILTERS, countActiveFilters, filtersToQuery } from "@kiro/types";
 
 const FILTERS_STORAGE_KEY = "kiro_discover_filters";
@@ -165,6 +166,14 @@ export function DiscoverFeed() {
   }, [user]);
 
   const current = items[index];
+  // §35 — one impression per card shown.
+  const lastImpression = useRef<string | null>(null);
+  useEffect(() => {
+    if (current && lastImpression.current !== current.id) {
+      lastImpression.current = current.id;
+      track(current.id, "IMPRESSION");
+    }
+  }, [current]);
   const upcoming = items[index + 1];
   const activeFilterCount = countActiveFilters(filters);
 
@@ -207,9 +216,11 @@ export function DiscoverFeed() {
     const url = `${window.location.origin}/events/${current.slug}`;
     try {
       if (navigator.share) {
+        track(current.id, "SHARE");
         await navigator.share({ title: current.title, url });
         return;
       }
+      track(current.id, "SHARE");
       await navigator.clipboard.writeText(url);
       setShareNote(t("profile.linkCopied"));
       window.setTimeout(() => setShareNote(null), 2000);
@@ -225,7 +236,7 @@ export function DiscoverFeed() {
   function handleOpen() {
     if (!current) return;
     void recordInteraction(current.id, "OPEN");
-    router.push(`/events/${current.slug}`);
+    router.push(`/events/${current.slug}?src=swipe`);
   }
 
   async function handleSave() {

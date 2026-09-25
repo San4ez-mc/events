@@ -8,6 +8,7 @@ import { ResourceNotFoundException } from "../common/exceptions/common-exception
 import { decodeScoredCursor, encodeScoredCursor, sliceAfterScoredCursor } from "../common/utils/scored-cursor";
 import { buildPublicEventWhere } from "../common/utils/public-event-filters";
 import { EVENT_CARD_INCLUDE, type EventCard } from "../common/utils/event-card-include";
+import { AnalyticsService } from "../analytics/analytics.service";
 import { SocialProofService, type SocialProof } from "../common/social-proof/social-proof.service";
 import type { DiscoveryQueryDto } from "./dto/discovery-query.dto";
 import type { RecordInteractionDto } from "./dto/record-interaction.dto";
@@ -32,6 +33,7 @@ export class DiscoveryService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly socialProof: SocialProofService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   /** §57/§58 — ranked, filtered, cursor-paginated discovery feed. */
@@ -45,8 +47,10 @@ export class DiscoveryService {
     ]);
 
     const now = new Date();
+    const viewer = userId ? await this.prisma.user.findUnique({ where: { id: userId }, select: { birthDate: true } }) : null;
+    const isMinor = !!viewer?.birthDate && this.ageOn(viewer.birthDate, now) < 18;
     const candidates = await this.prisma.event.findMany({
-      where: this.buildFeedWhere(query, excludedEventIds, now),
+      where: { ...this.buildFeedWhere(query, excludedEventIds, now), ...(isMinor ? { OR: [{ ageRestriction: null }, { ageRestriction: { lt: 18 } }] } : {}) },
       orderBy: { startsAt: "asc" },
       take: DISCOVERY_CANDIDATE_CAP,
       include: EVENT_CARD_INCLUDE,
@@ -92,10 +96,12 @@ export class DiscoveryService {
       create: { userId, eventId },
       update: {},
     });
+    this.analytics.record({ eventId, userId, action: "SAVE" });
   }
 
   async unsaveEvent(userId: string, eventId: string): Promise<void> {
     await this.prisma.savedEvent.deleteMany({ where: { userId, eventId } });
+    this.analytics.record({ eventId, userId, action: "UNSAVE" });
   }
 
   /** "Мої → Збережені" (UX §5). */
@@ -140,6 +146,13 @@ export class DiscoveryService {
       new Intl.DateTimeFormat("en-GB", { hour: "numeric", hourCycle: "h23", timeZone: timezone || "Europe/Kyiv" }).format(startsAt),
     );
     return from <= to ? hour >= from && hour < to : hour >= from || hour < to;
+  }
+
+  private ageOn(birthDate: Date, on: Date): number {
+    let age = on.getUTCFullYear() - birthDate.getUTCFullYear();
+    const beforeBirthday = on.getUTCMonth() < birthDate.getUTCMonth() || (on.getUTCMonth() === birthDate.getUTCMonth() && on.getUTCDate() < birthDate.getUTCDate());
+    if (beforeBirthday) age -= 1;
+    return age;
   }
 
   private buildFeedWhere(

@@ -5,6 +5,7 @@ import { useTranslations } from "@/lib/locale-context";
 import { api } from "@/lib/api-client";
 import type { City, District } from "@/lib/geo-types";
 import { TextField } from "@/components/ui/text-field";
+import { AddressAutocomplete } from "./address-autocomplete";
 import type { StepProps } from "./types";
 
 export function StepDatePlace({ data, onChange }: StepProps) {
@@ -14,11 +15,16 @@ export function StepDatePlace({ data, onChange }: StepProps) {
   // previously selected city is never rendered while a new fetch is in
   // flight — avoids needing to synchronously clear state on every keystroke
   // change of cityId (react-hooks/set-state-in-effect).
-  const [districts, setDistricts] = useState<{ cityId: string; items: District[] } | null>(null);
+  const [districts, setDistricts] = useState<{
+    cityId: string;
+    items: District[];
+  } | null>(null);
 
   useEffect(() => {
     (async () => {
-      const res = await api.GET("/api/v1/geography/cities", { params: { query: {} } });
+      const res = await api.GET("/api/v1/geography/cities", {
+        params: { query: {} },
+      });
       if (res.data) setCities(res.data as City[]);
     })();
   }, []);
@@ -27,15 +33,19 @@ export function StepDatePlace({ data, onChange }: StepProps) {
     if (!data.cityId) return;
     let cancelled = false;
     (async () => {
-      const res = await api.GET("/api/v1/geography/districts", { params: { query: { cityId: data.cityId! } } });
-      if (!cancelled && res.data) setDistricts({ cityId: data.cityId!, items: res.data as District[] });
+      const res = await api.GET("/api/v1/geography/districts", {
+        params: { query: { cityId: data.cityId! } },
+      });
+      if (!cancelled && res.data)
+        setDistricts({ cityId: data.cityId!, items: res.data as District[] });
     })();
     return () => {
       cancelled = true;
     };
   }, [data.cityId]);
 
-  const districtsForCurrentCity = districts?.cityId === data.cityId ? districts.items : [];
+  const districtsForCurrentCity =
+    districts?.cityId === data.cityId ? districts.items : [];
 
   return (
     <div className="flex flex-col gap-5">
@@ -53,7 +63,9 @@ export function StepDatePlace({ data, onChange }: StepProps) {
                   : "border-border hover:bg-surface"
               }`}
             >
-              {format === "OFFLINE" ? t("events.wizard.formatOffline") : t("events.wizard.formatOnline")}
+              {format === "OFFLINE"
+                ? t("events.wizard.formatOffline")
+                : t("events.wizard.formatOnline")}
             </button>
           ))}
         </div>
@@ -95,11 +107,15 @@ export function StepDatePlace({ data, onChange }: StepProps) {
             <select
               id="city"
               value={data.cityId ?? ""}
-              onChange={(e) => onChange({ cityId: e.target.value || null, districtId: null })}
+              onChange={(e) =>
+                onChange({ cityId: e.target.value || null, districtId: null })
+              }
               className="rounded-md border border-border bg-background px-3 py-2 text-sm"
             >
               <option value="">{t("events.wizard.cityPlaceholder")}</option>
-              {cities === null && <option disabled>{t("common.loading")}</option>}
+              {cities === null && (
+                <option disabled>{t("common.loading")}</option>
+              )}
               {cities?.map((city) => (
                 <option key={city.id} value={city.id}>
                   {locale === "uk" ? city.nameUk : city.nameEn}
@@ -116,23 +132,31 @@ export function StepDatePlace({ data, onChange }: StepProps) {
               <select
                 id="district"
                 value={data.districtId ?? ""}
-                onChange={(e) => onChange({ districtId: e.target.value || null })}
+                onChange={(e) =>
+                  onChange({ districtId: e.target.value || null })
+                }
                 className="rounded-md border border-border bg-background px-3 py-2 text-sm"
               >
-                <option value="">{t("events.wizard.districtPlaceholder")}</option>
+                <option value="">
+                  {t("events.wizard.districtPlaceholder")}
+                </option>
                 {districtsForCurrentCity.map((district) => (
                   <option key={district.id} value={district.id}>
-                    {locale === "uk" ? district.nameUk : (district.nameEn ?? district.nameUk)}
+                    {locale === "uk"
+                      ? district.nameUk
+                      : (district.nameEn ?? district.nameUk)}
                   </option>
                 ))}
               </select>
             </div>
           )}
 
-          <TextField
+          <AddressAutocomplete
             label={t("events.wizard.addressText")}
             value={data.addressText}
-            onChange={(addressText) => onChange({ addressText })}
+            latitude={data.latitude}
+            longitude={data.longitude}
+            onPick={(place) => onChange(place)}
             placeholder={t("events.wizard.addressPlaceholder")}
           />
         </>

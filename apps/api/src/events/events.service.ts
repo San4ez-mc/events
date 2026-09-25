@@ -14,6 +14,7 @@ import { ACTIVE_REGISTRATION_STATUSES } from "../common/constants/registration-a
 import { NotificationsService } from "../notifications/notifications.service";
 import { FriendsService } from "../friends/friends.service";
 import { EventAccessService } from "../organizer/event-access.service";
+import { AnalyticsService } from "../analytics/analytics.service";
 import { SocialProofService } from "../common/social-proof/social-proof.service";
 import type { CreateEventDto } from "./dto/create-event.dto";
 import type { UpdateEventDto } from "./dto/update-event.dto";
@@ -34,6 +35,7 @@ export class EventsService {
     private readonly friendsService: FriendsService,
     private readonly eventAccess: EventAccessService,
     private readonly socialProof: SocialProofService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   /** §10 — creating a first event is what makes a user an "organizer" (not a role). */
@@ -504,7 +506,21 @@ export class EventsService {
       this.prisma.savedEvent.count({ where: { eventId } }),
     ]);
 
-    return { registrations, confirmed, cancellations, paymentClicks, saves };
+    const tracked = await this.analytics.summary(eventId);
+    return {
+      registrations,
+      confirmed,
+      cancellations,
+      paymentClicks,
+      saves,
+      // Tracked funnel (impressions -> views -> registrations) from the daily aggregates, last 30 days.
+      impressions: tracked.impressions,
+      views: tracked.views,
+      shares: tracked.shares,
+      viewsBySource: tracked.viewsBySource,
+      conversionViewToRegistration: tracked.conversionViewToRegistration,
+      daily: tracked.daily,
+    };
   }
 
   /**

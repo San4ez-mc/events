@@ -9,7 +9,9 @@ export function StepPrice({ data, onChange }: StepProps) {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium">{t("events.wizard.priceType")}</span>
+        <span className="text-sm font-medium">
+          {t("events.wizard.priceType")}
+        </span>
         <div className="flex gap-2">
           {(["FREE", "PAID"] as const).map((priceType) => (
             <button
@@ -22,7 +24,9 @@ export function StepPrice({ data, onChange }: StepProps) {
                   : "border-border hover:bg-surface"
               }`}
             >
-              {priceType === "FREE" ? t("events.wizard.priceFree") : t("events.wizard.pricePaid")}
+              {priceType === "FREE"
+                ? t("events.wizard.priceFree")
+                : t("events.wizard.pricePaid")}
             </button>
           ))}
         </div>
@@ -75,7 +79,9 @@ export function StepPrice({ data, onChange }: StepProps) {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium">{t("events.wizard.approvalMode")}</span>
+        <span className="text-sm font-medium">
+          {t("events.wizard.approvalMode")}
+        </span>
         <div className="flex gap-2">
           {(["AUTO", "ORGANIZER_APPROVAL"] as const).map((mode) => (
             <button
@@ -88,7 +94,9 @@ export function StepPrice({ data, onChange }: StepProps) {
                   : "border-border hover:bg-surface"
               }`}
             >
-              {mode === "AUTO" ? t("events.wizard.approvalAuto") : t("events.wizard.approvalManual")}
+              {mode === "AUTO"
+                ? t("events.wizard.approvalAuto")
+                : t("events.wizard.approvalManual")}
             </button>
           ))}
         </div>

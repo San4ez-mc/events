@@ -428,7 +428,20 @@
     "confirmed": "Confirmed",
     "cancellations": "Cancellations",
     "paymentClicks": "Payment clicks",
-    "saves": "Saves"
+    "saves": "Saves",
+    "impressions": "Card impressions",
+    "views": "Page views",
+    "shares": "Shares",
+    "conversion": "Conversion: view → registration",
+    "sources": "Where visitors come from",
+    "noViewsYet": "No views yet.",
+    "dailyViews": "Views per day (30 days)",
+    "sourceSwipe": "Swipe",
+    "sourceSearch": "Search",
+    "sourceDirect": "Direct link",
+    "sourceProfile": "Profile",
+    "sourceThreads": "Threads",
+    "sourceOther": "Other"
   },
   "organizerSeries": {
     "title": "Make it recurring",
@@ -475,6 +488,7 @@
     "INVALID_CREDENTIALS": "Invalid email or password",
     "INVALID_GOOGLE_TOKEN": "Could not sign in with Google. Please try again.",
     "SOCIAL_LOGIN_DISABLED": "Google sign-in is temporarily unavailable",
+    "PLACES_UNAVAILABLE": "Address search is temporarily unavailable. Enter the address manually.",
     "EMAIL_ALREADY_REGISTERED": "This email is already registered",
     "EMAIL_NOT_VERIFIED": "Please verify your email to continue",
     "INVALID_OR_EXPIRED_TOKEN": "This link is invalid or has expired",
@@ -580,5 +594,13 @@
     },
     "open": "My events",
     "openHint": "Upcoming, pending, saved, past"
+  },
+  "chat": {
+    "title": "Event chat",
+    "empty": "It's quiet so far. Say hi first!",
+    "placeholder": "Message…",
+    "send": "Send",
+    "delete": "Delete",
+    "participantsOnly": "The chat is available to confirmed participants"
   }
 }

@@ -30,7 +30,10 @@ export function StepMedia({ eventId, media, onMediaChange }: StepMediaProps) {
       formData.append("file", file);
       const res = await fetch(`/api/v1/events/${eventId}/media`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${getAccessToken() ?? ""}`, "X-Client-Platform": "web" },
+        headers: {
+          Authorization: `Bearer ${getAccessToken() ?? ""}`,
+          "X-Client-Platform": "web",
+        },
         credentials: "include",
         body: formData,
       });
@@ -38,7 +41,11 @@ export function StepMedia({ eventId, media, onMediaChange }: StepMediaProps) {
       if (!res.ok) throw new ApiRequestError(body);
       onMediaChange([...media, body]);
     } catch (err) {
-      setError(err instanceof ApiRequestError ? t(`errors.${err.code}`) : t("common.somethingWentWrong"));
+      setError(
+        err instanceof ApiRequestError
+          ? t(`errors.${err.code}`)
+          : t("common.somethingWentWrong"),
+      );
     } finally {
       setUploading(false);
     }
@@ -47,7 +54,10 @@ export function StepMedia({ eventId, media, onMediaChange }: StepMediaProps) {
   async function handleDelete(mediaId: string) {
     await fetch(`/api/v1/events/${eventId}/media/${mediaId}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${getAccessToken() ?? ""}`, "X-Client-Platform": "web" },
+      headers: {
+        Authorization: `Bearer ${getAccessToken() ?? ""}`,
+        "X-Client-Platform": "web",
+      },
       credentials: "include",
     });
     onMediaChange(media.filter((m) => m.id !== mediaId));
@@ -62,7 +72,10 @@ export function StepMedia({ eventId, media, onMediaChange }: StepMediaProps) {
       ) : (
         <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4">
           {media.map((item) => (
-            <li key={item.id} className="group relative aspect-[3/4] overflow-hidden rounded-lg bg-surface">
+            <li
+              key={item.id}
+              className="group relative aspect-[3/4] overflow-hidden rounded-lg bg-surface"
+            >
               {/* eslint-disable-next-line @next/next/no-img-element -- external MinIO URLs */}
               <img
                 src={item.thumbnailUrl}
@@ -70,7 +83,9 @@ export function StepMedia({ eventId, media, onMediaChange }: StepMediaProps) {
                 className="h-full w-full object-cover"
                 style={
                   item.focalX
-                    ? { objectPosition: `${Number(item.focalX) * 100}% ${Number(item.focalY) * 100}%` }
+                    ? {
+                        objectPosition: `${Number(item.focalX) * 100}% ${Number(item.focalY) * 100}%`,
+                      }
                     : undefined
                 }
               />
@@ -106,7 +121,11 @@ export function StepMedia({ eventId, media, onMediaChange }: StepMediaProps) {
         </div>
       )}
 
-      {media.length >= 10 && <p className="text-xs text-muted">{t("events.wizard.mediaLimitReached")}</p>}
+      {media.length >= 10 && (
+        <p className="text-xs text-muted">
+          {t("events.wizard.mediaLimitReached")}
+        </p>
+      )}
 
       {error && (
         <p role="alert" className="text-sm text-danger">

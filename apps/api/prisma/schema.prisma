@@ -76,6 +76,9 @@ model User {
   phone           String?
   phoneVerifiedAt DateTime?
 
+  /// Optional. Used only to hide 18+ events from minors (UX §41) — never public unless the user opts in.
+  birthDate DateTime? @db.Date
+
   locale String     @default("uk")
   status UserStatus @default(ACTIVE)
   role   UserRole   @default(USER)
@@ -116,6 +119,8 @@ model User {
   eventInvitationsSent     EventInvitation[]        @relation("EventInvitationInviter")
   eventInvitationsReceived EventInvitation[]        @relation("EventInvitationInvitee")
   reviewsAuthored          EventReview[]
+  chatMessages             EventChatMessage[]
+  analyticsEvents          EventAnalyticsEvent[]
   platformPaymentOrders    PlatformPaymentOrder[]
   reportsFiled             Report[]                 @relation("ReportReporter")
   reportsAssigned          Report[]                 @relation("ReportAssignee")
@@ -578,6 +583,9 @@ model Event {
   collaborators      EventCollaborator[]
   invitations        EventInvitation[]
   reviews            EventReview[]
+  chatMessages       EventChatMessage[]
+  analyticsEvents    EventAnalyticsEvent[]
+  dailyStats         EventDailyStat[]
 
   @@index([ownerId])
   @@index([categoryId])
@@ -1253,4 +1261,93 @@ model PlatformPaymentOrder {
   @@index([userId])
   @@index([provider, providerReference])
   @@map("platform_payment_orders")
+}
+
+// ---------------------------------------------------------------------------
+// Event chat (UX §28): a simple group chat per event for confirmed
+// participants and organizers. No DMs in the MVP.
+// ---------------------------------------------------------------------------
+
+model EventChatMessage {
+  id       String @id @default(uuid()) @db.Uuid
+  eventId  String @db.Uuid
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  authorId String @db.Uuid
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  text      String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([eventId, createdAt])
+  @@map("event_chat_messages")
+}
+
+// ---------------------------------------------------------------------------
+// Event analytics (§45-47, UX §35): an append-only action log plus a daily
+// aggregate so the organizer dashboard never COUNTs raw rows.
+// ---------------------------------------------------------------------------
+
+enum AnalyticsAction {
+  IMPRESSION
+  VIEW
+  SAVE
+  UNSAVE
+  SHARE
+  REGISTRATION_STARTED
+  REGISTERED
+  CANCELLED
+  PAYMENT_LINK_CLICK
+  SUBSCRIBED
+}
+
+/// UX §35 traffic sources: Threads / Direct link / Search / Swipe / Profile / Other.
+enum TrafficSource {
+  SWIPE
+  SEARCH
+  DIRECT
+  PROFILE
+  THREADS
+  OTHER
+}
+
+model EventAnalyticsEvent {
+  id      String @id @default(uuid()) @db.Uuid
+  eventId String @db.Uuid
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  userId    String? @db.Uuid
+  user      User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  sessionId String?
+
+  action       AnalyticsAction
+  source       TrafficSource?
+  metadataJson Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([eventId, createdAt])
+  @@index([eventId, action])
+  @@map("event_analytics_events")
+}
+
+model EventDailyStat {
+  eventId String   @db.Uuid
+  event   Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  date    DateTime @db.Date
+
+  impressions        Int @default(0)
+  views              Int @default(0)
+  saves              Int @default(0)
+  shares             Int @default(0)
+  registrationStarts Int @default(0)
+  registrations      Int @default(0)
+  confirmed          Int @default(0)
+  cancellations      Int @default(0)
+  paymentClicks      Int @default(0)
+
+  /// View counts per traffic source for the day, e.g. {"SWIPE": 12, "DIRECT": 3}.
+  viewsBySource Json @default("{}")
+
+  @@id([eventId, date])
+  @@map("event_daily_stats")
 }

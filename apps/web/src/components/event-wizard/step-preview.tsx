@@ -15,11 +15,18 @@ interface StepPreviewProps {
   onStatusChange: (status: EventStatus) => void;
 }
 
-export function StepPreview({ eventId, slug, status, onStatusChange }: StepPreviewProps) {
+export function StepPreview({
+  eventId,
+  slug,
+  status,
+  onStatusChange,
+}: StepPreviewProps) {
   const { t } = useTranslations();
   const [balance, setBalance] = useState<number | null>(null);
   const [publishing, setPublishing] = useState(false);
-  const [error, setError] = useState<{ code: string; message: string } | null>(null);
+  const [error, setError] = useState<{ code: string; message: string } | null>(
+    null,
+  );
   const [claiming, setClaiming] = useState(false);
 
   useEffect(() => {
@@ -96,11 +103,17 @@ export function StepPreview({ eventId, slug, status, onStatusChange }: StepPrevi
               </p>
               {error.code === "INSUFFICIENT_LISTING_CREDITS" && (
                 <div className="flex gap-2">
-                  <Button variant="secondary" onClick={handleClaimFree} loading={claiming}>
+                  <Button
+                    variant="secondary"
+                    onClick={handleClaimFree}
+                    loading={claiming}
+                  >
                     {t("events.wizard.claimFreeCredits")}
                   </Button>
                   <Link href="/credits" target="_blank">
-                    <Button variant="secondary">{t("events.wizard.buyCredits")}</Button>
+                    <Button variant="secondary">
+                      {t("events.wizard.buyCredits")}
+                    </Button>
                   </Link>
                 </div>
               )}

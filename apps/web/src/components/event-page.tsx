@@ -9,6 +9,8 @@ import { ReviewsSection } from "@/components/reviews/reviews-section";
 import { AttendeeStack } from "@/components/discover/attendee-stack";
 import { EventGallery } from "@/components/event-gallery";
 import { EventLocation } from "@/components/event-location";
+import { EventChat } from "@/components/event-chat";
+import { EventViewTracker } from "@/components/event-view-tracker";
 
 /**
  * Shared presentational component for the public event page — used by both
@@ -18,24 +20,47 @@ import { EventLocation } from "@/components/event-location";
  * social proof, description, organizer, location, rules, participants,
  * reviews, registration.
  */
-export function EventPage({ event, locale }: { event: EventDetail; locale: SupportedLocale }) {
+export function EventPage({
+  event,
+  locale,
+}: {
+  event: EventDetail;
+  locale: SupportedLocale;
+}) {
   const t = getT(locale);
-  const categoryName = event.category ? (locale === "uk" ? event.category.nameUk : event.category.nameEn) : null;
-  const cityName = event.city ? (locale === "uk" ? event.city.nameUk : event.city.nameEn) : null;
+  const categoryName = event.category
+    ? locale === "uk"
+      ? event.category.nameUk
+      : event.category.nameEn
+    : null;
+  const cityName = event.city
+    ? locale === "uk"
+      ? event.city.nameUk
+      : event.city.nameEn
+    : null;
   const districtName = event.district?.nameUk ?? null;
   const social = event.social;
   const organizer = event.organizer;
-  const spotsLeft = event.capacity != null && social ? Math.max(0, event.capacity - social.registeredCount) : null;
+  const spotsLeft =
+    event.capacity != null && social
+      ? Math.max(0, event.capacity - social.registeredCount)
+      : null;
   const meta = "flex items-center gap-2";
 
   return (
     <article className="mx-auto max-w-2xl px-4 pb-24 pt-6">
       {event.status !== "PUBLISHED" && event.status !== "COMPLETED" && (
         <div className="mb-4 rounded-md border border-[var(--accent-from)] bg-surface px-4 py-2 text-sm">
-          {locale === "uk" ? "Це попередній перегляд — подія ще не опублікована." : "This is a preview — the event isn't published yet."}
+          {locale === "uk"
+            ? "Це попередній перегляд — подія ще не опублікована."
+            : "This is a preview — the event isn't published yet."}
         </div>
       )}
 
+      <EventViewTracker
+        eventId={event.id}
+        published={event.status === "PUBLISHED"}
+      />
       <EventGallery media={event.media} />
 
       <h1 className="mb-3 text-3xl font-bold leading-tight">{event.title}</h1>
@@ -62,7 +87,9 @@ export function EventPage({ event, locale }: { event: EventDetail; locale: Suppo
         <span className={meta}>
           <Tag className="h-4 w-4 shrink-0" aria-hidden="true" />
           <strong className="text-foreground">
-            {event.priceType === "FREE" ? t("common.free") : `${event.price ?? "?"} ${event.currency}`}
+            {event.priceType === "FREE"
+              ? t("common.free")
+              : `${event.price ?? "?"} ${event.currency}`}
           </strong>
           {categoryName && <span>· {categoryName}</span>}
         </span>
@@ -72,21 +99,36 @@ export function EventPage({ event, locale }: { event: EventDetail; locale: Suppo
         <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-surface p-4 text-sm">
           <span className={`${meta} font-semibold`}>
             <Users className="h-4 w-4" aria-hidden="true" />
-            {event.capacity != null ? `${social.registeredCount} / ${event.capacity}` : social.registeredCount}{" "}
-            <span className="font-normal text-muted">{t("events.page.participantsCount")}</span>
+            {event.capacity != null
+              ? `${social.registeredCount} / ${event.capacity}`
+              : social.registeredCount}{" "}
+            <span className="font-normal text-muted">
+              {t("events.page.participantsCount")}
+            </span>
           </span>
           <span className="[&_span]:border-background">
-            <AttendeeStack people={social.attendeePreviews} total={social.registeredCount} />
+            <AttendeeStack
+              people={social.attendeePreviews}
+              total={social.registeredCount}
+            />
           </span>
           {spotsLeft !== null && (
-            <span className={spotsLeft === 0 ? "font-semibold text-danger" : "text-muted"}>
-              {spotsLeft === 0 ? t("events.page.soldOut") : `${spotsLeft} ${t("events.page.spotsLeft")}`}
+            <span
+              className={
+                spotsLeft === 0 ? "font-semibold text-danger" : "text-muted"
+              }
+            >
+              {spotsLeft === 0
+                ? t("events.page.soldOut")
+                : `${spotsLeft} ${t("events.page.spotsLeft")}`}
             </span>
           )}
           {event.friendsGoing.count > 0 && (
             <span className="text-muted">
               👥 {event.friendsGoing.count}{" "}
-              {event.friendsGoing.count === 1 ? t("profile.friendsGoingOne") : t("profile.friendsGoingMany")}
+              {event.friendsGoing.count === 1
+                ? t("profile.friendsGoingOne")
+                : t("profile.friendsGoingMany")}
             </span>
           )}
         </div>
@@ -97,27 +139,42 @@ export function EventPage({ event, locale }: { event: EventDetail; locale: Suppo
       </div>
 
       {event.description && (
-        <section className="mb-8 whitespace-pre-wrap text-sm leading-relaxed">{event.description}</section>
+        <section className="mb-8 whitespace-pre-wrap text-sm leading-relaxed">
+          {event.description}
+        </section>
       )}
 
       {organizer && (
         <section className="mb-8">
-          <h2 className="mb-2 text-sm font-semibold">{t("events.page.organizer")}</h2>
+          <h2 className="mb-2 text-sm font-semibold">
+            {t("events.page.organizer")}
+          </h2>
           <div className="flex items-center gap-3 rounded-2xl border border-border p-4">
             {organizer.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- external avatar URLs
-              <img src={organizer.avatarUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
+              <img
+                src={organizer.avatarUrl}
+                alt=""
+                className="h-12 w-12 rounded-full object-cover"
+              />
             ) : (
               <span className="accent-gradient flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold text-white">
-                {(organizer.name ?? organizer.nickname ?? "?").slice(0, 1).toUpperCase()}
+                {(organizer.name ?? organizer.nickname ?? "?")
+                  .slice(0, 1)
+                  .toUpperCase()}
               </span>
             )}
             <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold">{organizer.name ?? organizer.nickname}</p>
+              <p className="truncate font-semibold">
+                {organizer.name ?? organizer.nickname}
+              </p>
               <p className="flex flex-wrap items-center gap-x-3 text-xs text-muted">
                 {organizer.rating.average !== null && (
                   <span className="flex items-center gap-1 font-semibold text-amber-500">
-                    <Star className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
+                    <Star
+                      className="h-3.5 w-3.5 fill-current"
+                      aria-hidden="true"
+                    />
                     {organizer.rating.average.toFixed(1)}
                   </span>
                 )}
@@ -140,29 +197,46 @@ export function EventPage({ event, locale }: { event: EventDetail; locale: Suppo
 
       {event.rules && (
         <section className="mb-8">
-          <h2 className="mb-2 text-sm font-semibold">{locale === "uk" ? "Правила" : "Rules"}</h2>
-          <p className="whitespace-pre-wrap text-sm text-muted">{event.rules}</p>
+          <h2 className="mb-2 text-sm font-semibold">
+            {locale === "uk" ? "Правила" : "Rules"}
+          </h2>
+          <p className="whitespace-pre-wrap text-sm text-muted">
+            {event.rules}
+          </p>
         </section>
       )}
 
       {event.participants && event.participants.length > 0 && (
         <section className="mb-8">
           <h2 className="mb-3 text-sm font-semibold">
-            {t("events.page.participants")} · {social?.registeredCount ?? event.participants.length}
+            {t("events.page.participants")} ·{" "}
+            {social?.registeredCount ?? event.participants.length}
           </h2>
           <ul className="flex flex-wrap gap-3">
             {event.participants.map((p) => (
-              <li key={p.id} className="flex w-16 flex-col items-center gap-1 text-center">
-                <Link href={`/users/${p.id}`} className="flex flex-col items-center gap-1">
+              <li
+                key={p.id}
+                className="flex w-16 flex-col items-center gap-1 text-center"
+              >
+                <Link
+                  href={`/users/${p.id}`}
+                  className="flex flex-col items-center gap-1"
+                >
                   {p.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element -- external avatar URLs
-                    <img src={p.avatarUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
+                    <img
+                      src={p.avatarUrl}
+                      alt=""
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
                   ) : (
                     <span className="accent-gradient flex h-12 w-12 items-center justify-center rounded-full font-bold text-white">
                       {(p.name ?? "?").slice(0, 1).toUpperCase()}
                     </span>
                   )}
-                  <span className="w-full truncate text-[11px] text-muted">{p.name}</span>
+                  <span className="w-full truncate text-[11px] text-muted">
+                    {p.name}
+                  </span>
                 </Link>
               </li>
             ))}
@@ -170,12 +244,20 @@ export function EventPage({ event, locale }: { event: EventDetail; locale: Suppo
         </section>
       )}
 
-      <ReviewsSection eventId={event.id} eventStatus={event.status} reviewSummary={event.reviewSummary} />
+      <EventChat eventId={event.id} />
+
+      <ReviewsSection
+        eventId={event.id}
+        eventStatus={event.status}
+        reviewSummary={event.reviewSummary}
+      />
 
       <RegistrationWidget event={event} />
 
       {event.priceType === "PAID" && (
-        <p className="mt-4 rounded-xl bg-surface p-3 text-xs leading-relaxed text-muted">{t("events.page.paidDisclaimer")}</p>
+        <p className="mt-4 rounded-xl bg-surface p-3 text-xs leading-relaxed text-muted">
+          {t("events.page.paidDisclaimer")}
+        </p>
       )}
     </article>
   );

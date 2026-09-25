@@ -7,6 +7,7 @@ import { ApiException } from "../common/exceptions/api.exception";
 import { ForbiddenActionException, ResourceNotFoundException } from "../common/exceptions/common-exceptions";
 import { ACTIVE_REGISTRATION_STATUSES as ACTIVE_STATUSES } from "../common/constants/registration-active-statuses";
 import { NotificationsService } from "../notifications/notifications.service";
+import { AnalyticsService } from "../analytics/analytics.service";
 import { EventAccessService } from "../organizer/event-access.service";
 import type { CreateRegistrationDto, RegistrationAnswerDto } from "./dto/create-registration.dto";
 import type { ListRegistrationsDto } from "./dto/list-registrations.dto";
@@ -23,6 +24,7 @@ export class RegistrationsService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly eventAccess: EventAccessService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   /**
@@ -103,6 +105,7 @@ export class RegistrationsService {
     // Fired after the transaction commits, not inside it — a mid-transaction
     // notification write uses a separate connection and wouldn't roll back
     // if the transaction later failed.
+    this.analytics.record({ eventId, userId, action: "REGISTERED" });
     const event = await this.prisma.event.findUnique({ where: { id: eventId }, select: { ownerId: true, title: true } });
     if (event) {
       await this.notifications.create({
@@ -137,6 +140,7 @@ export class RegistrationsService {
       return { updated, promoted };
     });
 
+    if (updated.status === "CANCELLED") this.analytics.record({ eventId: updated.eventId, userId, action: "CANCELLED" });
     if (promoted) await this.notifyWaitlistPromoted(promoted);
     return updated;
   }
@@ -208,6 +212,7 @@ export class RegistrationsService {
       where: { id: registrationId },
       data: { status: "PAYMENT_PENDING", paymentClickedAt: new Date() },
     });
+    this.analytics.record({ eventId: registration.eventId, userId, action: "PAYMENT_LINK_CLICK" });
     // Notifies the organizer a payment is awaiting their confirmation, not the payer.
     await this.notifications.create({
       userId: registration.event.ownerId,
