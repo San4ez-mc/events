@@ -287,13 +287,15 @@ export class EventsService {
       });
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const published = await this.prisma.$transaction(async (tx) => {
       await this.creditsService.debitForPublication(tx, userId, eventId);
       return tx.event.update({
         where: { id: eventId },
         data: { status: "PUBLISHED", publishedAt: new Date() },
       });
     });
+    void this.notifications.notifySubscribersOfNewEvent(eventId).catch(() => undefined);
+    return published;
   }
 
   /**
@@ -362,6 +364,7 @@ export class EventsService {
       return published;
     });
 
+    void this.notifications.notifySubscribersOfNewEvent(eventId).catch(() => undefined);
     await this.notifications.create({
       userId: event.ownerId,
       type: "EVENT_CHANGED",

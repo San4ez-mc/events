@@ -10,6 +10,7 @@ import { TokenService } from "../auth/token.service";
 import { UsersService } from "./users.service";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { UpdateUserPreferencesDto } from "./dto/update-user-preferences.dto";
+import { RateLimit } from "../common/throttle";
 
 @ApiTags("users")
 @Controller("users")
@@ -29,6 +30,7 @@ export class UsersController {
     return this.usersService.updateProfile(user.id, dto);
   }
 
+  @RateLimit(10)
   @Post("me/avatar")
   @ApiConsumes("multipart/form-data")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 5 * 1024 * 1024 } }))

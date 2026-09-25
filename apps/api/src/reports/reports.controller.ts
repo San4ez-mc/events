@@ -4,6 +4,7 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user";
 import { ReportsService } from "./reports.service";
 import { CreateReportDto } from "./dto/create-report.dto";
+import { RateLimit } from "../common/throttle";
 
 /** The user-facing half of §39 — filing a report. Resolving one is `/admin/reports` (AdminReportsController). */
 @ApiTags("reports")
@@ -11,6 +12,7 @@ import { CreateReportDto } from "./dto/create-report.dto";
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
+  @RateLimit(10)
   @Post()
   create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateReportDto) {
     return this.reportsService.create(user.id, dto);

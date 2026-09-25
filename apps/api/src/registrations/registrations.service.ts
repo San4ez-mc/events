@@ -116,6 +116,7 @@ export class RegistrationsService {
         payloadJson: { eventId, registrationId: registration.id },
       });
     }
+    void this.notifications.notifyFriendsOfRegistration(userId, eventId).catch(() => undefined);
 
     return registration;
   }

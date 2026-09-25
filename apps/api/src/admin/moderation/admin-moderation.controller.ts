@@ -1,4 +1,6 @@
-import { Controller, Get, Param, Patch } from "@nestjs/common";
+import { Controller, Get, Param, Patch, Req } from "@nestjs/common";
+import type { Request } from "express";
+import { AuditLogService } from "../../audit/audit-log.service";
 import { ApiTags } from "@nestjs/swagger";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
@@ -10,7 +12,10 @@ import { AdminModerationService } from "./admin-moderation.service";
 @Roles("MODERATOR", "ADMIN", "SUPER_ADMIN")
 @Controller("admin/moderation")
 export class AdminModerationController {
-  constructor(private readonly adminModerationService: AdminModerationService) {}
+  constructor(
+    private readonly adminModerationService: AdminModerationService,
+    private readonly auditLog: AuditLogService,
+  ) {}
 
   @Get()
   listPending() {
@@ -18,12 +23,16 @@ export class AdminModerationController {
   }
 
   @Patch(":id/approve")
-  approve(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
-    return this.adminModerationService.approve(id, user.id);
+  async approve(@CurrentUser() user: AuthenticatedUser, @Req() req: Request, @Param("id") id: string) {
+    const result = await this.adminModerationService.approve(id, user.id);
+    await this.auditLog.record({ actorUserId: user.id, action: "MODERATION_APPROVE", entityType: "ModerationCase", entityId: id, ip: req.ip });
+    return result;
   }
 
   @Patch(":id/reject")
-  reject(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
-    return this.adminModerationService.reject(id, user.id);
+  async reject(@CurrentUser() user: AuthenticatedUser, @Req() req: Request, @Param("id") id: string) {
+    const result = await this.adminModerationService.reject(id, user.id);
+    await this.auditLog.record({ actorUserId: user.id, action: "MODERATION_REJECT", entityType: "ModerationCase", entityId: id, ip: req.ip });
+    return result;
   }
 }

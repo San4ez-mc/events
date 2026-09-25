@@ -46,6 +46,85 @@ export class NotificationsService {
     await this.sendPush(params.userId, notification.id, params.title, params.body, params.payloadJson);
   }
 
+  /**
+   * §32/§34 — tells everyone following the organizer (all their events, or this
+   * event's category) that a new public event is out. Honours the recipient's
+   * `allowSubscriptionNotifications`; never notifies the organizer themself.
+   */
+  async notifySubscribersOfNewEvent(eventId: string): Promise<void> {
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      select: { id: true, slug: true, title: true, ownerId: true, categoryId: true, visibility: true, status: true },
+    });
+    if (!event || event.status !== "PUBLISHED" || event.visibility !== "PUBLIC") return;
+
+    const subscriptions = await this.prisma.subscription.findMany({
+      where: {
+        active: true,
+        organizerId: event.ownerId,
+        userId: { not: event.ownerId },
+        user: { preferences: { is: { allowSubscriptionNotifications: true } } },
+        OR: [
+          { scope: "ORGANIZER_ALL" },
+          ...(event.categoryId ? [{ scope: "ORGANIZER_CATEGORY" as const, categoryId: event.categoryId }] : []),
+        ],
+      },
+      select: { userId: true },
+      distinct: ["userId"],
+    });
+
+    await Promise.all(
+      subscriptions.map((s) =>
+        this.create({
+          userId: s.userId,
+          type: "ORGANIZER_NEW_EVENT",
+          title: "New event",
+          body: `An organizer you follow published "${event.title}".`,
+          payloadJson: { eventId: event.id, slug: event.slug },
+        }).catch(() => undefined),
+      ),
+    );
+  }
+
+  /**
+   * §34 — "your friend is going". Only when the registrant opted in to being
+   * shown as a participant (privacy), and only to accepted friends who allow it.
+   */
+  async notifyFriendsOfRegistration(userId: string, eventId: string): Promise<void> {
+    const [registration, event, user] = await Promise.all([
+      this.prisma.registration.findUnique({ where: { eventId_userId: { eventId, userId } }, select: { showAsParticipant: true, status: true } }),
+      this.prisma.event.findUnique({ where: { id: eventId }, select: { id: true, slug: true, title: true, status: true, visibility: true } }),
+      this.prisma.user.findUnique({ where: { id: userId }, select: { name: true, nickname: true } }),
+    ]);
+    if (!registration?.showAsParticipant || !["REGISTERED", "CONFIRMED", "PAYMENT_PENDING"].includes(registration.status)) return;
+    if (!event || event.status !== "PUBLISHED" || event.visibility !== "PUBLIC") return;
+
+    const friendships = await this.prisma.friendship.findMany({
+      where: { status: "ACCEPTED", OR: [{ requesterId: userId }, { addresseeId: userId }] },
+      select: { requesterId: true, addresseeId: true },
+    });
+    const friendIds = friendships.map((f) => (f.requesterId === userId ? f.addresseeId : f.requesterId));
+    if (friendIds.length === 0) return;
+
+    const recipients = await this.prisma.userPreferences.findMany({
+      where: { userId: { in: friendIds }, allowFriendActivityNotifications: true },
+      select: { userId: true },
+    });
+    const who = user?.name ?? user?.nickname ?? "A friend";
+
+    await Promise.all(
+      recipients.map((r) =>
+        this.create({
+          userId: r.userId,
+          type: "FRIEND_EVENT_REGISTERED",
+          title: "Friend is going",
+          body: `${who} is going to "${event.title}".`,
+          payloadJson: { eventId: event.id, slug: event.slug, friendId: userId },
+        }).catch(() => undefined),
+      ),
+    );
+  }
+
   /** UX §7/preferences-style opt-out (`allowPush`) is checked here, not by callers. */
   private async sendPush(
     userId: string,

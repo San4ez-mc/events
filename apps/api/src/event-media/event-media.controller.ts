@@ -19,12 +19,14 @@ import { DEFAULT_MEDIA_LIMITS } from "@kiro/config";
 import { EventMediaService } from "./event-media.service";
 import { ReorderMediaDto } from "./dto/reorder-media.dto";
 import { UpdateFocalPointDto } from "./dto/update-focal-point.dto";
+import { RateLimit } from "../common/throttle";
 
 @ApiTags("event-media")
 @Controller("events/:eventId/media")
 export class EventMediaController {
   constructor(private readonly eventMediaService: EventMediaService) {}
 
+  @RateLimit(40)
   @Post()
   @ApiConsumes("multipart/form-data")
   @UseInterceptors(

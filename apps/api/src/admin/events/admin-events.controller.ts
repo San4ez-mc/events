@@ -1,4 +1,8 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Query, Req } from "@nestjs/common";
+import type { Request } from "express";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
+import type { AuthenticatedUser } from "../../auth/types/authenticated-user";
+import { AuditLogService } from "../../audit/audit-log.service";
 import { ApiTags } from "@nestjs/swagger";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { EventsService } from "../../events/events.service";
@@ -15,6 +19,7 @@ export class AdminEventsController {
   constructor(
     private readonly adminEventsService: AdminEventsService,
     private readonly eventsService: EventsService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   @Get()
@@ -28,12 +33,26 @@ export class AdminEventsController {
   }
 
   @Patch(":id")
-  update(@Param("id") id: string, @Body() dto: UpdateEventDto) {
-    return this.eventsService.adminUpdate(id, dto);
+  async update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Body() dto: UpdateEventDto,
+  ) {
+    const updated = await this.eventsService.adminUpdate(id, dto);
+    await this.auditLog.record({ actorUserId: user.id, action: "EVENT_ADMIN_UPDATE", entityType: "Event", entityId: id, after: dto, ip: req.ip });
+    return updated;
   }
 
   @Post(":id/cancel")
-  cancel(@Param("id") id: string, @Body() dto: AdminCancelEventDto) {
-    return this.eventsService.adminCancel(id, dto.reason);
+  async cancel(
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Body() dto: AdminCancelEventDto,
+  ) {
+    const cancelled = await this.eventsService.adminCancel(id, dto.reason);
+    await this.auditLog.record({ actorUserId: user.id, action: "EVENT_ADMIN_CANCEL", entityType: "Event", entityId: id, after: { reason: dto.reason }, ip: req.ip });
+    return cancelled;
   }
 }

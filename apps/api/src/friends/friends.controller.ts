@@ -5,6 +5,7 @@ import type { AuthenticatedUser } from "../auth/types/authenticated-user";
 import { FriendsService } from "./friends.service";
 import { SendFriendRequestDto } from "./dto/send-friend-request.dto";
 import { BlockUserDto } from "./dto/block-user.dto";
+import { RateLimit } from "../common/throttle";
 
 @ApiTags("friends")
 @Controller("friends")
@@ -26,6 +27,7 @@ export class FriendsController {
     return this.friendsService.listOutgoingRequests(user.id);
   }
 
+  @RateLimit(30)
   @Post("requests")
   sendRequest(@CurrentUser() user: AuthenticatedUser, @Body() dto: SendFriendRequestDto) {
     return this.friendsService.sendRequest(user.id, dto.addresseeId);

@@ -1,4 +1,5 @@
 import { Controller, Get, Query } from "@nestjs/common";
+import { RateLimit } from "../common/throttle";
 import { ApiTags } from "@nestjs/swagger";
 import { Public } from "../common/decorators/public.decorator";
 import { SearchService } from "./search.service";
@@ -11,6 +12,7 @@ export class SearchController {
   constructor(private readonly searchService: SearchService) {}
 
   @Public()
+  @RateLimit(60)
   @Get()
   search(@Query() query: SearchQueryDto) {
     return this.searchService.search(query);

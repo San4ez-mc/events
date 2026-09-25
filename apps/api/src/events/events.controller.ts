@@ -10,6 +10,7 @@ import { CreateEventDto } from "./dto/create-event.dto";
 import { UpdateEventDto } from "./dto/update-event.dto";
 import { ListMyEventsDto } from "./dto/list-my-events.dto";
 import { CancelEventDto } from "./dto/cancel-event.dto";
+import { RateLimit } from "../common/throttle";
 
 @ApiTags("events")
 @Controller("events")
@@ -19,6 +20,7 @@ export class EventsController {
     private readonly tokenService: TokenService,
   ) {}
 
+  @RateLimit(20)
   @Post()
   create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateEventDto) {
     return this.eventsService.create(user.id, dto);
@@ -43,6 +45,7 @@ export class EventsController {
     return this.eventsService.update(id, user.id, dto);
   }
 
+  @RateLimit(20)
   @Post(":id/publish")
   publish(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
     return this.eventsService.publish(id, user.id);

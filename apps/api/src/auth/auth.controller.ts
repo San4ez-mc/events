@@ -25,6 +25,7 @@ import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { VerifyEmailDto } from "./dto/verify-email.dto";
 import type { AuthenticatedUser } from "./types/authenticated-user";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+import { RateLimit } from "../common/throttle";
 
 const REFRESH_COOKIE_NAME = "kiro_refresh_token";
 /** Web clients identify themselves so we know to use the httpOnly cookie flow (§9). */
@@ -39,6 +40,7 @@ export class AuthController {
   ) {}
 
   @Public()
+  @RateLimit(10)
   @Post("register")
   async register(
     @Body() dto: RegisterDto,
@@ -51,6 +53,7 @@ export class AuthController {
 
   @Public()
   @HttpCode(HttpStatus.OK)
+  @RateLimit(20)
   @Post("google")
   async google(
     @Body() dto: GoogleLoginDto,
@@ -63,6 +66,7 @@ export class AuthController {
 
   @Public()
   @HttpCode(HttpStatus.OK)
+  @RateLimit(10)
   @Post("login")
   async login(
     @Body() dto: LoginDto,
@@ -111,6 +115,7 @@ export class AuthController {
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RateLimit(3)
   @Post("resend-verification")
   async resendVerification(@CurrentUser() user: AuthenticatedUser) {
     await this.authService.resendVerificationEmail(user.id);
@@ -118,6 +123,7 @@ export class AuthController {
 
   @Public()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RateLimit(5)
   @Post("forgot-password")
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     await this.authService.forgotPassword(dto.email);
@@ -125,6 +131,7 @@ export class AuthController {
 
   @Public()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RateLimit(10)
   @Post("reset-password")
   async resetPassword(@Body() dto: ResetPasswordDto) {
     await this.authService.resetPassword(dto.token, dto.password);

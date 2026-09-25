@@ -247,4 +247,48 @@ describe("Spec gaps (e2e)", () => {
       expect(res.body.items.map((e: { id: string }) => e.id)).not.toContain(adults.id);
     });
   });
+  describe("notifications (§34)", () => {
+    const waitFor = async (check: () => Promise<boolean>) => {
+      for (let i = 0; i < 20; i++) {
+        if (await check()) return true;
+        await new Promise((r) => setTimeout(r, 150));
+      }
+      return false;
+    };
+
+    it("notifies followers when an organizer publishes, and opted-in friends when someone registers", async () => {
+      const organizer = await newUser("org");
+      const follower = await newUser("follower");
+      await http().post(`/api/v1/subscriptions/organizers/${organizer.id}`).set("Authorization", `Bearer ${follower.token}`).send({ allEvents: true }).expect(201);
+
+      await http().post("/api/v1/credits/claim-free").set("Authorization", `Bearer ${organizer.token}`);
+      const created = await http().post("/api/v1/events").set("Authorization", `Bearer ${organizer.token}`).send({ title: "Notify Fixture Event" }).expect(201);
+      await http()
+        .patch(`/api/v1/events/${created.body.id}`)
+        .set("Authorization", `Bearer ${organizer.token}`)
+        .send({ description: "A normal description of the event.", categoryId, cityId, addressText: "вул. Хрещатик, 2", startsAt: new Date(Date.now() + 5 * 86_400_000).toISOString() })
+        .expect(200);
+      await http().post(`/api/v1/events/${created.body.id}/publish`).set("Authorization", `Bearer ${organizer.token}`).expect(201);
+
+      const gotNewEvent = await waitFor(async () => {
+        const res = await http().get("/api/v1/notifications").set("Authorization", `Bearer ${follower.token}`);
+        return res.body.items?.some((n: { type: string }) => n.type === "ORGANIZER_NEW_EVENT");
+      });
+      expect(gotNewEvent).toBe(true);
+
+      // follower and attendee are friends; attendee registers as a visible participant
+      const attendee = await newUser("attendee");
+      const request1 = await http().post("/api/v1/friends/requests").set("Authorization", `Bearer ${attendee.token}`).send({ addresseeId: follower.id });
+      expect([200, 201]).toContain(request1.status);
+      const pending = await prisma.friendship.findFirstOrThrow({ where: { requesterId: attendee.id, addresseeId: follower.id } });
+      await prisma.friendship.update({ where: { id: pending.id }, data: { status: "ACCEPTED", respondedAt: new Date() } });
+
+      await register(created.body.id, attendee.token, { showAsParticipant: true }).expect(201);
+      const gotFriend = await waitFor(async () => {
+        const res = await http().get("/api/v1/notifications").set("Authorization", `Bearer ${follower.token}`);
+        return res.body.items?.some((n: { type: string }) => n.type === "FRIEND_EVENT_REGISTERED");
+      });
+      expect(gotFriend).toBe(true);
+    });
+  });
 });
