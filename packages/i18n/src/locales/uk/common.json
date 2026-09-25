@@ -307,7 +307,9 @@
       "totalRevenue": "Дохід",
       "openReports": "Відкритих скарг",
       "pendingModeration": "Очікують модерації",
-      "eventsByStatus": "Події за статусом"
+      "eventsByStatus": "Події за статусом",
+      "funnel30d": "Воронка платформи за 30 днів",
+      "topEvents": "Топ подій за переглядами (перегляди · реєстрації)"
     },
     "moderation": {
       "title": "Черга модерації",

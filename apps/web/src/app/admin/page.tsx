@@ -35,6 +35,31 @@ export default function AdminDashboardPage() {
             <Stat label={t("admin.dashboard.pendingModeration")} value={summary.pendingModeration} />
           </div>
 
+          <h2 className="mb-3 text-sm font-semibold">{t("admin.dashboard.funnel30d")}</h2>
+          <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <Stat label={t("organizerStats.impressions")} value={summary.funnel30d.impressions} />
+            <Stat label={t("organizerStats.views")} value={summary.funnel30d.views} />
+            <Stat label={t("organizerStats.saves")} value={summary.funnel30d.saves} />
+            <Stat label={t("organizerStats.shares")} value={summary.funnel30d.shares} />
+            <Stat label={t("organizerStats.registrations")} value={summary.funnel30d.registrations} />
+          </div>
+
+          {summary.topEvents30d.length > 0 && (
+            <>
+              <h2 className="mb-3 text-sm font-semibold">{t("admin.dashboard.topEvents")}</h2>
+              <ol className="mb-8 flex flex-col gap-2 text-sm">
+                {summary.topEvents30d.map((e) => (
+                  <li key={e.id} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+                    <span className="truncate">{e.title}</span>
+                    <span className="shrink-0 text-muted">
+                      {e.views} · {e.registrations}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </>
+          )}
+
           <h2 className="mb-3 text-sm font-semibold">{t("admin.dashboard.eventsByStatus")}</h2>
           <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
             {Object.entries(summary.eventsByStatus).map(([status, count]) => (

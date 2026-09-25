@@ -307,7 +307,9 @@
       "totalRevenue": "Revenue",
       "openReports": "Open reports",
       "pendingModeration": "Pending moderation",
-      "eventsByStatus": "Events by status"
+      "eventsByStatus": "Events by status",
+      "funnel30d": "Platform funnel, last 30 days",
+      "topEvents": "Top events by views (views · registrations)"
     },
     "moderation": {
       "title": "Moderation queue",

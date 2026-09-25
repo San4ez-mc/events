@@ -58,6 +58,8 @@ export interface AuditLogEntry {
 }
 
 export interface AdminAnalyticsSummary {
+  funnel30d: { impressions: number; views: number; shares: number; saves: number; registrations: number };
+  topEvents30d: { id: string; title: string; slug: string | null; views: number; registrations: number }[];
   totalUsers: number;
   totalOrganizers: number;
   eventsByStatus: Record<string, number>;
