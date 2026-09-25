@@ -11,6 +11,7 @@ import { FriendsService } from "../friends/friends.service";
 import { AuditLogService } from "../audit/audit-log.service";
 import { StorageService } from "../storage/storage.service";
 import type { UpdateProfileDto } from "./dto/update-profile.dto";
+import type { SetSocialLinksDto } from "./dto/set-social-links.dto";
 import type { UpdateUserPreferencesDto } from "./dto/update-user-preferences.dto";
 import type { AdminListUsersDto } from "./dto/admin-list-users.dto";
 
@@ -76,6 +77,14 @@ export class UsersService {
     const { url } = await this.storage.putObject(`avatars/${userId}/${Date.now()}.jpg`, buffer, "image/jpeg");
     await this.prisma.user.update({ where: { id: userId }, data: { avatarUrl: url } });
     return { avatarUrl: url };
+  }
+
+  async setSocialLinks(userId: string, dto: SetSocialLinksDto) {
+    await this.prisma.$transaction([
+      this.prisma.userSocialLink.deleteMany({ where: { userId } }),
+      this.prisma.userSocialLink.createMany({ data: dto.links.map((l) => ({ userId, type: l.type, url: l.url })) }),
+    ]);
+    return this.prisma.userSocialLink.findMany({ where: { userId }, select: { type: true, url: true }, orderBy: { createdAt: "asc" } });
   }
 
   async updatePreferences(userId: string, dto: UpdateUserPreferencesDto) {

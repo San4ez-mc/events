@@ -10,6 +10,17 @@ import { getAccessToken } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 
+type SocialType =
+  "INSTAGRAM" | "TELEGRAM" | "FACEBOOK" | "TIKTOK" | "WEBSITE" | "OTHER";
+const SOCIAL_TYPES: SocialType[] = [
+  "INSTAGRAM",
+  "TELEGRAM",
+  "FACEBOOK",
+  "TIKTOK",
+  "WEBSITE",
+  "OTHER",
+];
+
 interface Prefs {
   allowPush: boolean;
   allowEmail: boolean;
@@ -31,6 +42,7 @@ interface Me {
   avatarUrl: string | null;
   locale: "uk" | "en";
   preferences: Prefs | null;
+  socialLinks?: { type: SocialType; url: string }[];
 }
 
 const TOGGLES: { key: keyof Prefs; labelKey: string }[] = [
@@ -134,7 +146,16 @@ export default function ProfilePage() {
             }),
           })
         : null;
-      setStatus(profile.ok && (!prefs || prefs.ok) ? "saved" : "failed");
+      const links = await fetch("/api/v1/users/me/social-links", {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({
+          links: (me.socialLinks ?? []).filter((l) => l.url.trim()),
+        }),
+      });
+      setStatus(
+        profile.ok && links.ok && (!prefs || prefs.ok) ? "saved" : "failed",
+      );
     } catch {
       setStatus("failed");
     } finally {
@@ -268,6 +289,78 @@ export default function ProfilePage() {
           <option value="en">English</option>
         </select>
       </div>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-semibold">{t("profile.socialLinks")}</h2>
+        {(me.socialLinks ?? []).map((link, i) => (
+          <div key={i} className="flex gap-2">
+            <select
+              value={link.type}
+              onChange={(e) =>
+                patch({
+                  socialLinks: (me.socialLinks ?? []).map((l, idx) =>
+                    idx === i
+                      ? { ...l, type: e.target.value as SocialType }
+                      : l,
+                  ),
+                })
+              }
+              aria-label={t("profile.socialType")}
+              className="rounded-md border border-border bg-background px-2 py-2 text-sm"
+            >
+              {SOCIAL_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+            <input
+              type="url"
+              value={link.url}
+              placeholder="https://"
+              onChange={(e) =>
+                patch({
+                  socialLinks: (me.socialLinks ?? []).map((l, idx) =>
+                    idx === i ? { ...l, url: e.target.value } : l,
+                  ),
+                })
+              }
+              aria-label={t("profile.socialUrl")}
+              className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+            />
+            <button
+              type="button"
+              onClick={() =>
+                patch({
+                  socialLinks: (me.socialLinks ?? []).filter(
+                    (_, idx) => idx !== i,
+                  ),
+                })
+              }
+              aria-label={t("common.delete")}
+              className="rounded-md border border-border px-3 hover:bg-surface"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        {(me.socialLinks ?? []).length < 8 && (
+          <button
+            type="button"
+            onClick={() =>
+              patch({
+                socialLinks: [
+                  ...(me.socialLinks ?? []),
+                  { type: "INSTAGRAM", url: "" },
+                ],
+              })
+            }
+            className="min-h-10 rounded-md border border-dashed border-border text-sm font-medium hover:bg-surface"
+          >
+            + {t("profile.addSocialLink")}
+          </button>
+        )}
+      </section>
 
       {me.preferences && (
         <fieldset className="flex flex-col gap-3 rounded-2xl border border-border p-4">

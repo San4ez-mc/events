@@ -325,7 +325,11 @@
     "hideSocialLinks": "Hide social links on my profile",
     "hideUpcomingEvents": "Hide upcoming events on my profile",
     "hideAttendanceHistory": "Hide attendance history",
-    "viewPublic": "How others see it"
+    "viewPublic": "How others see it",
+    "socialLinks": "Social links",
+    "socialType": "Type",
+    "socialUrl": "Link",
+    "addSocialLink": "Add a link"
   },
   "admin": {
     "accessDenied": "You don't have access to the admin panel",
