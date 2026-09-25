@@ -10,14 +10,15 @@
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "next": "16.3.5",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "server-only": "^0.0.1",
     "@kiro/api-client": "workspace:*",
     "@kiro/i18n": "workspace:*",
     "@kiro/schemas": "workspace:*",
-    "@kiro/types": "workspace:*"
+    "@kiro/types": "workspace:*",
+    "lucide-react": "^1.47.0",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@kiro/eslint-config": "workspace:*",

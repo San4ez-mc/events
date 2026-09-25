@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarDays, MapPin, Video } from "lucide-react";
 import type { SupportedLocale } from "@kiro/i18n";
 import type { EventCard as EventCardData } from "@/lib/event-types";
 
@@ -22,14 +23,17 @@ export function EventCard({
   const categoryName = event.category ? (locale === "uk" ? event.category.nameUk : event.category.nameEn) : null;
   const cityName = event.city ? (locale === "uk" ? event.city.nameUk : event.city.nameEn) : null;
   const districtName = event.district?.nameUk ?? null;
+  const isFree = event.priceType === "FREE";
+  const place = [cityName, districtName].filter(Boolean).join(", ");
 
   return (
-    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-surface shadow-lg">
+    <div className="relative aspect-[3/4] w-full select-none overflow-hidden rounded-3xl bg-surface shadow-xl ring-1 ring-black/5">
       {cover ? (
         // eslint-disable-next-line @next/next/no-img-element -- external MinIO URLs
         <img
           src={cover.displayUrl}
           alt=""
+          draggable={false}
           className="h-full w-full object-cover"
           style={
             cover.focalX
@@ -38,24 +42,50 @@ export function EventCard({
           }
         />
       ) : (
-        <div className="flex h-full w-full items-center justify-center text-muted">{t("common.empty")}</div>
+        <div className="accent-gradient flex h-full w-full items-center justify-center text-white/80">
+          <CalendarDays className="h-16 w-16" strokeWidth={1.5} />
+        </div>
       )}
 
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-5 pt-16 text-white">
-        <h2 className="text-xl font-bold">{event.title}</h2>
-        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm opacity-90">
-          {event.startsAt && <span>{formatCardDate(event.startsAt, locale, t)}</span>}
-          {event.format === "OFFLINE" && (cityName || districtName) && (
-            <span>{[cityName, districtName].filter(Boolean).join(", ")}</span>
-          )}
-          {event.format === "ONLINE" && <span>{t("events.wizard.formatOnline")}</span>}
-          <span>{event.priceType === "FREE" ? t("common.free") : `${event.price ?? "?"} ${event.currency}`}</span>
-        </div>
-        {categoryName && (
-          <span className="mt-2 inline-block rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium">
+      <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-4">
+        {categoryName ? (
+          <span className="rounded-full bg-black/45 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
             {categoryName}
           </span>
+        ) : (
+          <span />
         )}
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-bold backdrop-blur ${
+            isFree ? "bg-emerald-500/90 text-white" : "bg-white/90 text-neutral-900"
+          }`}
+        >
+          {isFree ? t("common.free") : `${event.price ?? "?"} ${event.currency}`}
+        </span>
+      </div>
+
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/55 to-transparent p-5 pt-24 text-white">
+        <h2 className="text-2xl font-bold leading-tight">{event.title}</h2>
+        <div className="mt-3 flex flex-col gap-1.5 text-sm text-white/90">
+          {event.startsAt && (
+            <span className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 shrink-0 text-white/70" aria-hidden="true" />
+              {formatCardDate(event.startsAt, locale, t)}
+            </span>
+          )}
+          {event.format === "OFFLINE" && place && (
+            <span className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 shrink-0 text-white/70" aria-hidden="true" />
+              {place}
+            </span>
+          )}
+          {event.format === "ONLINE" && (
+            <span className="flex items-center gap-2">
+              <Video className="h-4 w-4 shrink-0 text-white/70" aria-hidden="true" />
+              {t("events.wizard.formatOnline")}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -69,8 +99,10 @@ function formatCardDate(iso: string, locale: SupportedLocale, t: (key: string) =
   tomorrow.setDate(now.getDate() + 1);
   const isTomorrow = date.toDateString() === tomorrow.toDateString();
 
-  const time = date.toLocaleTimeString(locale === "uk" ? "uk-UA" : "en-US", { hour: "2-digit", minute: "2-digit" });
+  const tag = locale === "uk" ? "uk-UA" : "en-US";
+  const time = date.toLocaleTimeString(tag, { hour: "2-digit", minute: "2-digit" });
   if (isSameDay) return `${t("discover.today")} · ${time}`;
   if (isTomorrow) return `${t("discover.tomorrow")} · ${time}`;
-  return date.toLocaleString(locale === "uk" ? "uk-UA" : "en-US", { dateStyle: "medium", timeStyle: "short" });
+  const day = date.toLocaleDateString(tag, { weekday: "short", day: "numeric", month: "long" });
+  return `${day} · ${time}`;
 }
