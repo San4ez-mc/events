@@ -7,6 +7,7 @@ import { MAX_CATEGORY_DEPTH } from "@kiro/config";
 import { AuditLogService } from "../audit/audit-log.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import type { CreateCategoryDto } from "./dto/create-category.dto";
+import type { UpdateCategoryDto } from "../admin/dto/update-category.dto";
 
 @Injectable()
 export class CategoriesService {
@@ -42,6 +43,32 @@ export class CategoriesService {
    * User-created categories (§16, §38) start PENDING — an admin approves,
    * renames, reparents, merges, or hides them (Phase 10 admin endpoints).
    */
+  /** Admin view: every category regardless of status, with who suggested it. */
+  listAllForAdmin() {
+    return this.prisma.category.findMany({
+      orderBy: [{ status: "asc" }, { sortOrder: "asc" }, { nameUk: "asc" }],
+      select: { id: true, parentId: true, slug: true, nameUk: true, nameEn: true, status: true, source: true, createdAt: true },
+    });
+  }
+
+  async adminUpdate(adminId: string, id: string, dto: UpdateCategoryDto) {
+    const before = await this.prisma.category.findUnique({ where: { id } });
+    if (!before) throw new ResourceNotFoundException("Category not found");
+    if (before.status === "MERGED") {
+      throw new ApiException("VALIDATION_ERROR", "A merged category can't be edited", 400);
+    }
+    const updated = await this.prisma.category.update({ where: { id }, data: dto });
+    await this.auditLog.record({
+      actorUserId: adminId,
+      action: dto.status && dto.status !== before.status ? `CATEGORY_${dto.status}` : "CATEGORY_UPDATE",
+      entityType: "Category",
+      entityId: id,
+      before: { nameUk: before.nameUk, nameEn: before.nameEn, status: before.status },
+      after: dto,
+    });
+    return updated;
+  }
+
   async create(userId: string, dto: CreateCategoryDto) {
     if (dto.parentId) {
       const parent = await this.prisma.category.findUnique({ where: { id: dto.parentId } });

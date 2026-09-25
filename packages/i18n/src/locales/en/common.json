@@ -393,7 +393,10 @@
       "title": "Category merge",
       "sourceId": "Source category ID",
       "targetId": "Target category ID",
-      "merge": "Merge"
+      "merge": "Merge",
+      "approve": "Approve",
+      "rename": "Rename",
+      "pending": "Awaiting approval"
     },
     "districts": {
       "title": "District merge",
