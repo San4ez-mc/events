@@ -671,5 +671,15 @@
     "send": "Send",
     "delete": "Delete",
     "participantsOnly": "The chat is available to confirmed participants"
+  },
+  "welcome": {
+    "title": "Welcome to Kiro!",
+    "subtitle": "Tell us what you like and your feed becomes yours. You can change everything later.",
+    "city": "Your city",
+    "districts": "Districts",
+    "interests": "Interests",
+    "freeOnly": "Show free events only",
+    "done": "Done",
+    "skip": "Skip"
   }
 }

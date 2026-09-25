@@ -29,7 +29,7 @@ export default function RegisterPage() {
     setIsSubmitting(true);
     try {
       await register({ email, password, name: name || undefined });
-      router.push("/organizer/events");
+      router.push("/welcome");
     } catch (err) {
       setEmailTaken(
         err instanceof ApiRequestError &&
@@ -105,7 +105,7 @@ export default function RegisterPage() {
         </form>
 
         <GoogleSignInButton
-          onSuccess={() => router.push("/organizer/events")}
+          onSuccess={() => router.push("/welcome")}
         />
 
         <p className="text-sm text-muted">
