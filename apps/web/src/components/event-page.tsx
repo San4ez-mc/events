@@ -11,6 +11,7 @@ import { EventGallery } from "@/components/event-gallery";
 import { EventLocation } from "@/components/event-location";
 import { EventChat } from "@/components/event-chat";
 import { EventViewTracker } from "@/components/event-view-tracker";
+import { EventActions } from "@/components/event-actions";
 
 /**
  * Shared presentational component for the public event page — used by both
@@ -134,7 +135,14 @@ export function EventPage({
         </div>
       )}
 
-      <div className="mb-6">
+      <div className="mb-6 flex flex-col gap-3">
+        {event.status === "PUBLISHED" && (
+          <EventActions
+            eventId={event.id}
+            slug={event.slug}
+            title={event.title}
+          />
+        )}
         <FollowButton eventId={event.id} />
       </div>
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, Image, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { ApiRequestError, useAuth } from "../../src/lib/auth-context";
@@ -24,6 +24,7 @@ export default function EventDetailScreen() {
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [joinWaitlist, setJoinWaitlist] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadEvent = useCallback(async () => {
@@ -31,7 +32,9 @@ export default function EventDetailScreen() {
     const res = await fetch(`${API_URL}/api/v1/events/slug/${slug}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     });
-    setEvent(res.ok ? await res.json() : null);
+    const body = res.ok ? await res.json() : null;
+    setEvent(body);
+    if (body) setSaved(Boolean(body.viewerSaved));
   }, [slug]);
 
   useEffect(() => {
@@ -60,6 +63,42 @@ export default function EventDetailScreen() {
       if (res.ok) setRegistration((await res.json()).registration);
     })();
   }, [authLoading, user, event]);
+
+  async function toggleSave() {
+    const token = getAccessToken();
+    if (!token || !event) {
+      router.push("/login");
+      return;
+    }
+    const next = !saved;
+    setSaved(next);
+    const res = await fetch(`${API_URL}/api/v1/discovery/${event.id}/save`, {
+      method: next ? "POST" : "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => null);
+    if (!res?.ok) setSaved(!next);
+  }
+
+  function reportEvent() {
+    const token = getAccessToken();
+    if (!token || !event) {
+      router.push("/login");
+      return;
+    }
+    const send = async (reason: string) => {
+      const res = await fetch(`${API_URL}/api/v1/reports`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ targetType: "EVENT", targetId: event.id, reason }),
+      }).catch(() => null);
+      Alert.alert(res?.ok ? t("events.actions.reportSent") : t("common.somethingWentWrong"));
+    };
+    const reasons = ["spam", "fraud", "inappropriate", "wrongInfo", "other"] as const;
+    Alert.alert(t("events.actions.report"), undefined, [
+      ...reasons.map((r) => ({ text: t(`events.actions.reasons.${r}`), onPress: () => void send(t(`events.actions.reasons.${r}`)) })),
+      { text: t("common.cancel"), style: "cancel" as const },
+    ]);
+  }
 
   async function submit() {
     const token = getAccessToken();
@@ -153,12 +192,18 @@ export default function EventDetailScreen() {
 
       <View style={styles.titleRow}>
         <Text style={[styles.title, { flex: 1 }]}>{event.title}</Text>
+        <Pressable style={styles.shareButton} onPress={() => void toggleSave()} accessibilityLabel={saved ? t("events.actions.saved") : t("events.actions.save")}>
+          <Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={22} color={saved ? colors.accentFrom : colors.foreground} />
+        </Pressable>
         <Pressable
           style={styles.shareButton}
           onPress={() => { track(event.id, "SHARE"); void Share.share({ message: `${event.title}\n${API_URL}/events/${event.slug}`, url: `${API_URL}/events/${event.slug}` }).catch(() => {}); }}
           accessibilityLabel={t("discover.share")}
         >
           <Ionicons name="share-social-outline" size={22} color={colors.foreground} />
+        </Pressable>
+        <Pressable style={styles.shareButton} onPress={reportEvent} accessibilityLabel={t("events.actions.report")}>
+          <Ionicons name="flag-outline" size={20} color={colors.foreground} />
         </Pressable>
       </View>
 

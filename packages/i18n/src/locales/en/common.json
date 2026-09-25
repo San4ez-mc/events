@@ -159,6 +159,21 @@
       "insufficientCredits": "Not enough credits to publish.",
       "claimFreeCredits": "🎁 Take 5 free publications",
       "buyCredits": "Buy more credits"
+    },
+    "actions": {
+      "save": "Save",
+      "saved": "Saved",
+      "share": "Share",
+      "report": "Report",
+      "linkCopied": "Link copied",
+      "reportSent": "Thanks, your report was received",
+      "reasons": {
+        "spam": "Spam",
+        "fraud": "Fraud",
+        "inappropriate": "Inappropriate content",
+        "wrongInfo": "Wrong information",
+        "other": "Other"
+      }
     }
   },
   "credits": {

@@ -231,6 +231,9 @@ export class EventsService {
       organizer: { ...event.owner, eventsCount: organizerEventsCount, rating: withSocial!.social.organizerRating },
       participants: participantRows.map((r) => ({ id: r.user.id, name: r.user.name ?? r.user.nickname, avatarUrl: r.user.avatarUrl })),
       friendsGoing: await this.getFriendsGoing(event.id, requesterId),
+      viewerSaved: requesterId
+        ? !!(await this.prisma.savedEvent.findUnique({ where: { userId_eventId: { userId: requesterId, eventId: event.id } }, select: { id: true } }))
+        : false,
       reviewSummary: await this.getReviewSummary(event.id),
     };
   }

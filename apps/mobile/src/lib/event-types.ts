@@ -67,6 +67,7 @@ export interface EventDetail extends EventCard {
     sortOrder: number;
   }[];
   reviewSummary: { average: number | null; count: number };
+  viewerSaved?: boolean;
   friendsGoing: { count: number; previews: { id: string; name: string | null; avatarUrl: string | null }[] };
   ownerId: string;
 }
