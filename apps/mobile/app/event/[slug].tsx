@@ -27,6 +27,7 @@ export default function EventDetailScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [following, setFollowing] = useState(false);
+  const [tierId, setTierId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadEvent = useCallback(async () => {
@@ -142,6 +143,7 @@ export default function EventDetailScreen() {
         body: JSON.stringify({
           answers: event.registrationFields.map((f) => ({ fieldId: f.id, value: answers[f.id] })),
           joinWaitlist,
+          priceOptionId: (event.priceOptions?.length ?? 0) > 0 ? (tierId ?? event.priceOptions?.find((o) => !o.soldOut)?.id) : undefined,
         }),
       });
       const body = await res.json();
@@ -339,6 +341,18 @@ export default function EventDetailScreen() {
         </View>
       )}
 
+      {event.priceOptions && event.priceOptions.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t("registration.ticketType")}</Text>
+          {event.priceOptions.map((o) => (
+            <Text key={o.id} style={styles.meta}>
+              {o.name} — {Number(o.price) === 0 ? t("common.free") : `${Number(o.price)} ${event.currency}`}
+              {o.soldOut ? ` (${t("events.page.soldOut")})` : ""}
+            </Text>
+          ))}
+        </View>
+      )}
+
       {event.faqItems && event.faqItems.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("events.page.faq")}</Text>
@@ -397,9 +411,32 @@ export default function EventDetailScreen() {
     if (!user) return <Button title={t("auth.login.title")} onPress={() => router.push("/login")} />;
 
     if (!registration || registration.status === "CANCELLED" || registration.status === "REJECTED") {
+      const tiers = event.priceOptions ?? [];
+      const chosen = tierId ?? tiers.find((o) => !o.soldOut)?.id ?? null;
+      const tierPicker =
+        tiers.length > 0 ? (
+          <View style={{ gap: spacing.sm }}>
+            <Text style={styles.sectionTitle}>{t("registration.ticketType")}</Text>
+            {tiers.map((o) => (
+              <Pressable
+                key={o.id}
+                disabled={o.soldOut}
+                onPress={() => setTierId(o.id)}
+                style={[styles.tier, chosen === o.id && styles.tierOn, o.soldOut && { opacity: 0.5 }]}
+              >
+                <Text style={styles.tierName}>
+                  {o.name}
+                  {o.soldOut ? ` · ${t("events.page.soldOut")}` : ""}
+                </Text>
+                <Text style={styles.tierName}>{Number(o.price) === 0 ? t("common.free") : `${Number(o.price)} ${event.currency}`}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null;
       if (showForm && event.registrationFields.length > 0) {
         return (
           <View style={styles.form}>
+            {tierPicker}
             {event.registrationFields.map((field) => (
               <RegistrationFieldInput
                 key={field.id}
@@ -413,11 +450,15 @@ export default function EventDetailScreen() {
         );
       }
       return (
-        <Button
-          title={joinWaitlist ? t("registration.joinWaitlist") : applyLabel}
-          onPress={() => (event.registrationFields.length > 0 ? setShowForm(true) : void submit())}
-          loading={submitting}
-        />
+        <View style={styles.form}>
+          {tierPicker}
+          <Button
+            title={joinWaitlist ? t("registration.joinWaitlist") : applyLabel}
+            onPress={() => (event.registrationFields.length > 0 ? setShowForm(true) : void submit())}
+            loading={submitting}
+            disabled={tiers.length > 0 && !chosen}
+          />
+        </View>
       );
     }
 
@@ -444,6 +485,9 @@ export default function EventDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  tier: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
+  tierOn: { borderColor: colors.accentFrom, backgroundColor: colors.surface },
+  tierName: { color: colors.foreground, fontSize: 14, fontWeight: "600" },
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl * 2, gap: spacing.md },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },

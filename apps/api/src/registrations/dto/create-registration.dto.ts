@@ -35,4 +35,9 @@ export class CreateRegistrationDto {
   @IsOptional()
   @IsBoolean()
   showAsParticipant?: boolean;
+
+  @ApiPropertyOptional({ description: "Ticket type to buy, required when the event defines several (§24)." })
+  @IsOptional()
+  @IsUUID()
+  priceOptionId?: string;
 }

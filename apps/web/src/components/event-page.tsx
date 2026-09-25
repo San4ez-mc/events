@@ -214,6 +214,36 @@ export function EventPage({
         </section>
       )}
 
+      {event.priceOptions && event.priceOptions.length > 0 && (
+        <section className="mb-8">
+          <h2 className="mb-2 text-sm font-semibold">
+            {t("registration.ticketType")}
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {event.priceOptions.map((tier) => (
+              <li
+                key={tier.id}
+                className="flex items-center justify-between rounded-2xl border border-border px-4 py-3 text-sm"
+              >
+                <span>
+                  {tier.name}
+                  {tier.soldOut && (
+                    <span className="ml-2 text-xs text-danger">
+                      {t("events.page.soldOut")}
+                    </span>
+                  )}
+                </span>
+                <strong>
+                  {Number(tier.price) === 0
+                    ? t("common.free")
+                    : `${Number(tier.price)} ${event.currency}`}
+                </strong>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {event.faqItems && event.faqItems.length > 0 && (
         <section className="mb-8">
           <h2 className="mb-2 text-sm font-semibold">{t("events.page.faq")}</h2>

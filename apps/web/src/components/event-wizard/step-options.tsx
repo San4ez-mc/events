@@ -189,6 +189,86 @@ export function StepOptions({ data, onChange }: StepProps) {
         )}
       </section>
       <section className="flex flex-col gap-3">
+        <h3 className="text-sm font-semibold">{t("events.wizard.tiers")}</h3>
+        <p className="text-xs text-muted">{t("events.wizard.tiersHint")}</p>
+        {data.tiers.map((tier, i) => (
+          <div
+            key={tier.id ?? `t-${i}`}
+            className="flex flex-wrap gap-2 rounded-2xl border border-border p-3"
+          >
+            <input
+              value={tier.name}
+              maxLength={80}
+              onChange={(e) =>
+                onChange({
+                  tiers: data.tiers.map((x, idx) =>
+                    idx === i ? { ...x, name: e.target.value } : x,
+                  ),
+                })
+              }
+              placeholder={t("events.wizard.tierName")}
+              aria-label={t("events.wizard.tierName")}
+              className={`${input} min-w-0 flex-1`}
+            />
+            <input
+              type="number"
+              min={0}
+              value={tier.price}
+              onChange={(e) =>
+                onChange({
+                  tiers: data.tiers.map((x, idx) =>
+                    idx === i ? { ...x, price: e.target.value } : x,
+                  ),
+                })
+              }
+              placeholder={t("events.wizard.tierPrice")}
+              aria-label={t("events.wizard.tierPrice")}
+              className={`${input} w-28`}
+            />
+            <input
+              type="number"
+              min={1}
+              value={tier.capacity}
+              onChange={(e) =>
+                onChange({
+                  tiers: data.tiers.map((x, idx) =>
+                    idx === i ? { ...x, capacity: e.target.value } : x,
+                  ),
+                })
+              }
+              placeholder={t("events.wizard.tierCapacity")}
+              aria-label={t("events.wizard.tierCapacity")}
+              className={`${input} w-28`}
+            />
+            <button
+              type="button"
+              onClick={() =>
+                onChange({ tiers: data.tiers.filter((_, idx) => idx !== i) })
+              }
+              aria-label={t("common.delete")}
+              className="flex h-10 w-10 items-center justify-center rounded-md border border-border hover:bg-surface"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+        {data.tiers.length < 10 && (
+          <button
+            type="button"
+            onClick={() =>
+              onChange({
+                tiers: [...data.tiers, { name: "", price: "", capacity: "" }],
+              })
+            }
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-dashed border-border text-sm font-medium hover:bg-surface"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            {t("events.wizard.addTier")}
+          </button>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold">{t("events.wizard.faq")}</h3>
         <p className="text-xs text-muted">{t("events.wizard.faqHint")}</p>
         {data.faq.map((item, i) => (

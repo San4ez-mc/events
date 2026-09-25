@@ -42,6 +42,7 @@ export interface WizardData {
   paymentUrl: string;
   fields: WizardField[];
   faq: { question: string; answer: string }[];
+  tiers: { id?: string; name: string; price: string; capacity: string }[];
 }
 
 export const EMPTY_WIZARD_DATA: WizardData = {
@@ -70,6 +71,7 @@ export const EMPTY_WIZARD_DATA: WizardData = {
   paymentUrl: "",
   fields: [],
   faq: [],
+  tiers: [],
 };
 
 export interface StepProps {

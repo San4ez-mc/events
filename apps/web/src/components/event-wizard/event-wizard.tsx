@@ -43,6 +43,12 @@ function toWizardData(event: EventDetail): WizardData {
     adultsOnly: (event.ageRestriction ?? 0) >= 18,
     rules: event.rules ?? "",
     paymentUrl: event.paymentUrl ?? "",
+    tiers: (event.priceOptions ?? []).map((o) => ({
+      id: o.id,
+      name: o.name,
+      price: String(Number(o.price)),
+      capacity: o.capacity?.toString() ?? "",
+    })),
     faq: (event.faqItems ?? []).map((f) => ({
       question: f.question,
       answer: f.answer,
@@ -225,6 +231,27 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
         },
       );
       if (!fieldsRes.ok) throw new ApiRequestError(await fieldsRes.json());
+
+      const tiersRes = await fetch(`/api/v1/events/${id}/price-options`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Client-Platform": "web",
+          Authorization: `Bearer ${getAccessToken() ?? ""}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          items: data.tiers
+            .filter((tier) => tier.name.trim() && tier.price !== "")
+            .map((tier) => ({
+              ...(tier.id ? { id: tier.id } : {}),
+              name: tier.name.trim(),
+              price: Number(tier.price),
+              capacity: tier.capacity ? Number(tier.capacity) : undefined,
+            })),
+        }),
+      });
+      if (!tiersRes.ok) throw new ApiRequestError(await tiersRes.json());
 
       const faqRes = await fetch(`/api/v1/events/${id}/faq`, {
         method: "PUT",

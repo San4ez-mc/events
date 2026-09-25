@@ -20,10 +20,16 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
   const { t } = useTranslations();
   const { user, isLoading: authLoading } = useAuth();
 
-  const [registration, setRegistration] = useState<Registration | null | undefined>(undefined);
+  const [registration, setRegistration] = useState<
+    Registration | null | undefined
+  >(undefined);
   const [showForm, setShowForm] = useState(false);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [joinWaitlist, setJoinWaitlist] = useState(false);
+  const tiers = event.priceOptions ?? [];
+  const [tierId, setTierId] = useState<string | null>(null);
+  const selectedTier =
+    tierId ?? tiers.find((tier) => !tier.soldOut)?.id ?? null;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +55,8 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
 
   // Tells sibling blocks (e.g. the exact-location card) to re-fetch what a registered user may see.
   useEffect(() => {
-    if (registration !== undefined) window.dispatchEvent(new Event("kiro:registration-changed"));
+    if (registration !== undefined)
+      window.dispatchEvent(new Event("kiro:registration-changed"));
   }, [registration]);
 
   async function submit() {
@@ -60,10 +67,18 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
     try {
       const res = await fetch(`/api/v1/events/${event.id}/registrations`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
-          answers: event.registrationFields.map((f) => ({ fieldId: f.id, value: answers[f.id] })),
+          answers: event.registrationFields.map((f) => ({
+            fieldId: f.id,
+            value: answers[f.id],
+          })),
           joinWaitlist,
+          priceOptionId:
+            tiers.length > 0 ? (selectedTier ?? undefined) : undefined,
         }),
       });
       const body = await res.json();
@@ -71,10 +86,17 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
       setRegistration(body as Registration);
       setShowForm(false);
     } catch (err) {
-      if (err instanceof ApiRequestError && err.code === "EVENT_CAPACITY_REACHED") {
+      if (
+        err instanceof ApiRequestError &&
+        err.code === "EVENT_CAPACITY_REACHED"
+      ) {
         setJoinWaitlist(true);
       }
-      setError(err instanceof ApiRequestError ? errorMessage(err.code, t) : t("common.somethingWentWrong"));
+      setError(
+        err instanceof ApiRequestError
+          ? errorMessage(err.code, t)
+          : t("common.somethingWentWrong"),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -86,10 +108,13 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
     if (!token) return;
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/v1/registrations/${registration.id}/cancel`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `/api/v1/registrations/${registration.id}/cancel`,
+        {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       if (res.ok) setRegistration(await res.json());
     } finally {
       setSubmitting(false);
@@ -102,17 +127,23 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
     if (!token) return;
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/v1/registrations/${registration.id}/mark-paid`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `/api/v1/registrations/${registration.id}/mark-paid`,
+        {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       if (res.ok) setRegistration(await res.json());
     } finally {
       setSubmitting(false);
     }
   }
 
-  const applyLabel = event.approvalMode === "ORGANIZER_APPROVAL" ? t("registration.apply") : t("registration.register");
+  const applyLabel =
+    event.approvalMode === "ORGANIZER_APPROVAL"
+      ? t("registration.apply")
+      : t("registration.register");
 
   return (
     <div className="fixed inset-x-0 bottom-0 border-t border-border bg-background/95 p-4 backdrop-blur">
@@ -128,12 +159,60 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
     </div>
   );
 
+  /** §24 — ticket type radio list (only when the event sells several). */
+  function tierPicker() {
+    if (tiers.length === 0) return null;
+    return (
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-1 text-sm font-medium">
+          {t("registration.ticketType")}
+        </legend>
+        {tiers.map((tier) => (
+          <label
+            key={tier.id}
+            className={`flex cursor-pointer items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm ${selectedTier === tier.id ? "border-[var(--accent-from)] bg-surface" : "border-border"} ${tier.soldOut ? "opacity-50" : ""}`}
+          >
+            <span className="flex items-center gap-3">
+              <input
+                type="radio"
+                name="tier"
+                checked={selectedTier === tier.id}
+                disabled={tier.soldOut}
+                onChange={() => setTierId(tier.id)}
+                className="accent-[var(--accent-from)]"
+              />
+              {tier.name}
+              {tier.soldOut && (
+                <span className="text-xs text-danger">
+                  {t("events.page.soldOut")}
+                </span>
+              )}
+            </span>
+            <strong>
+              {Number(tier.price) === 0
+                ? t("common.free")
+                : `${Number(tier.price)} ${event.currency}`}
+            </strong>
+          </label>
+        ))}
+      </fieldset>
+    );
+  }
+
   function renderBody() {
     if (event.status === "CANCELLED") {
-      return <p className="text-center text-sm text-danger">{t("registration.eventCancelled")}</p>;
+      return (
+        <p className="text-center text-sm text-danger">
+          {t("registration.eventCancelled")}
+        </p>
+      );
     }
     if (event.status !== "PUBLISHED") {
-      return <p className="text-center text-sm text-muted">{t("registration.registrationClosed")}</p>;
+      return (
+        <p className="text-center text-sm text-muted">
+          {t("registration.registrationClosed")}
+        </p>
+      );
     }
 
     if (authLoading || registration === undefined) {
@@ -147,62 +226,107 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
     if (!user) {
       return (
         <Link href="/login">
-          <Button className="w-full">{t("registration.signInToRegister")}</Button>
+          <Button className="w-full">
+            {t("registration.signInToRegister")}
+          </Button>
         </Link>
       );
     }
 
-    if (!registration || registration.status === "CANCELLED" || registration.status === "REJECTED") {
+    if (
+      !registration ||
+      registration.status === "CANCELLED" ||
+      registration.status === "REJECTED"
+    ) {
       if (showForm && event.registrationFields.length > 0) {
         return (
           <div className="flex flex-col gap-3">
+            {tierPicker()}
             {event.registrationFields.map((field) => (
               <RegistrationFieldInput
                 key={field.id}
                 field={field}
                 value={answers[field.id]}
-                onChange={(value) => setAnswers((a) => ({ ...a, [field.id]: value }))}
+                onChange={(value) =>
+                  setAnswers((a) => ({ ...a, [field.id]: value }))
+                }
               />
             ))}
-            <Button onClick={() => void submit()} loading={submitting} className="w-full">
-              {joinWaitlist ? t("registration.joinWaitlist") : t("registration.submitApplication")}
+            <Button
+              onClick={() => void submit()}
+              loading={submitting}
+              className="w-full"
+            >
+              {joinWaitlist
+                ? t("registration.joinWaitlist")
+                : t("registration.submitApplication")}
             </Button>
           </div>
         );
       }
       return (
-        <Button
-          onClick={() => (event.registrationFields.length > 0 ? setShowForm(true) : void submit())}
-          loading={submitting}
-          className="w-full"
-        >
-          {joinWaitlist ? t("registration.joinWaitlist") : applyLabel}
-        </Button>
+        <div className="flex flex-col gap-3">
+          {tierPicker()}
+          <Button
+            onClick={() =>
+              event.registrationFields.length > 0
+                ? setShowForm(true)
+                : void submit()
+            }
+            loading={submitting}
+            disabled={tiers.length > 0 && !selectedTier}
+            className="w-full"
+          >
+            {joinWaitlist ? t("registration.joinWaitlist") : applyLabel}
+          </Button>
+        </div>
       );
     }
 
     if (registration.status === "PENDING") {
-      return <p className="text-center text-sm text-muted">{t("registration.pending")}</p>;
+      return (
+        <p className="text-center text-sm text-muted">
+          {t("registration.pending")}
+        </p>
+      );
     }
     if (registration.status === "WAITLISTED") {
-      return <p className="text-center text-sm text-muted">{t("registration.waitlisted")}</p>;
+      return (
+        <p className="text-center text-sm text-muted">
+          {t("registration.waitlisted")}
+        </p>
+      );
     }
     if (registration.status === "PAYMENT_PENDING") {
-      return <p className="text-center text-sm text-muted">{t("registration.paymentPendingConfirmation")}</p>;
+      return (
+        <p className="text-center text-sm text-muted">
+          {t("registration.paymentPendingConfirmation")}
+        </p>
+      );
     }
 
     if (registration.status === "REGISTERED" && event.priceType === "PAID") {
       return (
         <div className="flex flex-col gap-2">
-          <p className="text-center text-sm text-muted">{t("registration.registered")}</p>
+          <p className="text-center text-sm text-muted">
+            {t("registration.registered")}
+          </p>
           {event.paymentUrl && (
-            <a href={event.paymentUrl} target="_blank" rel="noopener noreferrer">
+            <a
+              href={event.paymentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Button variant="secondary" className="w-full">
                 {t("registration.payNow")}
               </Button>
             </a>
           )}
-          <Button onClick={() => void markPaid()} loading={submitting} className="w-full">
+          <Button
+            onClick={() => void markPaid()}
+            loading={submitting}
+            className="w-full"
+          >
             {t("registration.markPaid")}
           </Button>
         </div>
@@ -212,9 +336,16 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
     return (
       <div className="flex flex-col gap-2">
         <p className="text-center text-sm text-muted">
-          {registration.status === "CONFIRMED" ? t("registration.confirmed") : t("registration.registered")}
+          {registration.status === "CONFIRMED"
+            ? t("registration.confirmed")
+            : t("registration.registered")}
         </p>
-        <Button variant="secondary" onClick={() => void cancel()} loading={submitting} className="w-full">
+        <Button
+          variant="secondary"
+          onClick={() => void cancel()}
+          loading={submitting}
+          className="w-full"
+        >
           {t("registration.cancelRegistration")}
         </Button>
       </div>
@@ -223,7 +354,9 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
 }
 
 function errorMessage(code: string, t: (key: string) => string): string {
-  if (code === "EVENT_CAPACITY_REACHED") return t("registration.capacityReached");
-  if (code === "REGISTRATION_CLOSED") return t("registration.registrationClosed");
+  if (code === "EVENT_CAPACITY_REACHED")
+    return t("registration.capacityReached");
+  if (code === "REGISTRATION_CLOSED")
+    return t("registration.registrationClosed");
   return t(`errors.${code}`);
 }

@@ -317,4 +317,27 @@ describe("Spec gaps (e2e)", () => {
       expect(cleared.body.faqItems).toHaveLength(0);
     });
   });
+  describe("ticket types (§24)", () => {
+    it("requires a tier when the event has several, enforces per-tier capacity and shows sold-out on the page", async () => {
+      const { organizer, id, slug } = await publishedEvent();
+      const put = await http()
+        .put(`/api/v1/events/${id}/price-options`)
+        .set("Authorization", `Bearer ${organizer.token}`)
+        .send({ items: [{ name: "Standard", price: 100 }, { name: "VIP", price: 500, capacity: 1 }] })
+        .expect(200);
+      const [standard, vip] = put.body as { id: string }[];
+
+      const first = await newUser("t1");
+      const second = await newUser("t2");
+      await register(id, first.token).expect(400); // no tier chosen
+      await register(id, first.token, { priceOptionId: vip!.id }).expect(201);
+      await register(id, second.token, { priceOptionId: vip!.id }).expect(409); // VIP sold out
+      await register(id, second.token, { priceOptionId: standard!.id }).expect(201);
+
+      const page = await http().get(`/api/v1/events/slug/${slug}`).expect(200);
+      const tiers = page.body.priceOptions as { name: string; soldOut: boolean; taken: number }[];
+      expect(tiers.find((t) => t.name === "VIP")).toMatchObject({ soldOut: true, taken: 1 });
+      expect(tiers.find((t) => t.name === "Standard")).toMatchObject({ soldOut: false, taken: 1 });
+    });
+  });
 });

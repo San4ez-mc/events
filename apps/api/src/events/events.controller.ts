@@ -11,6 +11,7 @@ import { UpdateEventDto } from "./dto/update-event.dto";
 import { ListMyEventsDto } from "./dto/list-my-events.dto";
 import { CancelEventDto } from "./dto/cancel-event.dto";
 import { SetFaqDto } from "./dto/set-faq.dto";
+import { SetPriceOptionsDto } from "./dto/set-price-options.dto";
 import { RateLimit } from "../common/throttle";
 
 @ApiTags("events")
@@ -44,6 +45,11 @@ export class EventsController {
     @Body() dto: UpdateEventDto,
   ) {
     return this.eventsService.update(id, user.id, dto);
+  }
+
+  @Put(":id/price-options")
+  setPriceOptions(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() dto: SetPriceOptionsDto) {
+    return this.eventsService.setPriceOptions(id, user.id, dto);
   }
 
   @Put(":id/faq")

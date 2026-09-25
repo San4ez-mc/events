@@ -16,6 +16,7 @@ import type { SetRegistrationFieldsDto } from "./dto/set-registration-fields.dto
 
 const REGISTRATION_INCLUDE = {
   answers: { include: { field: true } },
+  priceOption: { select: { id: true, name: true, price: true } },
 } satisfies Prisma.RegistrationInclude;
 
 @Injectable()
@@ -73,6 +74,21 @@ export class RegistrationsService {
 
       this.validateAnswers(event.registrationFields, dto.answers ?? []);
 
+      // §24 — when the event sells several ticket types, one must be picked and still have room.
+      const tiers = await tx.eventPriceOption.findMany({ where: { eventId } });
+      let priceOptionId: string | null = null;
+      if (tiers.length > 0) {
+        const tier = tiers.find((t) => t.id === dto.priceOptionId);
+        if (!tier) throw new ApiException("VALIDATION_ERROR", "Choose a ticket type", 400, { priceOptionId: ["Required"] });
+        if (tier.capacity != null) {
+          const taken = await tx.registration.count({
+            where: { priceOptionId: tier.id, status: { in: [...ACTIVE_STATUSES] }, ...(existing ? { id: { not: existing.id } } : {}) },
+          });
+          if (taken >= tier.capacity) throw new ApiException("EVENT_CAPACITY_REACHED", "This ticket type is sold out", 409);
+        }
+        priceOptionId = tier.id;
+      }
+
       const activeCount = await tx.registration.count({
         where: { eventId, status: { in: [...ACTIVE_STATUSES] } },
       });
@@ -93,6 +109,7 @@ export class RegistrationsService {
         userId,
         status,
         showAsParticipant: dto.showAsParticipant ?? false,
+        priceOptionId,
       };
 
       const registration = existing

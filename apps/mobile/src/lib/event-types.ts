@@ -68,6 +68,7 @@ export interface EventDetail extends EventCard {
   }[];
   reviewSummary: { average: number | null; count: number };
   viewerSaved?: boolean;
+  priceOptions?: { id: string; name: string; price: string; capacity: number | null; taken: number; soldOut: boolean }[];
   faqItems?: { id: string; question: string; answer: string }[];
   friendsGoing: { count: number; previews: { id: string; name: string | null; avatarUrl: string | null }[] };
   ownerId: string;

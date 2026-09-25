@@ -191,7 +191,13 @@
       "faqHint": "Answers to what participants usually ask.",
       "faqQuestion": "Question",
       "faqAnswer": "Answer",
-      "addFaq": "Add a Q&A"
+      "addFaq": "Add a Q&A",
+      "tiers": "Ticket types",
+      "tiersHint": "E.g. Standard, VIP, Student. When set, participants pick one while registering.",
+      "tierName": "Name",
+      "tierPrice": "Price",
+      "tierCapacity": "Seats",
+      "addTier": "Add a ticket type"
     },
     "actions": {
       "save": "Save",
@@ -285,7 +291,8 @@
     "joinWaitlist": "Join the waitlist",
     "submitApplication": "Submit application",
     "errorSubmitting": "Couldn't register",
-    "eventCancelled": "This event was cancelled by the organizer"
+    "eventCancelled": "This event was cancelled by the organizer",
+    "ticketType": "Ticket type"
   },
   "notifications": {
     "markAllRead": "Mark all as read"

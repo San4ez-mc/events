@@ -19,6 +19,7 @@ import { SocialProofService } from "../common/social-proof/social-proof.service"
 import type { CreateEventDto } from "./dto/create-event.dto";
 import type { UpdateEventDto } from "./dto/update-event.dto";
 import type { SetFaqDto } from "./dto/set-faq.dto";
+import type { SetPriceOptionsDto } from "./dto/set-price-options.dto";
 import type { ListMyEventsDto } from "./dto/list-my-events.dto";
 
 /** Changing any of these on an already-published event requires explicit confirmation (§78). */
@@ -150,6 +151,25 @@ export class EventsService {
     return this.prisma.eventFaqItem.findMany({ where: { eventId }, orderBy: { sortOrder: "asc" }, select: { id: true, question: true, answer: true } });
   }
 
+  /** §24 — replaces the ticket types; existing tiers (by id) are updated in place so registrations stay linked. */
+  async setPriceOptions(eventId: string, userId: string, dto: SetPriceOptionsDto) {
+    await this.eventAccess.assertPermission(eventId, userId, "EDIT_EVENT");
+    const keepIds = dto.items.filter((i) => i.id).map((i) => i.id!);
+    const owned = await this.prisma.eventPriceOption.findMany({ where: { eventId, id: { in: keepIds } }, select: { id: true } });
+    if (owned.length !== keepIds.length) {
+      throw new ApiException("VALIDATION_ERROR", "Unknown ticket type", 400);
+    }
+    await this.prisma.$transaction([
+      this.prisma.eventPriceOption.deleteMany({ where: { eventId, id: { notIn: keepIds } } }),
+      ...dto.items.map((item, sortOrder) =>
+        item.id
+          ? this.prisma.eventPriceOption.update({ where: { id: item.id }, data: { name: item.name.trim(), price: item.price, capacity: item.capacity ?? null, sortOrder } })
+          : this.prisma.eventPriceOption.create({ data: { eventId, name: item.name.trim(), price: item.price, capacity: item.capacity ?? null, sortOrder } }),
+      ),
+    ]);
+    return this.prisma.eventPriceOption.findMany({ where: { eventId }, orderBy: { sortOrder: "asc" } });
+  }
+
   async findMine(userId: string, params: ListMyEventsDto): Promise<CursorPage<unknown>> {
     const limit = Math.min(params.limit ?? PAGINATION.defaultLimit, PAGINATION.maxLimit);
 
@@ -184,6 +204,16 @@ export class EventsService {
         district: true,
         registrationFields: { orderBy: { sortOrder: "asc" } },
         faqItems: { orderBy: { sortOrder: "asc" }, select: { id: true, question: true, answer: true } },
+        priceOptions: {
+          orderBy: { sortOrder: "asc" },
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            capacity: true,
+            _count: { select: { registrations: { where: { status: { in: ["REGISTERED", "PAYMENT_PENDING", "CONFIRMED", "PENDING"] } } } } },
+          },
+        },
       },
     });
   }
@@ -207,6 +237,16 @@ export class EventsService {
         district: true,
         registrationFields: { orderBy: { sortOrder: "asc" } },
         faqItems: { orderBy: { sortOrder: "asc" }, select: { id: true, question: true, answer: true } },
+        priceOptions: {
+          orderBy: { sortOrder: "asc" },
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            capacity: true,
+            _count: { select: { registrations: { where: { status: { in: ["REGISTERED", "PAYMENT_PENDING", "CONFIRMED", "PENDING"] } } } } },
+          },
+        },
         owner: { select: { id: true, name: true, nickname: true, avatarUrl: true, bio: true } },
       },
     });
@@ -244,6 +284,11 @@ export class EventsService {
       ...locationFields,
       addressLocked: !canSeeExactLocation && (event.format === "OFFLINE" || event.format === "ONLINE"),
       organizer: { ...event.owner, eventsCount: organizerEventsCount, rating: withSocial!.social.organizerRating },
+      priceOptions: (event.priceOptions ?? []).map(({ _count, ...option }) => ({
+        ...option,
+        taken: _count.registrations,
+        soldOut: option.capacity != null && _count.registrations >= option.capacity,
+      })),
       participants: participantRows.map((r) => ({ id: r.user.id, name: r.user.name ?? r.user.nickname, avatarUrl: r.user.avatarUrl })),
       friendsGoing: await this.getFriendsGoing(event.id, requesterId),
       viewerSaved: requesterId

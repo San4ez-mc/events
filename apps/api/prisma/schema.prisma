@@ -578,6 +578,7 @@ model Event {
   savedBy            SavedEvent[]
   registrationFields RegistrationField[]
   faqItems           EventFaqItem[]
+  priceOptions       EventPriceOption[]
   registrations      Registration[]
   subscriptions      Subscription[]
   privateNotes       PrivateUserNote[]
@@ -898,6 +899,10 @@ model Registration {
   updatedAt DateTime @updatedAt
 
   answers RegistrationAnswer[]
+
+  /// §24 — the ticket type the registrant chose, when the event defines several.
+  priceOptionId String?           @db.Uuid
+  priceOption   EventPriceOption? @relation(fields: [priceOptionId], references: [id], onDelete: SetNull)
 
   @@unique([eventId, userId])
   @@index([eventId, status])
@@ -1368,4 +1373,24 @@ model EventFaqItem {
 
   @@index([eventId, sortOrder])
   @@map("event_faq_items")
+}
+
+/// §24 — several ticket types / price tiers for one event (e.g. Standard, VIP, Student).
+model EventPriceOption {
+  id      String @id @default(uuid()) @db.Uuid
+  eventId String @db.Uuid
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  name      String
+  price     Decimal @db.Decimal(10, 2)
+  /// Per-tier seat limit; null = only the event's overall capacity applies.
+  capacity  Int?
+  sortOrder Int     @default(0)
+
+  registrations Registration[]
+
+  createdAt DateTime @default(now())
+
+  @@index([eventId, sortOrder])
+  @@map("event_price_options")
 }
