@@ -52,3 +52,6 @@ android/
 
 # misc
 .DS_Store
+
+# local credentials notes (never commit)
+google clients.txt

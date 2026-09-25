@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsIn, IsOptional, IsString, IsUrl, MaxLength, MinLength } from "class-validator";
+import { IsIn, IsOptional, IsString, IsUrl, Matches, MaxLength, MinLength } from "class-validator";
 
 export class UpdateProfileDto {
   @ApiPropertyOptional()
@@ -20,6 +20,12 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(1000)
   bio?: string;
+
+  @ApiPropertyOptional({ description: "Optional, never shown publicly (spec §82)" })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\+?[0-9 ()-]{7,20}$/, { message: "Invalid phone number" })
+  phone?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

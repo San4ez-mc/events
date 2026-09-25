@@ -14,6 +14,17 @@
     "organizer": "Організатор",
     "admin": "Адмінка"
   },
+  "screens": {
+    "searchSubtitle": "Знайдіть подію за назвою, темою чи містом",
+    "searchHintTitle": "Що шукаємо сьогодні?",
+    "searchHintText": "Спробуйте: настолки, джаз, пробіжка, стендап",
+    "searchNothing": "Нічого не знайшли. Спробуйте інше слово.",
+    "myEventsSubtitle": "Події, на які ви записані",
+    "myEventsEmpty": "Тут з'являться події, на які ви запишетесь. Час обрати першу!",
+    "notificationsSubtitle": "Усе важливе про ваші події",
+    "notificationsEmpty": "Поки що тихо. Ми повідомимо, щойно щось станеться.",
+    "profileSubtitle": "Ваш акаунт і налаштування"
+  },
   "common": {
     "loading": "Завантаження…",
     "retry": "Повторити",
@@ -31,6 +42,8 @@
     "free": "Безкоштовно"
   },
   "auth": {
+    "orContinueWith": "або",
+    "continueWithGoogle": "Продовжити з Google",
     "login": {
       "title": "Вхід",
       "email": "Email",
@@ -211,6 +224,14 @@
     "markAllRead": "Позначити всі прочитаними"
   },
   "profile": {
+    "about": "Про мене",
+    "phone": "Телефон",
+    "phoneHint": "Телефон бачите лише ви, публічно він не показується",
+    "bio": "Про себе",
+    "settings": "Налаштування",
+    "language": "Мова",
+    "saved": "Збережено",
+    "saveFailed": "Не вдалося зберегти. Перевірте дані.",
     "addFriend": "Додати в друзі",
     "cancelRequest": "Скасувати запит",
     "acceptRequest": "Прийняти",
@@ -434,6 +455,8 @@
     "RATE_LIMITED": "Забагато спроб. Спробуйте пізніше",
     "INTERNAL_ERROR": "Внутрішня помилка сервера",
     "INVALID_CREDENTIALS": "Невірний email або пароль",
+    "INVALID_GOOGLE_TOKEN": "Не вдалося увійти через Google. Спробуйте ще раз.",
+    "SOCIAL_LOGIN_DISABLED": "Вхід через Google тимчасово недоступний",
     "EMAIL_ALREADY_REGISTERED": "Цей email вже зареєстровано",
     "EMAIL_NOT_VERIFIED": "Підтвердіть email, щоб продовжити",
     "INVALID_OR_EXPIRED_TOKEN": "Посилання недійсне або застаріло",

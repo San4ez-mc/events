@@ -6,6 +6,7 @@ import { ApiException } from "../common/exceptions/api.exception";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../mail/mail.service";
 import { TokenService } from "./token.service";
+import { GoogleTokenVerifier } from "./google-token.verifier";
 import type { RegisterDto } from "./dto/register.dto";
 import type { LoginDto } from "./dto/login.dto";
 import { randomUUID } from "node:crypto";
@@ -39,6 +40,7 @@ export class AuthService {
     private readonly tokenService: TokenService,
     private readonly mailService: MailService,
     private readonly configService: ConfigService<EnvConfig, true>,
+    private readonly googleTokenVerifier: GoogleTokenVerifier,
   ) {}
 
   async register(dto: RegisterDto): Promise<{ user: SafeUser; tokens: AuthTokens }> {
@@ -85,6 +87,47 @@ export class AuthService {
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
     });
+
+    const tokens = await this.issueTokenPair(user.id, user.email);
+    return { user: this.toSafeUser(user), tokens };
+  }
+
+  /**
+   * §9 — Google sign-in. Existing account with the same (Google-verified)
+   * email is signed in and marked email-verified; otherwise a new account is
+   * created with an unusable random password (the user can set a real one via
+   * "forgot password").
+   */
+  async loginWithGoogle(idToken: string): Promise<{ user: SafeUser; tokens: AuthTokens }> {
+    const identity = await this.googleTokenVerifier.verify(idToken);
+    if (!identity.emailVerified) {
+      throw new ApiException("INVALID_GOOGLE_TOKEN", "Google email is not verified", 401);
+    }
+
+    let user = await this.prisma.user.findUnique({ where: { email: identity.email } });
+    if (user && (user.status === "BLOCKED" || user.status === "DELETED")) {
+      throw new ApiException("FORBIDDEN", "This account is not accessible", 403);
+    }
+
+    if (!user) {
+      const passwordHash = await argon2.hash(randomUUID() + randomUUID(), { type: argon2.argon2id });
+      user = await this.prisma.user.create({
+        data: {
+          email: identity.email,
+          passwordHash,
+          name: identity.name,
+          avatarUrl: identity.picture,
+          emailVerifiedAt: new Date(),
+          lastLoginAt: new Date(),
+          preferences: { create: {} },
+        },
+      });
+    } else {
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date(), emailVerifiedAt: user.emailVerifiedAt ?? new Date() },
+      });
+    }
 
     const tokens = await this.issueTokenPair(user.id, user.email);
     return { user: this.toSafeUser(user), tokens };

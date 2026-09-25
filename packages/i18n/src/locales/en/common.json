@@ -14,6 +14,17 @@
     "organizer": "Organizer",
     "admin": "Admin"
   },
+  "screens": {
+    "searchSubtitle": "Find an event by name, topic or city",
+    "searchHintTitle": "What are we looking for today?",
+    "searchHintText": "Try: board games, jazz, running, stand-up",
+    "searchNothing": "Nothing found. Try another word.",
+    "myEventsSubtitle": "Events you have signed up for",
+    "myEventsEmpty": "Events you join will show up here. Time to pick your first one!",
+    "notificationsSubtitle": "Everything important about your events",
+    "notificationsEmpty": "All quiet for now. We'll let you know when something happens.",
+    "profileSubtitle": "Your account and settings"
+  },
   "common": {
     "loading": "Loading…",
     "retry": "Retry",
@@ -31,6 +42,8 @@
     "free": "Free"
   },
   "auth": {
+    "orContinueWith": "or",
+    "continueWithGoogle": "Continue with Google",
     "login": {
       "title": "Sign in",
       "email": "Email",
@@ -211,6 +224,14 @@
     "markAllRead": "Mark all as read"
   },
   "profile": {
+    "about": "About me",
+    "phone": "Phone",
+    "phoneHint": "Only you can see your phone; it is never shown publicly",
+    "bio": "About you",
+    "settings": "Settings",
+    "language": "Language",
+    "saved": "Saved",
+    "saveFailed": "Could not save. Check the data.",
     "addFriend": "Add friend",
     "cancelRequest": "Cancel request",
     "acceptRequest": "Accept",
@@ -434,6 +455,8 @@
     "RATE_LIMITED": "Too many attempts. Try again later",
     "INTERNAL_ERROR": "Internal server error",
     "INVALID_CREDENTIALS": "Invalid email or password",
+    "INVALID_GOOGLE_TOKEN": "Could not sign in with Google. Please try again.",
+    "SOCIAL_LOGIN_DISABLED": "Google sign-in is temporarily unavailable",
     "EMAIL_ALREADY_REGISTERED": "This email is already registered",
     "EMAIL_NOT_VERIFIED": "Please verify your email to continue",
     "INVALID_OR_EXPIRED_TOKEN": "This link is invalid or has expired",

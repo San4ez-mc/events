@@ -7,6 +7,7 @@ import { parseDurationToSeconds } from "../common/utils/duration";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { TokenService } from "./token.service";
+import { GoogleTokenVerifier } from "./google-token.verifier";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 
 @Module({
@@ -24,7 +25,7 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, TokenService, JwtStrategy],
+  providers: [AuthService, TokenService, JwtStrategy, GoogleTokenVerifier],
   exports: [AuthService, TokenService],
 })
 export class AuthModule {}

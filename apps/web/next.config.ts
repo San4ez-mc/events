@@ -15,6 +15,8 @@ import type { NextConfig } from "next";
 const API_URL = process.env.API_URL ?? "http://localhost:3100";
 
 const nextConfig: NextConfig = {
+  // Public OAuth client ID (not a secret) — baked into the client bundle for Google sign-in (§9).
+  env: { NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "257175906055-2o5q0jlm3cavm1tihvscjs8tpg67ec6l.apps.googleusercontent.com" },
   async rewrites() {
     return [
       {

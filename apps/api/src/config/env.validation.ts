@@ -21,6 +21,8 @@ const envSchema = z.object({
   CORS_ORIGINS: z.string().default(""),
 
   GOOGLE_MAPS_API_KEY: z.string().optional(),
+  /** Comma-separated OAuth client IDs (web, Android, iOS) accepted as the audience of Google ID tokens (§9, §96). */
+  GOOGLE_CLIENT_IDS: z.string().optional(),
 
   S3_ENDPOINT: z.string().optional(),
   S3_ACCESS_KEY: z.string().optional(),

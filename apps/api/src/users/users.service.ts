@@ -44,7 +44,8 @@ export class UsersService {
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: dto,
+      // A changed number is no longer verified.
+      data: dto.phone !== undefined ? { ...dto, phoneVerifiedAt: null } : dto,
     });
     const { passwordHash: _passwordHash, ...safe } = user;
     return safe;
