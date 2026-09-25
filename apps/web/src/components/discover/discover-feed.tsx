@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowRight, ChevronLeft, ChevronRight, Heart, SlidersHorizontal, Undo2, X } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
@@ -11,6 +12,8 @@ import { EventCard } from "./event-card";
 import { DiscoverFilters, type DiscoveryFilters } from "./discover-filters";
 
 const EMPTY_FILTERS: DiscoveryFilters = { cityId: null, categoryId: null, freeOnly: false };
+const SWIPE_DISTANCE = 100;
+const TAP_DISTANCE = 6;
 
 function buildQuery(filters: DiscoveryFilters, cursor: string | null): string {
   const params = new URLSearchParams();
@@ -21,12 +24,13 @@ function buildQuery(filters: DiscoveryFilters, cursor: string | null): string {
   return params.toString();
 }
 
+const roundButton =
+  "flex items-center justify-center rounded-full border border-border bg-background shadow-md transition active:scale-90 hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40";
+
 /**
- * UX §3-8 — the Tinder-style discovery feed. One card at a time, big
- * bottom buttons (undo / pass / save / open) rather than requiring a touch
- * swipe gesture, since the buttons are a required control regardless (UX §4
- * — "icons must be large and clear") and are far more reliable on desktop
- * web than an emulated drag gesture.
+ * UX §3-8 — the Tinder-style discovery feed. Swipe left = pass, swipe right
+ * (or tap) = open; the icon buttons below (undo / pass / save / open) and the
+ * side arrows on wide screens do the same for mouse and keyboard users.
  */
 export function DiscoverFeed() {
   const { t, locale } = useTranslations();
@@ -43,6 +47,10 @@ export function DiscoverFeed() {
   const [error, setError] = useState(false);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const fetchingRef = useRef(false);
+
+  const [drag, setDrag] = useState({ x: 0, y: 0, active: false });
+  const [flyOut, setFlyOut] = useState<null | "left" | "right">(null);
+  const startRef = useRef<{ x: number; y: number } | null>(null);
 
   const fetchPage = useCallback(
     async (targetFilters: DiscoveryFilters, targetCursor: string | null, reset: boolean) => {
@@ -100,11 +108,13 @@ export function DiscoverFeed() {
       const body = (await res.json()) as CursorPage<EventCardData>;
       setSavedIds(new Set(body.items.map((e) => e.id)));
     })().catch(() => {
-      // Non-critical — the star just won't pre-fill for already-saved events.
+      // Non-critical — the heart just won't pre-fill for already-saved events.
     });
   }, [user]);
 
   const current = items[index];
+  const upcoming = items[index + 1];
+  const activeFilterCount = (filters.cityId ? 1 : 0) + (filters.categoryId ? 1 : 0) + (filters.freeOnly ? 1 : 0);
 
   async function recordInteraction(eventId: string, interaction: "PASS" | "OPEN") {
     const token = getAccessToken();
@@ -123,7 +133,7 @@ export function DiscoverFeed() {
     void recordInteraction(current.id, "PASS");
     const nextIndex = index + 1;
     setIndex(nextIndex);
-    // Prefetch the next page directly from this click, once the queue is
+    // Prefetch the next page directly from this action, once the queue is
     // running low — not from a reactive effect (data fetching triggered by
     // a specific user action belongs in the handler, not a useEffect).
     if (hasMore && cursor && nextIndex >= items.length - 2) {
@@ -171,26 +181,77 @@ export function DiscoverFeed() {
     });
   }
 
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (flyOut) return;
+    startRef.current = { x: e.clientX, y: e.clientY };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDrag({ x: 0, y: 0, active: true });
+  }
+
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const start = startRef.current;
+    if (!start) return;
+    setDrag({ x: e.clientX - start.x, y: (e.clientY - start.y) * 0.3, active: true });
+  }
+
+  function onPointerUp() {
+    const start = startRef.current;
+    startRef.current = null;
+    if (!start) return;
+    const { x, y } = drag;
+    if (Math.abs(x) < TAP_DISTANCE && Math.abs(y) < TAP_DISTANCE) {
+      setDrag({ x: 0, y: 0, active: false });
+      handleOpen();
+      return;
+    }
+    if (Math.abs(x) >= SWIPE_DISTANCE) {
+      const direction = x > 0 ? "right" : "left";
+      setFlyOut(direction);
+      setDrag({ x: x > 0 ? 700 : -700, y, active: false });
+      window.setTimeout(() => {
+        setFlyOut(null);
+        setDrag({ x: 0, y: 0, active: false });
+        if (direction === "right") handleOpen();
+        else handlePass();
+      }, 220);
+      return;
+    }
+    setDrag({ x: 0, y: 0, active: false });
+  }
+
+  const passOpacity = Math.min(1, Math.max(0, -drag.x / SWIPE_DISTANCE));
+  const openOpacity = Math.min(1, Math.max(0, drag.x / SWIPE_DISTANCE));
+  const hasCards = !loading && !error && items.length > 0;
+
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-4 px-4 py-6">
+    <div className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-5">
       <div className="relative flex items-center justify-between">
-        <h1 className="text-lg font-bold accent-gradient-text">{t("nav.discover")}</h1>
-        <Button variant="secondary" onClick={() => setFiltersOpen((o) => !o)}>
-          {t("discover.filters")}
-        </Button>
+        <h1 className="text-2xl font-bold accent-gradient-text">{t("nav.discover")}</h1>
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((o) => !o)}
+          aria-label={t("discover.filters")}
+          title={t("discover.filters")}
+          className={`relative h-11 w-11 ${roundButton}`}
+        >
+          <SlidersHorizontal className="h-5 w-5" />
+          {activeFilterCount > 0 && (
+            <span className="accent-gradient absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold text-white">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
         {filtersOpen && (
           <DiscoverFilters filters={filters} onApply={applyFilters} onClose={() => setFiltersOpen(false)} />
         )}
       </div>
 
       {loading && items.length === 0 && (
-        <div className="flex aspect-[3/4] w-full items-center justify-center rounded-2xl bg-surface text-muted">
-          {t("discover.loading")}
-        </div>
+        <div className="aspect-[3/4] w-full animate-pulse rounded-3xl bg-surface" aria-label={t("discover.loading")} />
       )}
 
       {error && items.length === 0 && (
-        <div className="flex flex-col items-center gap-3 rounded-2xl bg-surface p-10 text-center text-muted">
+        <div className="flex flex-col items-center gap-3 rounded-3xl bg-surface p-10 text-center text-muted">
           <p>{t("discover.errorLoading")}</p>
           <Button variant="secondary" onClick={() => void fetchPage(filters, null, true)}>
             {t("common.retry")}
@@ -199,56 +260,124 @@ export function DiscoverFeed() {
       )}
 
       {!loading && !error && !current && (
-        <div className="flex aspect-[3/4] w-full items-center justify-center rounded-2xl bg-surface p-10 text-center text-muted">
-          {t("discover.empty")}
+        <div className="flex aspect-[3/4] w-full flex-col items-center justify-center gap-4 rounded-3xl bg-surface p-10 text-center text-muted">
+          <p>{t("discover.empty")}</p>
+          {index > 0 && (
+            <Button variant="secondary" onClick={handleUndo}>
+              <Undo2 className="h-4 w-4" /> {t("discover.undo")}
+            </Button>
+          )}
         </div>
       )}
 
       {current && (
-        <button type="button" onClick={handleOpen} className="text-left" aria-label={t("discover.open")}>
-          <EventCard event={current} locale={locale} t={t} />
-        </button>
+        <div className="relative">
+          {upcoming && (
+            <div className="pointer-events-none absolute inset-0 origin-bottom scale-[0.94] opacity-70" aria-hidden="true">
+              <EventCard event={upcoming} locale={locale} t={t} />
+            </div>
+          )}
+
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label={t("discover.open")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleOpen();
+              if (e.key === "ArrowLeft") handlePass();
+              if (e.key === "ArrowRight") handleOpen();
+            }}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={() => {
+              startRef.current = null;
+              setDrag({ x: 0, y: 0, active: false });
+            }}
+            className="relative cursor-grab touch-pan-y select-none active:cursor-grabbing"
+            style={{
+              transform: `translate(${drag.x}px, ${drag.y}px) rotate(${drag.x / 25}deg)`,
+              transition: drag.active ? "none" : "transform 220ms ease-out",
+            }}
+          >
+            <EventCard event={current} locale={locale} t={t} />
+            <span
+              className="pointer-events-none absolute left-5 top-16 rotate-[-12deg] rounded-xl border-4 border-rose-500 px-3 py-1 text-xl font-extrabold uppercase text-rose-500"
+              style={{ opacity: passOpacity }}
+            >
+              {t("discover.pass")}
+            </span>
+            <span
+              className="pointer-events-none absolute right-5 top-16 rotate-[12deg] rounded-xl border-4 border-emerald-400 px-3 py-1 text-xl font-extrabold uppercase text-emerald-400"
+              style={{ opacity: openOpacity }}
+            >
+              {t("discover.open")}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleUndo}
+            disabled={index === 0}
+            aria-label={t("discover.undo")}
+            className={`absolute -left-16 top-1/2 hidden h-12 w-12 -translate-y-1/2 md:flex ${roundButton}`}
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+          <button
+            type="button"
+            onClick={handlePass}
+            aria-label={t("discover.pass")}
+            className={`absolute -right-16 top-1/2 hidden h-12 w-12 -translate-y-1/2 md:flex ${roundButton}`}
+          >
+            <ChevronRight className="h-6 w-6" />
+          </button>
+        </div>
       )}
 
-      {!loading && !error && items.length > 0 && (
-        <div className="grid grid-cols-4 gap-2">
+      {hasCards && (
+        <div className="flex items-center justify-center gap-4">
           <button
             type="button"
             onClick={handleUndo}
             disabled={index === 0}
             title={t("discover.undo")}
-            className="flex h-14 items-center justify-center rounded-full border border-border text-xl hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label={t("discover.undo")}
+            className={`h-12 w-12 text-amber-500 ${roundButton}`}
           >
-            ↩️
+            <Undo2 className="h-5 w-5" />
           </button>
           <button
             type="button"
             onClick={handlePass}
             disabled={!current}
             title={t("discover.pass")}
-            className="flex h-14 items-center justify-center rounded-full border border-border text-xl hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label={t("discover.pass")}
+            className={`h-16 w-16 text-rose-500 ${roundButton}`}
           >
-            ✖️
+            <X className="h-8 w-8" strokeWidth={2.5} />
           </button>
           <button
             type="button"
             onClick={() => void handleSave()}
             disabled={!current}
             title={user ? t("discover.save") : t("discover.signInToSave")}
-            className={`flex h-14 items-center justify-center rounded-full border text-xl hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40 ${
-              current && savedIds.has(current.id) ? "border-transparent accent-gradient text-white" : "border-border"
+            aria-label={t("discover.save")}
+            className={`h-16 w-16 ${roundButton} ${
+              current && savedIds.has(current.id) ? "accent-gradient border-transparent text-white" : "text-pink-500"
             }`}
           >
-            ⭐
+            <Heart className="h-7 w-7" fill={current && savedIds.has(current.id) ? "currentColor" : "none"} />
           </button>
           <button
             type="button"
             onClick={handleOpen}
             disabled={!current}
             title={t("discover.open")}
-            className="flex h-14 items-center justify-center rounded-full border border-border text-xl hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label={t("discover.open")}
+            className={`h-12 w-12 text-emerald-500 ${roundButton}`}
           >
-            ➡️
+            <ArrowRight className="h-5 w-5" />
           </button>
         </div>
       )}

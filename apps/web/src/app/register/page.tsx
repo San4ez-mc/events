@@ -17,16 +17,19 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [emailTaken, setEmailTaken] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setEmailTaken(false);
     setIsSubmitting(true);
     try {
       await register({ email, password, name: name || undefined });
       router.push("/organizer/events");
     } catch (err) {
+      setEmailTaken(err instanceof ApiRequestError && err.code === "EMAIL_ALREADY_REGISTERED");
       setError(err instanceof ApiRequestError ? t(`errors.${err.code}`) : t("common.somethingWentWrong"));
     } finally {
       setIsSubmitting(false);
@@ -57,9 +60,21 @@ export default function RegisterPage() {
         />
 
         {error && (
-          <p role="alert" className="text-sm text-danger">
-            {error}
-          </p>
+          <div className="flex flex-col gap-2">
+            <p role="alert" className="text-sm text-danger">
+              {error}
+            </p>
+            {emailTaken && (
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                <Link href="/login" className="font-medium underline">
+                  {t("auth.register.signIn")}
+                </Link>
+                <Link href="/forgot-password" className="font-medium underline">
+                  {t("auth.login.forgotPassword")}
+                </Link>
+              </div>
+            )}
+          </div>
         )}
 
         <Button type="submit" loading={isSubmitting}>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Globe, Monitor, Moon, Sun } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
 import { useTheme } from "@/lib/theme-context";
@@ -41,20 +42,27 @@ export function SiteHeader() {
           <button
             type="button"
             onClick={() => setLocale(locale === "uk" ? "en" : "uk")}
-            className="rounded-md border border-border px-2 py-1 text-xs font-medium uppercase hover:bg-surface"
+            className="flex h-9 items-center gap-1.5 rounded-full border border-border px-3 text-xs font-semibold uppercase hover:bg-surface"
             aria-label="Change language"
           >
+            <Globe className="h-4 w-4" aria-hidden="true" />
             {locale}
           </button>
 
           <button
             type="button"
             onClick={() => setTheme(theme === "dark" ? "light" : theme === "light" ? "system" : "dark")}
-            className="rounded-md border border-border px-2 py-1 text-xs hover:bg-surface"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border hover:bg-surface"
             aria-label="Change theme"
             title={`Theme: ${theme}`}
           >
-            {theme === "dark" ? "🌙" : theme === "light" ? "☀️" : "🖥️"}
+            {theme === "dark" ? (
+              <Moon className="h-4 w-4" />
+            ) : theme === "light" ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Monitor className="h-4 w-4" />
+            )}
           </button>
 
           <NotificationBell />

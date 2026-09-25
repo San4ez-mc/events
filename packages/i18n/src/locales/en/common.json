@@ -63,7 +63,14 @@
     },
     "resetPassword": {
       "title": "New password",
-      "submit": "Save password"
+      "submit": "Save password",
+      "password": "New password",
+      "confirm": "Repeat password",
+      "mismatch": "Passwords do not match",
+      "hint": "At least 8 characters, with a letter and a digit",
+      "success": "Password changed. You can sign in now.",
+      "invalidLink": "This link is invalid or has expired. Request a new one.",
+      "requestNew": "Request a new link"
     },
     "verifyEmail": {
       "title": "Verify email",
