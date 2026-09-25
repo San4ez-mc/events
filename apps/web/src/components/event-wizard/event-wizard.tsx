@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { StepBasics } from "./step-basics";
 import { StepDatePlace } from "./step-date-place";
 import { StepPrice } from "./step-price";
+import { StepOptions } from "./step-options";
 import { StepMedia } from "./step-media";
 import { StepPreview } from "./step-preview";
 import { EMPTY_WIZARD_DATA, type WizardData } from "./types";
@@ -35,6 +36,20 @@ function toWizardData(event: EventDetail): WizardData {
     capacity: event.capacity?.toString() ?? "",
     minParticipants: event.minParticipants?.toString() ?? "",
     approvalMode: event.approvalMode,
+    visibility: event.visibility,
+    registrationDeadline: event.registrationDeadline
+      ? toLocalInputValue(event.registrationDeadline)
+      : "",
+    adultsOnly: (event.ageRestriction ?? 0) >= 18,
+    rules: event.rules ?? "",
+    paymentUrl: event.paymentUrl ?? "",
+    fields: (event.registrationFields ?? []).map((f) => ({
+      id: f.id,
+      label: f.label,
+      type: f.type,
+      required: f.required,
+      options: (f.optionsJson ?? []).join(", "),
+    })),
   };
 }
 
@@ -55,6 +70,16 @@ function toUpdatePayload(data: WizardData): Record<string, unknown> {
     endsAt: data.endsAt ? new Date(data.endsAt).toISOString() : undefined,
     priceType: data.priceType,
     approvalMode: data.approvalMode,
+    visibility: data.visibility,
+    registrationDeadline: data.registrationDeadline
+      ? new Date(data.registrationDeadline).toISOString()
+      : undefined,
+    ageRestriction: data.adultsOnly ? 18 : 0,
+    rules: data.rules || undefined,
+    paymentUrl:
+      data.priceType === "PAID" && data.paymentUrl
+        ? data.paymentUrl
+        : undefined,
   };
   if (data.format === "OFFLINE") {
     payload.cityId = data.cityId ?? undefined;
@@ -76,13 +101,21 @@ function toUpdatePayload(data: WizardData): Record<string, unknown> {
   return payload;
 }
 
-type Step = "basics" | "media" | "datePlace" | "price" | "preview";
-const STEPS: Step[] = ["basics", "media", "datePlace", "price", "preview"];
+type Step = "basics" | "media" | "datePlace" | "price" | "options" | "preview";
+const STEPS: Step[] = [
+  "basics",
+  "media",
+  "datePlace",
+  "price",
+  "options",
+  "preview",
+];
 const STEP_LABEL_KEYS: Record<Step, string> = {
   basics: "events.wizard.stepBasics",
   media: "events.wizard.stepMedia",
   datePlace: "events.wizard.stepDatePlace",
   price: "events.wizard.stepPrice",
+  options: "events.wizard.stepOptions",
   preview: "events.wizard.stepPreview",
 };
 
@@ -156,6 +189,38 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
       const patchBody = await patchRes.json();
       if (!patchRes.ok) throw new ApiRequestError(patchBody);
       setSlug((patchBody as EventDetail).slug);
+
+      // Custom registration questions are replaced as a whole set (§25).
+      const fields = data.fields
+        .filter((f) => f.label.trim())
+        .map((f, sortOrder) => ({
+          ...(f.id ? { id: f.id } : {}),
+          label: f.label.trim(),
+          type: f.type,
+          required: f.required,
+          options:
+            f.type === "SELECT"
+              ? f.options
+                  .split(",")
+                  .map((o) => o.trim())
+                  .filter(Boolean)
+              : undefined,
+          sortOrder,
+        }));
+      const fieldsRes = await fetch(
+        `/api/v1/events/${id}/registrations/fields`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Client-Platform": "web",
+            Authorization: `Bearer ${getAccessToken() ?? ""}`,
+          },
+          credentials: "include",
+          body: JSON.stringify({ fields }),
+        },
+      );
+      if (!fieldsRes.ok) throw new ApiRequestError(await fieldsRes.json());
       return true;
     } catch (err) {
       setError(
@@ -215,6 +280,9 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
           <StepDatePlace data={data} onChange={handleChange} />
         )}
         {step === "price" && <StepPrice data={data} onChange={handleChange} />}
+        {step === "options" && (
+          <StepOptions data={data} onChange={handleChange} />
+        )}
         {step === "preview" && slug && eventId && (
           <StepPreview
             eventId={eventId}

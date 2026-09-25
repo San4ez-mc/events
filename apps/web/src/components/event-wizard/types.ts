@@ -1,4 +1,19 @@
-import type { ApprovalMode, EventFormat, EventPriceType } from "@kiro/types";
+import type {
+  ApprovalMode,
+  EventFormat,
+  EventPriceType,
+  EventVisibility,
+  RegistrationFieldType,
+} from "@kiro/types";
+
+/** A custom registration question as edited in the wizard (options are a comma-separated string). */
+export interface WizardField {
+  id?: string;
+  label: string;
+  type: RegistrationFieldType;
+  required: boolean;
+  options: string;
+}
 
 /** Local wizard state — a subset of EventDetail the steps actually edit. */
 export interface WizardData {
@@ -20,6 +35,12 @@ export interface WizardData {
   capacity: string;
   minParticipants: string;
   approvalMode: ApprovalMode;
+  visibility: EventVisibility;
+  registrationDeadline: string; // datetime-local value
+  adultsOnly: boolean;
+  rules: string;
+  paymentUrl: string;
+  fields: WizardField[];
 }
 
 export const EMPTY_WIZARD_DATA: WizardData = {
@@ -41,6 +62,12 @@ export const EMPTY_WIZARD_DATA: WizardData = {
   capacity: "",
   minParticipants: "",
   approvalMode: "AUTO",
+  visibility: "PUBLIC",
+  registrationDeadline: "",
+  adultsOnly: false,
+  rules: "",
+  paymentUrl: "",
+  fields: [],
 };
 
 export interface StepProps {

@@ -39,7 +39,8 @@
     "done": "Done",
     "yes": "Yes",
     "no": "No",
-    "free": "Free"
+    "free": "Free",
+    "delete": "Delete"
   },
   "auth": {
     "orContinueWith": "or",
@@ -158,7 +159,33 @@
       "creditsBalance": "Listing credits",
       "insufficientCredits": "Not enough credits to publish.",
       "claimFreeCredits": "🎁 Take 5 free publications",
-      "buyCredits": "Buy more credits"
+      "buyCredits": "Buy more credits",
+      "stepOptions": "Extras",
+      "visibility": "Who can see the event",
+      "visibilityPublic": "Everyone (feed and search)",
+      "visibilityLink": "Link only",
+      "visibilityHint": "\"Link only\" events are hidden from the feed, search and sitemap.",
+      "registrationDeadline": "Registration closes",
+      "adultsOnly": "18+ only",
+      "adultsOnlyHint": "Minors will not see this event.",
+      "rules": "Rules and important info",
+      "paymentUrl": "Payment link",
+      "questions": "Questions for participants",
+      "questionsHint": "Participants answer them when registering.",
+      "questionLabel": "Question text",
+      "questionType": "Answer type",
+      "questionRequired": "Required",
+      "questionOptions": "Options, comma-separated",
+      "addQuestion": "Add question",
+      "fieldTypes": {
+        "TEXT": "Short text",
+        "TEXTAREA": "Long text",
+        "NUMBER": "Number",
+        "PHONE": "Phone",
+        "EMAIL": "Email",
+        "SELECT": "Choice list",
+        "CHECKBOX": "Yes/No"
+      }
     },
     "actions": {
       "save": "Save",

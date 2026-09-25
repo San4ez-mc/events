@@ -39,7 +39,8 @@
     "done": "Готово",
     "yes": "Так",
     "no": "Ні",
-    "free": "Безкоштовно"
+    "free": "Безкоштовно",
+    "delete": "Видалити"
   },
   "auth": {
     "orContinueWith": "або",
@@ -158,7 +159,33 @@
       "creditsBalance": "Кредитів на публікацію",
       "insufficientCredits": "Недостатньо кредитів для публікації.",
       "claimFreeCredits": "🎁 Забрати 5 безкоштовних публікацій",
-      "buyCredits": "Купити ще кредитів"
+      "buyCredits": "Купити ще кредитів",
+      "stepOptions": "Додатково",
+      "visibility": "Хто бачить подію",
+      "visibilityPublic": "Усі (у стрічці й пошуку)",
+      "visibilityLink": "Лише за посиланням",
+      "visibilityHint": "«За посиланням» — подія не показується в стрічці, пошуку та sitemap.",
+      "registrationDeadline": "Реєстрація до",
+      "adultsOnly": "Лише 18+",
+      "adultsOnlyHint": "Неповнолітнім подію не буде показано.",
+      "rules": "Правила та важлива інформація",
+      "paymentUrl": "Посилання на оплату",
+      "questions": "Питання до учасників",
+      "questionsHint": "Учасник відповість на них під час реєстрації.",
+      "questionLabel": "Текст питання",
+      "questionType": "Тип відповіді",
+      "questionRequired": "Обов'язкове",
+      "questionOptions": "Варіанти через кому",
+      "addQuestion": "Додати питання",
+      "fieldTypes": {
+        "TEXT": "Короткий текст",
+        "TEXTAREA": "Довгий текст",
+        "NUMBER": "Число",
+        "PHONE": "Телефон",
+        "EMAIL": "Email",
+        "SELECT": "Вибір зі списку",
+        "CHECKBOX": "Так/Ні"
+      }
     },
     "actions": {
       "save": "Зберегти",
