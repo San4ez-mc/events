@@ -62,6 +62,12 @@ export class DiscoveryQueryDto {
   @IsBoolean()
   adultsOnly?: boolean;
 
+  @ApiPropertyOptional({ description: "Only events that still have free spots" })
+  @IsOptional()
+  @Transform(({ value }) => value === "true" || value === true)
+  @IsBoolean()
+  availableOnly?: boolean;
+
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Number)

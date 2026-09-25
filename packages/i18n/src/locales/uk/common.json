@@ -616,7 +616,10 @@
     "groupAny": "Будь-яка",
     "reset": "Скинути",
     "apply": "Показати події",
-    "saved": "Фільтри збережено"
+    "saved": "Фільтри збережено",
+    "availability": "Місця",
+    "availabilityAll": "Усі",
+    "availabilityFree": "Є вільні місця"
   },
   "create": {
     "subtitle": "Створіть подію за кілька кроків",

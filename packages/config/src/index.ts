@@ -40,4 +40,7 @@ export const DISCOVERY_RANKING_WEIGHTS = {
   freshEventMax: 15,
   popularEventMax: 15,
   availabilityBonus: 5,
+  friendsGoingPerFriend: 12,
+  friendsGoingMax: 36,
+  budgetFit: 8,
 };

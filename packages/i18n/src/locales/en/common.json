@@ -616,7 +616,10 @@
     "groupAny": "Any",
     "reset": "Reset",
     "apply": "Show events",
-    "saved": "Filters saved"
+    "saved": "Filters saved",
+    "availability": "Spots",
+    "availabilityAll": "All",
+    "availabilityFree": "Spots available"
   },
   "create": {
     "subtitle": "Create an event in a few steps",

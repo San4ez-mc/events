@@ -23,6 +23,7 @@ export interface DiscoveryFilters {
   freeOnly: boolean;
   format: FormatFilter;
   adultsOnly: boolean;
+  availableOnly: boolean;
   groupSize: GroupSize;
 }
 
@@ -41,6 +42,7 @@ export const EMPTY_FILTERS: DiscoveryFilters = {
   freeOnly: false,
   format: "any",
   adultsOnly: false,
+  availableOnly: false,
   groupSize: "any",
 };
 
@@ -69,6 +71,7 @@ export function countActiveFilters(f: DiscoveryFilters): number {
     f.freeOnly,
     f.format !== "any",
     f.adultsOnly,
+    f.availableOnly,
     f.groupSize !== "any",
   ].filter(Boolean).length;
 }
@@ -157,6 +160,7 @@ export function filtersToQuery(
   }
   if (f.format !== "any") p.set("format", f.format);
   if (f.adultsOnly) p.set("adultsOnly", "true");
+  if (f.availableOnly) p.set("availableOnly", "true");
 
   switch (f.groupSize) {
     case "1-5":

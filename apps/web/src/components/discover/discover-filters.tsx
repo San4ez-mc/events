@@ -460,6 +460,17 @@ export function DiscoverFilters({
             />
           </Section>
 
+          <Section title={t("filters.availability")}>
+            <Chips
+              value={draft.availableOnly ? "free" : "all"}
+              options={[
+                { value: "all", label: t("filters.availabilityAll") },
+                { value: "free", label: t("filters.availabilityFree") },
+              ]}
+              onChange={(v) => set({ availableOnly: v === "free" })}
+            />
+          </Section>
+
           <Section title={t("filters.group")}>
             <Chips
               value={draft.groupSize}

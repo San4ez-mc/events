@@ -49,16 +49,23 @@ export class DiscoveryService {
     const now = new Date();
     const viewer = userId ? await this.prisma.user.findUnique({ where: { id: userId }, select: { birthDate: true } }) : null;
     const isMinor = !!viewer?.birthDate && this.ageOn(viewer.birthDate, now) < 18;
+    const blockedOwnerIds = await this.getBlockedUserIds(userId);
     const candidates = await this.prisma.event.findMany({
-      where: { ...this.buildFeedWhere(query, excludedEventIds, now), ...(isMinor ? { OR: [{ ageRestriction: null }, { ageRestriction: { lt: 18 } }] } : {}) },
+      where: {
+        ...this.buildFeedWhere(query, excludedEventIds, now),
+        ...(isMinor ? { OR: [{ ageRestriction: null }, { ageRestriction: { lt: 18 } }] } : {}),
+        ...(blockedOwnerIds.length ? { ownerId: { notIn: blockedOwnerIds } } : {}),
+      },
       orderBy: { startsAt: "asc" },
       take: DISCOVERY_CANDIDATE_CAP,
       include: EVENT_CARD_INCLUDE,
     });
 
-    const scored = candidates
-      .filter((event) => this.startsInHourWindow(event.startsAt, query.hourFrom, query.hourTo, event.timezone))
-      .map((event) => ({ ...event, score: this.scoreEvent(event, preferences, now) }))
+    const inWindow = candidates.filter((event) => this.startsInHourWindow(event.startsAt, query.hourFrom, query.hourTo, event.timezone));
+    const signals = await this.loadRankingSignals(inWindow.map((e) => e.id), userId);
+    const scored = inWindow
+      .filter((event) => !query.availableOnly || event.capacity == null || (signals.get(event.id)?.registered ?? 0) < event.capacity)
+      .map((event) => ({ ...event, score: this.scoreEvent(event, preferences, now, signals.get(event.id)) }))
       .sort((a, b) => (b.score !== a.score ? b.score - a.score : a.id.localeCompare(b.id)));
 
     const sliced = sliceAfterScoredCursor(scored, cursor);
@@ -178,11 +185,29 @@ export class DiscoveryService {
    * exist until Phase 4 (registrations) — both contribute 0 for now.
    */
   private scoreEvent(
-    event: Pick<EventCard, "cityId" | "districtId" | "categoryId" | "startsAt" | "createdAt">,
-    preferences: { preferredCityId: string | null; preferredDistrictIds: string[]; preferredCategoryIds: string[] } | null,
+    event: Pick<EventCard, "cityId" | "districtId" | "categoryId" | "startsAt" | "createdAt" | "capacity" | "priceType" | "price">,
+    preferences: {
+      preferredCityId: string | null;
+      preferredDistrictIds: string[];
+      preferredCategoryIds: string[];
+      maxBudget?: Prisma.Decimal | null;
+      freeOnly?: boolean;
+    } | null,
     now: Date,
+    signal?: { registered: number; friends: number },
   ): number {
     let score = 0;
+
+    // §58 popularity (log-scaled so a handful of sign-ups matters, hundreds don't dominate) and remaining spots.
+    const registered = signal?.registered ?? 0;
+    score += Math.min(DISCOVERY_RANKING_WEIGHTS.popularEventMax, Math.log2(1 + registered) * 3);
+    if (event.capacity != null && registered < event.capacity) score += DISCOVERY_RANKING_WEIGHTS.availabilityBonus;
+    // §34 social signal: each friend going adds a bonus, capped.
+    score += Math.min(DISCOVERY_RANKING_WEIGHTS.friendsGoingMax, (signal?.friends ?? 0) * DISCOVERY_RANKING_WEIGHTS.friendsGoingPerFriend);
+    // Budget fit: free events always fit; paid ones fit within the user's stated max budget.
+    if (preferences?.freeOnly ? event.priceType === "FREE" : preferences?.maxBudget != null && (event.priceType === "FREE" || (event.price != null && Number(event.price) <= Number(preferences.maxBudget)))) {
+      score += DISCOVERY_RANKING_WEIGHTS.budgetFit;
+    }
 
     if (preferences?.preferredCityId && event.cityId === preferences.preferredCityId) {
       score += DISCOVERY_RANKING_WEIGHTS.preferredCity;
@@ -201,6 +226,49 @@ export class DiscoveryService {
     score += Math.max(0, DISCOVERY_RANKING_WEIGHTS.freshEventMax - daysSinceCreated);
 
     return score;
+  }
+
+  /** Events by people the viewer blocked, or who blocked the viewer, never surface in the feed. */
+  private async getBlockedUserIds(userId: string | undefined): Promise<string[]> {
+    if (!userId) return [];
+    const rows = await this.prisma.userBlock.findMany({
+      where: { OR: [{ blockerId: userId }, { blockedUserId: userId }] },
+      select: { blockerId: true, blockedUserId: true },
+    });
+    return rows.map((r) => (r.blockerId === userId ? r.blockedUserId : r.blockerId));
+  }
+
+  /** Active-registration counts and how many of the viewer's friends are going, for every candidate in two queries. */
+  private async loadRankingSignals(eventIds: string[], userId: string | undefined): Promise<Map<string, { registered: number; friends: number }>> {
+    const result = new Map<string, { registered: number; friends: number }>();
+    if (eventIds.length === 0) return result;
+    const counts = await this.prisma.registration.groupBy({
+      by: ["eventId"],
+      where: { eventId: { in: eventIds }, status: { in: ["REGISTERED", "PAYMENT_PENDING", "CONFIRMED"] } },
+      _count: { _all: true },
+    });
+    for (const row of counts) result.set(row.eventId, { registered: row._count._all, friends: 0 });
+
+    if (userId) {
+      const friendships = await this.prisma.friendship.findMany({
+        where: { status: "ACCEPTED", OR: [{ requesterId: userId }, { addresseeId: userId }] },
+        select: { requesterId: true, addresseeId: true },
+      });
+      const friendIds = friendships.map((f) => (f.requesterId === userId ? f.addresseeId : f.requesterId));
+      if (friendIds.length > 0) {
+        const friendRows = await this.prisma.registration.groupBy({
+          by: ["eventId"],
+          where: { eventId: { in: eventIds }, userId: { in: friendIds }, status: { in: ["REGISTERED", "PAYMENT_PENDING", "CONFIRMED"] } },
+          _count: { _all: true },
+        });
+        for (const row of friendRows) {
+          const entry = result.get(row.eventId) ?? { registered: 0, friends: 0 };
+          entry.friends = row._count._all;
+          result.set(row.eventId, entry);
+        }
+      }
+    }
+    return result;
   }
 
   private async getRecentlyPassedEventIds(userId: string | undefined): Promise<string[]> {
