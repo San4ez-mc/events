@@ -339,6 +339,18 @@ export default function EventDetailScreen() {
         </View>
       )}
 
+      {event.faqItems && event.faqItems.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t("events.page.faq")}</Text>
+          {event.faqItems.map((item) => (
+            <View key={item.id} style={{ marginBottom: spacing.sm }}>
+              <Text style={[styles.meta, { fontWeight: "700", color: colors.foreground }]}>{item.question}</Text>
+              <Text style={styles.meta}>{item.answer}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
       {event.participants && event.participants.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Put, Query, Req } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 import { Public } from "../common/decorators/public.decorator";
@@ -10,6 +10,7 @@ import { CreateEventDto } from "./dto/create-event.dto";
 import { UpdateEventDto } from "./dto/update-event.dto";
 import { ListMyEventsDto } from "./dto/list-my-events.dto";
 import { CancelEventDto } from "./dto/cancel-event.dto";
+import { SetFaqDto } from "./dto/set-faq.dto";
 import { RateLimit } from "../common/throttle";
 
 @ApiTags("events")
@@ -43,6 +44,11 @@ export class EventsController {
     @Body() dto: UpdateEventDto,
   ) {
     return this.eventsService.update(id, user.id, dto);
+  }
+
+  @Put(":id/faq")
+  setFaq(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() dto: SetFaqDto) {
+    return this.eventsService.setFaq(id, user.id, dto);
   }
 
   @RateLimit(20)

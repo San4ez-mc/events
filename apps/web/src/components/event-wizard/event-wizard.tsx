@@ -43,6 +43,10 @@ function toWizardData(event: EventDetail): WizardData {
     adultsOnly: (event.ageRestriction ?? 0) >= 18,
     rules: event.rules ?? "",
     paymentUrl: event.paymentUrl ?? "",
+    faq: (event.faqItems ?? []).map((f) => ({
+      question: f.question,
+      answer: f.answer,
+    })),
     fields: (event.registrationFields ?? []).map((f) => ({
       id: f.id,
       label: f.label,
@@ -221,6 +225,20 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
         },
       );
       if (!fieldsRes.ok) throw new ApiRequestError(await fieldsRes.json());
+
+      const faqRes = await fetch(`/api/v1/events/${id}/faq`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Client-Platform": "web",
+          Authorization: `Bearer ${getAccessToken() ?? ""}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          items: data.faq.filter((f) => f.question.trim() && f.answer.trim()),
+        }),
+      });
+      if (!faqRes.ok) throw new ApiRequestError(await faqRes.json());
       return true;
     } catch (err) {
       setError(

@@ -291,4 +291,30 @@ describe("Spec gaps (e2e)", () => {
       expect(gotFriend).toBe(true);
     });
   });
+  describe("event FAQ (§20)", () => {
+    it("lets the organizer replace the FAQ, exposes it on the public page, and rejects strangers", async () => {
+      const { organizer, id, slug } = await publishedEvent();
+      const stranger = await newUser("stranger");
+
+      await http()
+        .put(`/api/v1/events/${id}/faq`)
+        .set("Authorization", `Bearer ${stranger.token}`)
+        .send({ items: [{ question: "Q?", answer: "A." }] })
+        .expect(403);
+
+      const saved = await http()
+        .put(`/api/v1/events/${id}/faq`)
+        .set("Authorization", `Bearer ${organizer.token}`)
+        .send({ items: [{ question: "Що взяти з собою?", answer: "Воду." }, { question: "Чи є паркінг?", answer: "Так." }] })
+        .expect(200);
+      expect(saved.body.map((i: { question: string }) => i.question)).toEqual(["Що взяти з собою?", "Чи є паркінг?"]);
+
+      const page = await http().get(`/api/v1/events/slug/${slug}`).expect(200);
+      expect(page.body.faqItems).toHaveLength(2);
+
+      await http().put(`/api/v1/events/${id}/faq`).set("Authorization", `Bearer ${organizer.token}`).send({ items: [] }).expect(200);
+      const cleared = await http().get(`/api/v1/events/slug/${slug}`).expect(200);
+      expect(cleared.body.faqItems).toHaveLength(0);
+    });
+  });
 });

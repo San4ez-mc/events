@@ -41,6 +41,7 @@ export interface WizardData {
   rules: string;
   paymentUrl: string;
   fields: WizardField[];
+  faq: { question: string; answer: string }[];
 }
 
 export const EMPTY_WIZARD_DATA: WizardData = {
@@ -68,6 +69,7 @@ export const EMPTY_WIZARD_DATA: WizardData = {
   rules: "",
   paymentUrl: "",
   fields: [],
+  faq: [],
 };
 
 export interface StepProps {

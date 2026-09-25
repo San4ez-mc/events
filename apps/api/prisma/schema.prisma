@@ -577,6 +577,7 @@ model Event {
   interactions       EventInteraction[]
   savedBy            SavedEvent[]
   registrationFields RegistrationField[]
+  faqItems           EventFaqItem[]
   registrations      Registration[]
   subscriptions      Subscription[]
   privateNotes       PrivateUserNote[]
@@ -1350,4 +1351,21 @@ model EventDailyStat {
 
   @@id([eventId, date])
   @@map("event_daily_stats")
+}
+
+/// §20 — organizer-authored FAQ shown on the event page (question + answer, ordered).
+model EventFaqItem {
+  id      String @id @default(uuid()) @db.Uuid
+  eventId String @db.Uuid
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  question  String
+  answer    String @db.Text
+  sortOrder Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId, sortOrder])
+  @@map("event_faq_items")
 }

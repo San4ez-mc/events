@@ -18,6 +18,7 @@ import { AnalyticsService } from "../analytics/analytics.service";
 import { SocialProofService } from "../common/social-proof/social-proof.service";
 import type { CreateEventDto } from "./dto/create-event.dto";
 import type { UpdateEventDto } from "./dto/update-event.dto";
+import type { SetFaqDto } from "./dto/set-faq.dto";
 import type { ListMyEventsDto } from "./dto/list-my-events.dto";
 
 /** Changing any of these on an already-published event requires explicit confirmation (§78). */
@@ -137,6 +138,18 @@ export class EventsService {
     return updated;
   }
 
+  /** §20 — replaces the event's FAQ; collaborators with EDIT_EVENT may do it too. */
+  async setFaq(eventId: string, userId: string, dto: SetFaqDto) {
+    await this.eventAccess.assertPermission(eventId, userId, "EDIT_EVENT");
+    await this.prisma.$transaction([
+      this.prisma.eventFaqItem.deleteMany({ where: { eventId } }),
+      this.prisma.eventFaqItem.createMany({
+        data: dto.items.map((item, sortOrder) => ({ eventId, question: item.question.trim(), answer: item.answer.trim(), sortOrder })),
+      }),
+    ]);
+    return this.prisma.eventFaqItem.findMany({ where: { eventId }, orderBy: { sortOrder: "asc" }, select: { id: true, question: true, answer: true } });
+  }
+
   async findMine(userId: string, params: ListMyEventsDto): Promise<CursorPage<unknown>> {
     const limit = Math.min(params.limit ?? PAGINATION.defaultLimit, PAGINATION.maxLimit);
 
@@ -170,6 +183,7 @@ export class EventsService {
         city: true,
         district: true,
         registrationFields: { orderBy: { sortOrder: "asc" } },
+        faqItems: { orderBy: { sortOrder: "asc" }, select: { id: true, question: true, answer: true } },
       },
     });
   }
@@ -192,6 +206,7 @@ export class EventsService {
         city: true,
         district: true,
         registrationFields: { orderBy: { sortOrder: "asc" } },
+        faqItems: { orderBy: { sortOrder: "asc" }, select: { id: true, question: true, answer: true } },
         owner: { select: { id: true, name: true, nickname: true, avatarUrl: true, bio: true } },
       },
     });

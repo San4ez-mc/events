@@ -98,6 +98,7 @@ export interface EventDetail extends EventSummary {
   district: { id: string; nameUk: string } | null;
   registrationFields: RegistrationField[];
   viewerSaved?: boolean;
+  faqItems?: { id: string; question: string; answer: string }[];
   friendsGoing: { count: number; previews: { id: string; name: string | null; avatarUrl: string | null }[] };
   reviewSummary: { average: number | null; count: number };
 }

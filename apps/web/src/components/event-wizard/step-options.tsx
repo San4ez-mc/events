@@ -188,6 +188,70 @@ export function StepOptions({ data, onChange }: StepProps) {
           </button>
         )}
       </section>
+      <section className="flex flex-col gap-3">
+        <h3 className="text-sm font-semibold">{t("events.wizard.faq")}</h3>
+        <p className="text-xs text-muted">{t("events.wizard.faqHint")}</p>
+        {data.faq.map((item, i) => (
+          <div
+            key={i}
+            className="flex flex-col gap-2 rounded-2xl border border-border p-3"
+          >
+            <div className="flex gap-2">
+              <input
+                value={item.question}
+                maxLength={200}
+                onChange={(e) =>
+                  onChange({
+                    faq: data.faq.map((f, idx) =>
+                      idx === i ? { ...f, question: e.target.value } : f,
+                    ),
+                  })
+                }
+                placeholder={t("events.wizard.faqQuestion")}
+                aria-label={t("events.wizard.faqQuestion")}
+                className={`${input} flex-1`}
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  onChange({ faq: data.faq.filter((_, idx) => idx !== i) })
+                }
+                aria-label={t("common.delete")}
+                className="flex h-10 w-10 items-center justify-center rounded-md border border-border hover:bg-surface"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+            <textarea
+              value={item.answer}
+              rows={2}
+              maxLength={2000}
+              onChange={(e) =>
+                onChange({
+                  faq: data.faq.map((f, idx) =>
+                    idx === i ? { ...f, answer: e.target.value } : f,
+                  ),
+                })
+              }
+              placeholder={t("events.wizard.faqAnswer")}
+              aria-label={t("events.wizard.faqAnswer")}
+              className={input}
+            />
+          </div>
+        ))}
+        {data.faq.length < 20 && (
+          <button
+            type="button"
+            onClick={() =>
+              onChange({ faq: [...data.faq, { question: "", answer: "" }] })
+            }
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-dashed border-border text-sm font-medium hover:bg-surface"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            {t("events.wizard.addFaq")}
+          </button>
+        )}
+      </section>
     </div>
   );
 }

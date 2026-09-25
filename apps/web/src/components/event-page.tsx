@@ -214,6 +214,27 @@ export function EventPage({
         </section>
       )}
 
+      {event.faqItems && event.faqItems.length > 0 && (
+        <section className="mb-8">
+          <h2 className="mb-2 text-sm font-semibold">{t("events.page.faq")}</h2>
+          <div className="flex flex-col gap-2">
+            {event.faqItems.map((item) => (
+              <details
+                key={item.id}
+                className="rounded-2xl border border-border px-4 py-3 text-sm"
+              >
+                <summary className="cursor-pointer font-medium">
+                  {item.question}
+                </summary>
+                <p className="mt-2 whitespace-pre-wrap text-muted">
+                  {item.answer}
+                </p>
+              </details>
+            ))}
+          </div>
+        </section>
+      )}
+
       {event.participants && event.participants.length > 0 && (
         <section className="mb-8">
           <h2 className="mb-3 text-sm font-semibold">
