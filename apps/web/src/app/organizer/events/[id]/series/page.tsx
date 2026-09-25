@@ -5,7 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
-import type { CreateSeriesResult, EventDetail, EventOccurrence } from "@/lib/event-types";
+import type {
+  CreateSeriesResult,
+  EventDetail,
+  EventOccurrence,
+} from "@/lib/event-types";
 import { Button } from "@/components/ui/button";
 
 const RECURRENCE_TYPES = [
@@ -26,15 +30,27 @@ export default function EventSeriesPage() {
   const router = useRouter();
 
   const [event, setEvent] = useState<EventDetail | null>(null);
-  const [occurrences, setOccurrences] = useState<EventOccurrence[] | null>(null);
+  const [occurrences, setOccurrences] = useState<EventOccurrence[] | null>(
+    null,
+  );
   const [error, setError] = useState(false);
 
-  const [recurrenceType, setRecurrenceType] = useState<(typeof RECURRENCE_TYPES)[number]>("WEEKLY");
+  const [recurrenceType, setRecurrenceType] =
+    useState<(typeof RECURRENCE_TYPES)[number]>("WEEKLY");
   const [interval, setInterval] = useState("");
   const [count, setCount] = useState("");
   const [until, setUntil] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  // §29 — edit every upcoming occurrence at once (details that don't move date/place).
+  const [bulk, setBulk] = useState({
+    title: "",
+    description: "",
+    capacity: "",
+    rules: "",
+  });
+  const [bulkNotice, setBulkNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -47,7 +63,9 @@ export default function EventSeriesPage() {
     (async () => {
       const token = getAccessToken();
       if (!token) return;
-      const eventRes = await fetch(`/api/v1/events/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      const eventRes = await fetch(`/api/v1/events/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (cancelled) return;
       if (!eventRes.ok) {
         setError(true);
@@ -57,9 +75,12 @@ export default function EventSeriesPage() {
       setEvent(eventBody);
 
       if (eventBody.seriesId) {
-        const occRes = await fetch(`/api/v1/event-series/${eventBody.seriesId}/occurrences`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const occRes = await fetch(
+          `/api/v1/event-series/${eventBody.seriesId}/occurrences`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
         if (!cancelled && occRes.ok) {
           setOccurrences((await occRes.json()) as EventOccurrence[]);
         }
@@ -78,7 +99,10 @@ export default function EventSeriesPage() {
     try {
       const res = await fetch(`/api/v1/events/${id}/series`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           recurrenceType,
           interval: interval ? Number(interval) : undefined,
@@ -92,9 +116,58 @@ export default function EventSeriesPage() {
       }
       const result = (await res.json()) as CreateSeriesResult;
       setOccurrences(result.occurrences);
-      setEvent((prev) => (prev ? { ...prev, seriesId: result.series.id } : prev));
+      setEvent((prev) =>
+        prev ? { ...prev, seriesId: result.series.id } : prev,
+      );
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function applyToSeries() {
+    const token = getAccessToken();
+    if (!token || !event?.seriesId) return;
+    const body: Record<string, unknown> = {};
+    if (bulk.title.trim()) body.title = bulk.title.trim();
+    if (bulk.description.trim()) body.description = bulk.description.trim();
+    if (bulk.capacity) body.capacity = Number(bulk.capacity);
+    if (bulk.rules.trim()) body.rules = bulk.rules.trim();
+    if (Object.keys(body).length === 0) return;
+    const res = await fetch(`/api/v1/event-series/${event.seriesId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      const { updated } = (await res.json()) as { updated: number };
+      setBulkNotice(`${t("organizerSeries.applied")}: ${updated}`);
+      setBulk({ title: "", description: "", capacity: "", rules: "" });
+    } else {
+      setBulkNotice(t("common.somethingWentWrong"));
+    }
+  }
+
+  async function endSeries() {
+    const token = getAccessToken();
+    if (!token || !event?.seriesId) return;
+    const res = await fetch(
+      `/api/v1/event-series/${event.seriesId}/upcoming-drafts`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    if (res.ok) {
+      const { deleted } = (await res.json()) as { deleted: number };
+      setBulkNotice(`${t("organizerSeries.removed")}: ${deleted}`);
+      const occRes = await fetch(
+        `/api/v1/event-series/${event.seriesId}/occurrences`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (occRes.ok) setOccurrences((await occRes.json()) as EventOccurrence[]);
     }
   }
 
@@ -103,24 +176,38 @@ export default function EventSeriesPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <h1 className="mb-2 text-2xl font-bold">{t("organizerSeries.title")}</h1>
-      <p className="mb-6 text-sm text-muted">{t("organizerSeries.description")}</p>
+      <p className="mb-6 text-sm text-muted">
+        {t("organizerSeries.description")}
+      </p>
 
       {error && <p className="text-danger">{t("common.somethingWentWrong")}</p>}
-      {!error && event === null && <p className="text-muted">{t("common.loading")}</p>}
+      {!error && event === null && (
+        <p className="text-muted">{t("common.loading")}</p>
+      )}
 
       {!error && event !== null && (
         <>
           {event.seriesId ? (
-            <p className="mb-6 text-sm text-muted">{t("organizerSeries.alreadyInSeries")}</p>
+            <p className="mb-6 text-sm text-muted">
+              {t("organizerSeries.alreadyInSeries")}
+            </p>
           ) : !event.startsAt ? (
-            <p className="mb-6 text-sm text-danger">{t("organizerSeries.needsStartDate")}</p>
+            <p className="mb-6 text-sm text-danger">
+              {t("organizerSeries.needsStartDate")}
+            </p>
           ) : (
             <div className="mb-8 rounded-lg border border-border p-4">
               <div className="mb-3 flex flex-col gap-1.5">
-                <label className="text-sm font-medium">{t("organizerSeries.recurrenceType")}</label>
+                <label className="text-sm font-medium">
+                  {t("organizerSeries.recurrenceType")}
+                </label>
                 <select
                   value={recurrenceType}
-                  onChange={(e) => setRecurrenceType(e.target.value as (typeof RECURRENCE_TYPES)[number])}
+                  onChange={(e) =>
+                    setRecurrenceType(
+                      e.target.value as (typeof RECURRENCE_TYPES)[number],
+                    )
+                  }
                   className="rounded-md border border-border bg-background px-3 py-2 text-sm"
                 >
                   {RECURRENCE_TYPES.map((type) => (
@@ -132,7 +219,9 @@ export default function EventSeriesPage() {
               </div>
 
               <div className="mb-3 flex flex-col gap-1.5">
-                <label className="text-sm font-medium">{t("organizerSeries.interval")}</label>
+                <label className="text-sm font-medium">
+                  {t("organizerSeries.interval")}
+                </label>
                 <input
                   type="number"
                   min={1}
@@ -144,7 +233,9 @@ export default function EventSeriesPage() {
               </div>
 
               <div className="mb-3 flex flex-col gap-1.5">
-                <label className="text-sm font-medium">{t("organizerSeries.count")}</label>
+                <label className="text-sm font-medium">
+                  {t("organizerSeries.count")}
+                </label>
                 <input
                   type="number"
                   min={1}
@@ -156,7 +247,9 @@ export default function EventSeriesPage() {
               </div>
 
               <div className="mb-4 flex flex-col gap-1.5">
-                <label className="text-sm font-medium">{t("organizerSeries.until")}</label>
+                <label className="text-sm font-medium">
+                  {t("organizerSeries.until")}
+                </label>
                 <input
                   type="date"
                   value={until}
@@ -165,16 +258,76 @@ export default function EventSeriesPage() {
                 />
               </div>
 
-              {createError && <p className="mb-3 text-sm text-danger">{createError}</p>}
+              {createError && (
+                <p className="mb-3 text-sm text-danger">{createError}</p>
+              )}
               <Button loading={creating} onClick={() => void createSeries()}>
                 {t("organizerSeries.create")}
               </Button>
             </div>
           )}
 
+          {event.seriesId && (
+            <section className="mb-8 flex flex-col gap-3 rounded-2xl border border-border p-4">
+              <h2 className="font-semibold">{t("organizerSeries.editAll")}</h2>
+              <p className="text-xs text-muted">
+                {t("organizerSeries.editAllHint")}
+              </p>
+              <input
+                value={bulk.title}
+                onChange={(e) => setBulk({ ...bulk, title: e.target.value })}
+                placeholder={t("events.wizard.title")}
+                aria-label={t("events.wizard.title")}
+                className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+              />
+              <textarea
+                value={bulk.description}
+                onChange={(e) =>
+                  setBulk({ ...bulk, description: e.target.value })
+                }
+                placeholder={t("events.wizard.description")}
+                aria-label={t("events.wizard.description")}
+                rows={3}
+                className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+              />
+              <input
+                type="number"
+                min={1}
+                value={bulk.capacity}
+                onChange={(e) => setBulk({ ...bulk, capacity: e.target.value })}
+                placeholder={t("events.wizard.capacity")}
+                aria-label={t("events.wizard.capacity")}
+                className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+              />
+              <textarea
+                value={bulk.rules}
+                onChange={(e) => setBulk({ ...bulk, rules: e.target.value })}
+                placeholder={t("events.wizard.rules")}
+                aria-label={t("events.wizard.rules")}
+                rows={2}
+                className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={() => void applyToSeries()}>
+                  {t("organizerSeries.applyAll")}
+                </Button>
+                <Button variant="secondary" onClick={() => void endSeries()}>
+                  {t("organizerSeries.endSeries")}
+                </Button>
+              </div>
+              {bulkNotice && (
+                <p role="status" className="text-sm text-muted">
+                  {bulkNotice}
+                </p>
+              )}
+            </section>
+          )}
+
           {occurrences && occurrences.length > 0 && (
             <>
-              <h2 className="mb-3 font-semibold">{t("organizerSeries.occurrencesTitle")}</h2>
+              <h2 className="mb-3 font-semibold">
+                {t("organizerSeries.occurrencesTitle")}
+              </h2>
               <ul className="flex flex-col gap-2">
                 {occurrences.map((occurrence) => (
                   <li
@@ -183,7 +336,9 @@ export default function EventSeriesPage() {
                   >
                     <span>{occurrence.title}</span>
                     <span className="text-muted">
-                      {occurrence.startsAt ? new Date(occurrence.startsAt).toLocaleString() : "—"}
+                      {occurrence.startsAt
+                        ? new Date(occurrence.startsAt).toLocaleString()
+                        : "—"}
                     </span>
                   </li>
                 ))}

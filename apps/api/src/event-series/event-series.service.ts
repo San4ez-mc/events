@@ -2,10 +2,12 @@ import { Injectable } from "@nestjs/common";
 import type { Prisma, Event } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { ApiException } from "../common/exceptions/api.exception";
+import { ForbiddenActionException, ResourceNotFoundException } from "../common/exceptions/common-exceptions";
 import { EventAccessService } from "../organizer/event-access.service";
 import { slugifyUnique } from "../common/utils/slugify";
 import { generateOccurrenceDates } from "./recurrence";
 import type { CreateSeriesDto } from "./dto/create-series.dto";
+import type { UpdateSeriesDto } from "./dto/update-series.dto";
 
 /** Copies every field from the template onto a new occurrence except identity/dates/status/series linkage. */
 function copyableFields(template: Event): Omit<Prisma.EventUncheckedCreateInput, "ownerId" | "slug" | "startsAt" | "endsAt" | "seriesId"> {
@@ -123,5 +125,31 @@ export class EventSeriesService {
       orderBy: { startsAt: "asc" },
       include: { media: { take: 1, orderBy: { sortOrder: "asc" } } },
     });
+  }
+
+  private async getOwnedSeries(seriesId: string, userId: string) {
+    const series = await this.prisma.eventSeries.findUnique({ where: { id: seriesId } });
+    if (!series) throw new ResourceNotFoundException("Series not found");
+    if (series.ownerId !== userId) throw new ForbiddenActionException();
+    return series;
+  }
+
+  /** Applies the given details to every upcoming (not yet started, not cancelled) occurrence of the series. */
+  async updateUpcoming(seriesId: string, userId: string, dto: UpdateSeriesDto) {
+    await this.getOwnedSeries(seriesId, userId);
+    const { count } = await this.prisma.event.updateMany({
+      where: { seriesId, startsAt: { gt: new Date() }, status: { in: ["DRAFT", "PUBLISHED"] } },
+      data: dto,
+    });
+    return { updated: count };
+  }
+
+  /** "End the series": removes upcoming occurrences that were never published; published ones stay (cancel them individually). */
+  async deleteUpcomingDrafts(seriesId: string, userId: string) {
+    await this.getOwnedSeries(seriesId, userId);
+    const { count } = await this.prisma.event.deleteMany({
+      where: { seriesId, status: "DRAFT", startsAt: { gt: new Date() } },
+    });
+    return { deleted: count };
   }
 }

@@ -546,7 +546,13 @@
       "SPECIFIC_WEEKDAY": "Specific weekday",
       "SPECIFIC_DAY_OF_MONTH": "Specific day of month",
       "EVERY_N_MONTHS": "Every N months"
-    }
+    },
+    "editAll": "Edit all upcoming events in the series",
+    "editAllHint": "Fill in only what should change. Dates and address are edited on a single event.",
+    "applyAll": "Apply to all upcoming",
+    "endSeries": "Delete upcoming drafts",
+    "applied": "Events updated",
+    "removed": "Drafts deleted"
   },
   "organizerInvite": {
     "title": "Invite past participants",
