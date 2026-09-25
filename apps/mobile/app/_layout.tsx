@@ -30,6 +30,7 @@ export default function RootLayout() {
               <Stack.Screen name="friends" options={{ title: "" }} />
               <Stack.Screen name="manage/[id]" options={{ title: "" }} />
               <Stack.Screen name="edit/[id]" options={{ title: "" }} />
+              <Stack.Screen name="welcome" options={{ headerShown: false }} />
             </Stack>
           </AuthProvider>
         </LocaleProvider>

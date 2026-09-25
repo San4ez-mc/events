@@ -26,7 +26,7 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       await register({ email: email.trim(), password, name: name.trim() || undefined });
-      router.replace("/");
+      router.replace("/welcome");
     } catch (err) {
       setEmailTaken(err instanceof ApiRequestError && err.code === "EMAIL_ALREADY_REGISTERED");
       setError(err instanceof ApiRequestError ? t(`errors.${err.code}`) : t("common.somethingWentWrong"));
@@ -59,7 +59,7 @@ export default function RegisterScreen() {
         <Button title={t("auth.register.submit")} onPress={() => void submit()} loading={loading} disabled={!email || !password} />
       </View>
 
-      <GoogleSignInButton onSuccess={() => router.replace("/")} />
+      <GoogleSignInButton onSuccess={() => router.replace("/welcome")} />
 
       <Link href="/login" style={styles.link}>
         <Text style={styles.linkText}>{t("auth.register.hasAccount")} {t("auth.register.signIn")}</Text>
