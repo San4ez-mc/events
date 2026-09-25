@@ -102,6 +102,15 @@ export default function ProfileScreen() {
           <Button title={t("common.save")} onPress={() => void handleSave()} loading={saving} disabled={!loaded} />
         </View>
 
+        <Pressable style={styles.row} onPress={() => router.push("/my-events")}>
+          <Ionicons name="ticket" size={22} color={colors.accentFrom} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowText}>{t("myEvents.open")}</Text>
+            <Text style={styles.rowHint}>{t("myEvents.openHint")}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        </Pressable>
+
         <Text style={styles.section}>{t("profile.settings")}</Text>
         <Pressable style={styles.row} onPress={() => setLocale(locale === "uk" ? "en" : "uk")}>
           <Ionicons name="language" size={22} color={colors.accentFrom} />
@@ -132,5 +141,6 @@ const styles = StyleSheet.create({
   message: { fontSize: 14 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.lg },
   rowText: { color: colors.foreground, fontSize: 15, fontWeight: "600", flex: 1 },
+  rowHint: { color: colors.muted, fontSize: 12 },
   rowValue: { color: colors.muted, fontSize: 14 },
 });

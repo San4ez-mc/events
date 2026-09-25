@@ -17,6 +17,7 @@ interface AuthContextValue {
   user: SessionUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   register: (input: { email: string; password: string; name?: string; nickname?: string }) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -60,6 +61,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(body.user);
   }, []);
 
+  const loginWithGoogle = useCallback(async (idToken: string) => {
+    const res = await fetch(`${API_URL}/api/v1/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new ApiRequestError(body);
+    setAccessToken(body.accessToken);
+    await setStoredRefreshToken(body.refreshToken);
+    setUser(body.user);
+  }, []);
+
   const register = useCallback(
     async (input: { email: string; password: string; name?: string; nickname?: string }) => {
       const res = await fetch(`${API_URL}/api/v1/auth/register`, {
@@ -89,7 +103,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
-  const value = useMemo(() => ({ user, isLoading, login, register, logout }), [user, isLoading, login, register, logout]);
+  const value = useMemo(
+    () => ({ user, isLoading, login, loginWithGoogle, register, logout }),
+    [user, isLoading, login, loginWithGoogle, register, logout],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

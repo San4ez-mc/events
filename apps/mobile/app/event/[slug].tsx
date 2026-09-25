@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { ApiRequestError, useAuth } from "../../src/lib/auth-context";
 import { useTranslations } from "../../src/lib/locale-context";
 import { Button } from "../../src/components/ui/Button";
 import { RegistrationFieldInput } from "../../src/components/registration/RegistrationFieldInput";
+import { EventGallery } from "../../src/components/event/EventGallery";
 import type { EventDetail, Registration } from "../../src/lib/event-types";
 import { colors, radius, spacing } from "../../src/lib/theme";
 
@@ -68,6 +70,7 @@ export default function EventDetailScreen() {
       if (!res.ok) throw new ApiRequestError(body);
       setRegistration(body);
       setShowForm(false);
+      void loadEvent(); // the exact address is only sent to registered users (§10)
     } catch (err) {
       if (err instanceof ApiRequestError && err.code === "EVENT_CAPACITY_REACHED") setJoinWaitlist(true);
       setError(err instanceof ApiRequestError ? t(`errors.${err.code}`) : t("common.somethingWentWrong"));
@@ -86,6 +89,7 @@ export default function EventDetailScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) setRegistration(await res.json());
+      void loadEvent();
     } finally {
       setSubmitting(false);
     }
@@ -121,18 +125,33 @@ export default function EventDetailScreen() {
     );
   }
 
-  const cover = event.media[0];
+  const social = event.social;
+  const organizer = event.organizer;
+  const spotsLeft = event.capacity != null && social ? Math.max(0, event.capacity - social.registeredCount) : null;
+  const mapsUrl =
+    event.latitude && event.longitude
+      ? `https://www.google.com/maps/dir/?api=1&destination=${event.latitude},${event.longitude}`
+      : event.addressText
+        ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.addressText)}`
+        : null;
   const applyLabel = event.approvalMode === "ORGANIZER_APPROVAL" ? t("registration.apply") : t("registration.register");
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {cover ? (
-        <Image source={{ uri: cover.displayUrl }} style={styles.cover} resizeMode="cover" />
-      ) : (
-        <View style={[styles.cover, styles.coverPlaceholder]} />
-      )}
+      <View style={styles.galleryBleed}>
+        <EventGallery media={event.media} />
+      </View>
 
-      <Text style={styles.title}>{event.title}</Text>
+      <View style={styles.titleRow}>
+        <Text style={[styles.title, { flex: 1 }]}>{event.title}</Text>
+        <Pressable
+          style={styles.shareButton}
+          onPress={() => void Share.share({ message: `${event.title}\n${API_URL}/events/${event.slug}`, url: `${API_URL}/events/${event.slug}` }).catch(() => {})}
+          accessibilityLabel={t("discover.share")}
+        >
+          <Ionicons name="share-social-outline" size={22} color={colors.foreground} />
+        </Pressable>
+      </View>
 
       <View style={styles.metaRow}>
         {event.startsAt && <Text style={styles.meta}>{new Date(event.startsAt).toLocaleString(locale === "uk" ? "uk-UA" : "en-US")}</Text>}
@@ -141,20 +160,90 @@ export default function EventDetailScreen() {
         <Text style={styles.meta}>{event.priceType === "FREE" ? t("common.free") : `${event.price ?? "?"} ${event.currency}`}</Text>
       </View>
 
-      {event.friendsGoing.count > 0 && (
-        <Text style={styles.meta}>
-          👥 {event.friendsGoing.count} {event.friendsGoing.count === 1 ? t("profile.friendsGoingOne") : t("profile.friendsGoingMany")}
-        </Text>
+      {social && (
+        <View style={styles.socialBar}>
+          <View style={styles.socialRow}>
+            <Ionicons name="people" size={18} color={colors.foreground} />
+            <Text style={styles.socialCount}>
+              {event.capacity != null ? `${social.registeredCount} / ${event.capacity}` : social.registeredCount}{" "}
+              <Text style={styles.socialMuted}>{t("events.page.participantsCount")}</Text>
+            </Text>
+            {spotsLeft !== null && (
+              <Text style={[styles.socialMuted, spotsLeft === 0 && { color: colors.danger, fontWeight: "700" }]}>
+                {spotsLeft === 0 ? t("events.page.soldOut") : `${spotsLeft} ${t("events.page.spotsLeft")}`}
+              </Text>
+            )}
+          </View>
+          {event.friendsGoing.count > 0 && (
+            <Text style={styles.socialMuted}>
+              {event.friendsGoing.count} {event.friendsGoing.count === 1 ? t("profile.friendsGoingOne") : t("profile.friendsGoingMany")}
+            </Text>
+          )}
+        </View>
       )}
 
       {event.description && <Text style={styles.description}>{event.description}</Text>}
 
-      {event.format === "OFFLINE" && event.addressText && (
+      {organizer && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("events.wizard.addressText")}</Text>
-          <Text style={styles.meta}>{event.addressText}</Text>
+          <Text style={styles.sectionTitle}>{t("events.page.organizer")}</Text>
+          <View style={styles.organizerCard}>
+            {organizer.avatarUrl ? (
+              <Image source={{ uri: organizer.avatarUrl }} style={styles.orgAvatar} />
+            ) : (
+              <View style={[styles.orgAvatar, styles.orgAvatarFallback]}>
+                <Text style={styles.orgInitial}>{(organizer.name ?? organizer.nickname ?? "?").slice(0, 1).toUpperCase()}</Text>
+              </View>
+            )}
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={styles.orgName} numberOfLines={1}>
+                {organizer.name ?? organizer.nickname}
+              </Text>
+              <View style={styles.socialRow}>
+                {organizer.rating.average !== null && (
+                  <>
+                    <Ionicons name="star" size={13} color="#f59e0b" />
+                    <Text style={styles.orgRating}>{organizer.rating.average.toFixed(1)}</Text>
+                  </>
+                )}
+                <Text style={styles.socialMuted}>
+                  {organizer.eventsCount} {t("events.page.eventsHosted")}
+                </Text>
+              </View>
+            </View>
+          </View>
         </View>
       )}
+
+      <View style={styles.locationCard}>
+        {event.addressLocked || (!event.addressText && !event.onlineUrl) ? (
+          <View style={styles.socialRow}>
+            <Ionicons name="lock-closed-outline" size={20} color={colors.muted} />
+            <Text style={[styles.socialMuted, { flex: 1 }]}>{t("events.location.lockedHint")}</Text>
+          </View>
+        ) : (
+          <View style={{ gap: spacing.sm }}>
+            {event.addressText && (
+              <View style={styles.socialRow}>
+                <Ionicons name="location" size={18} color={colors.accentFrom} />
+                <Text style={[styles.locationText, { flex: 1 }]}>{event.addressText}</Text>
+              </View>
+            )}
+            {event.onlineUrl && (
+              <Pressable style={styles.socialRow} onPress={() => void Linking.openURL(event.onlineUrl!)}>
+                <Ionicons name="videocam" size={18} color={colors.accentFrom} />
+                <Text style={[styles.locationText, { textDecorationLine: "underline" }]}>{t("events.location.joinOnline")}</Text>
+              </Pressable>
+            )}
+            {mapsUrl && (
+              <Pressable style={styles.routeButton} onPress={() => void Linking.openURL(mapsUrl)}>
+                <Ionicons name="navigate" size={16} color={colors.white} />
+                <Text style={styles.routeText}>{t("events.location.route")}</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+      </View>
 
       {event.rules && (
         <View style={styles.section}>
@@ -163,10 +252,36 @@ export default function EventDetailScreen() {
         </View>
       )}
 
+      {event.participants && event.participants.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            {t("events.page.participants")} · {social?.registeredCount ?? event.participants.length}
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md }}>
+            {event.participants.map((p) => (
+              <View key={p.id} style={styles.participant}>
+                {p.avatarUrl ? (
+                  <Image source={{ uri: p.avatarUrl }} style={styles.pAvatar} />
+                ) : (
+                  <View style={[styles.pAvatar, styles.orgAvatarFallback]}>
+                    <Text style={styles.orgInitial}>{(p.name ?? "?").slice(0, 1).toUpperCase()}</Text>
+                  </View>
+                )}
+                <Text style={styles.pName} numberOfLines={1}>
+                  {p.name}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
       <View style={styles.registrationBox}>
         {error && <Text style={styles.error}>{error}</Text>}
         {renderRegistration()}
       </View>
+
+      {event.priceType === "PAID" && <Text style={styles.disclaimer}>{t("events.page.paidDisclaimer")}</Text>}
     </ScrollView>
   );
 
@@ -229,8 +344,27 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl * 2, gap: spacing.md },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
-  cover: { width: "100%", height: 260, borderRadius: radius.lg, backgroundColor: colors.surface },
-  coverPlaceholder: {},
+  galleryBleed: { marginHorizontal: -spacing.lg, marginTop: -spacing.lg },
+  titleRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.md },
+  shareButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
+  socialBar: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, gap: 6 },
+  socialRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  socialCount: { color: colors.foreground, fontSize: 14, fontWeight: "700" },
+  socialMuted: { color: colors.muted, fontSize: 13 },
+  organizerCard: { flexDirection: "row", alignItems: "center", gap: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md },
+  orgAvatar: { width: 46, height: 46, borderRadius: 23 },
+  orgAvatarFallback: { backgroundColor: colors.accentFrom, alignItems: "center", justifyContent: "center" },
+  orgInitial: { color: colors.white, fontWeight: "800", fontSize: 16 },
+  orgName: { color: colors.foreground, fontSize: 15, fontWeight: "700" },
+  orgRating: { color: "#f59e0b", fontSize: 13, fontWeight: "700" },
+  locationCard: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md },
+  locationText: { color: colors.foreground, fontSize: 14, fontWeight: "600" },
+  routeButton: { flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "flex-start", backgroundColor: colors.accentFrom, borderRadius: radius.full, paddingHorizontal: 16, paddingVertical: 10 },
+  routeText: { color: colors.white, fontWeight: "700", fontSize: 14 },
+  participant: { width: 60, alignItems: "center", gap: 4 },
+  pAvatar: { width: 48, height: 48, borderRadius: 24 },
+  pName: { color: colors.muted, fontSize: 11, maxWidth: 60 },
+  disclaimer: { color: colors.muted, fontSize: 11, lineHeight: 16, backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md },
   title: { color: colors.foreground, fontSize: 24, fontWeight: "700" },
   metaRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
   meta: { color: colors.muted, fontSize: 13 },

@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Heart,
+  Share2,
   SlidersHorizontal,
   Undo2,
   X,
@@ -18,7 +19,7 @@ import type { CursorPage, EventCard as EventCardData } from "@/lib/event-types";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "./event-card";
 import { DiscoverFilters, type DiscoveryFilters } from "./discover-filters";
-import { EMPTY_FILTERS, countActiveFilters, filtersToQuery } from "./filters";
+import { EMPTY_FILTERS, countActiveFilters, filtersToQuery } from "@kiro/types";
 
 const FILTERS_STORAGE_KEY = "kiro_discover_filters";
 const SWIPE_DISTANCE = 100;
@@ -198,6 +199,25 @@ export function DiscoverFeed() {
     }
   }
 
+  const [shareNote, setShareNote] = useState<string | null>(null);
+
+  /** §11/§65 — native share sheet where available, otherwise copy the public link. */
+  async function handleShare() {
+    if (!current) return;
+    const url = `${window.location.origin}/events/${current.slug}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: current.title, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setShareNote(t("profile.linkCopied"));
+      window.setTimeout(() => setShareNote(null), 2000);
+    } catch {
+      // User cancelled the share sheet or clipboard is blocked — nothing to do.
+    }
+  }
+
   function handleUndo() {
     setIndex((i) => Math.max(0, i - 1));
   }
@@ -290,20 +310,40 @@ export function DiscoverFeed() {
         <h1 className="text-2xl font-bold accent-gradient-text">
           {t("nav.discover")}
         </h1>
-        <button
-          type="button"
-          onClick={() => setFiltersOpen((o) => !o)}
-          aria-label={t("discover.filters")}
-          title={t("discover.filters")}
-          className={`relative h-11 w-11 ${roundButton}`}
-        >
-          <SlidersHorizontal className="h-5 w-5" />
-          {activeFilterCount > 0 && (
-            <span className="accent-gradient absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold text-white">
-              {activeFilterCount}
-            </span>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void handleShare()}
+            disabled={!current}
+            aria-label={t("discover.share")}
+            title={t("discover.share")}
+            className={`h-11 w-11 ${roundButton}`}
+          >
+            <Share2 className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((o) => !o)}
+            aria-label={t("discover.filters")}
+            title={t("discover.filters")}
+            className={`relative h-11 w-11 ${roundButton}`}
+          >
+            <SlidersHorizontal className="h-5 w-5" />
+            {activeFilterCount > 0 && (
+              <span className="accent-gradient absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold text-white">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+        </div>
+        {shareNote && (
+          <span
+            role="status"
+            className="absolute right-0 top-full mt-2 rounded-full bg-foreground px-3 py-1 text-xs font-semibold text-background"
+          >
+            {shareNote}
+          </span>
+        )}
         {filtersOpen && (
           <DiscoverFilters
             filters={filters}

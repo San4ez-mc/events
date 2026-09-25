@@ -17,8 +17,16 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-        <Link href="/" className="text-lg font-bold accent-gradient-text" aria-label="Кіро">
-          Кіро
+        <Link href="/" className="flex items-center gap-2" aria-label="Кіро">
+          {/* eslint-disable-next-line @next/next/no-img-element -- tiny static brand mark */}
+          <img
+            src="/logo-mark.png"
+            alt=""
+            width={32}
+            height={32}
+            className="h-8 w-8 rounded-lg"
+          />
+          <span className="text-lg font-bold accent-gradient-text">Кіро</span>
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-medium sm:flex">
@@ -51,7 +59,15 @@ export function SiteHeader() {
 
           <button
             type="button"
-            onClick={() => setTheme(theme === "dark" ? "light" : theme === "light" ? "system" : "dark")}
+            onClick={() =>
+              setTheme(
+                theme === "dark"
+                  ? "light"
+                  : theme === "light"
+                    ? "system"
+                    : "dark",
+              )
+            }
             className="flex h-9 w-9 items-center justify-center rounded-full border border-border hover:bg-surface"
             aria-label="Change theme"
             title={`Theme: ${theme}`}
@@ -85,7 +101,9 @@ export function SiteHeader() {
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
               >
-                {(user.name ?? user.nickname ?? user.email).slice(0, 1).toUpperCase()}
+                {(user.name ?? user.nickname ?? user.email)
+                  .slice(0, 1)
+                  .toUpperCase()}
               </button>
               {menuOpen && (
                 <div
@@ -140,7 +158,9 @@ export function SiteHeader() {
                   >
                     {t("nav.myEvents")}
                   </Link>
-                  {["MODERATOR", "ADMIN", "SUPER_ADMIN"].includes(user.role) && (
+                  {["MODERATOR", "ADMIN", "SUPER_ADMIN"].includes(
+                    user.role,
+                  ) && (
                     <Link
                       href="/admin"
                       role="menuitem"

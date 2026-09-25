@@ -3,6 +3,7 @@ import type { EventFormat, EventPriceType, EventStatus } from "@kiro/types";
 export interface EventMedia {
   id: string;
   type: "IMAGE" | "VIDEO";
+  originalUrl: string;
   displayUrl: string;
   thumbnailUrl: string;
   focalX: string | null;
@@ -36,6 +37,18 @@ export interface EventCard {
 }
 
 export interface EventDetail extends EventCard {
+  addressLocked?: boolean;
+  latitude?: string | null;
+  longitude?: string | null;
+  organizer?: {
+    id: string;
+    name: string | null;
+    nickname: string | null;
+    avatarUrl: string | null;
+    bio: string | null;
+    eventsCount: number;
+    rating: { average: number | null; reviewsCount: number };
+  };
   participants?: { id: string; name: string | null; avatarUrl: string | null }[];
   description: string | null;
   addressText: string | null;

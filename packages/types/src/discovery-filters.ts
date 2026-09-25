@@ -128,7 +128,9 @@ export function filtersToQuery(
   f: DiscoveryFilters,
   cursor: string | null,
 ): string {
-  const p = new URLSearchParams();
+  // Tiny platform-neutral query builder (this package has no DOM/Node typings).
+  const pairs: string[] = [];
+  const p = { set: (key: string, value: string) => void pairs.push(`${key}=${encodeURIComponent(value)}`) };
   if (f.cityId) p.set("cityIds", f.cityId);
   if (f.districtIds.length) p.set("districtIds", f.districtIds.join(","));
   if (f.categoryIds.length) p.set("categoryIds", f.categoryIds.join(","));
@@ -174,5 +176,5 @@ export function filtersToQuery(
   }
 
   if (cursor) p.set("cursor", cursor);
-  return p.toString();
+  return pairs.join("&");
 }

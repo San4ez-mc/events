@@ -14,9 +14,9 @@ import {
   type FormatFilter,
   type GroupSize,
   type TimePreset,
-} from "./filters";
+} from "@kiro/types";
 
-export type { DiscoveryFilters } from "./filters";
+export type { DiscoveryFilters } from "@kiro/types";
 
 interface Option {
   id: string;

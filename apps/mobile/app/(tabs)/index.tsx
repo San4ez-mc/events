@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Share, StyleSheet, Text, View } from "react-native";
+import * as SecureStore from "expo-secure-store";
+import { EMPTY_FILTERS, countActiveFilters, filtersToQuery, type DiscoveryFilters } from "@kiro/types";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useTranslations } from "../../src/lib/locale-context";
 import { SwipeCard } from "../../src/components/discover/SwipeCard";
+import { FiltersSheet } from "../../src/components/discover/FiltersSheet";
 import type { CursorPage, EventCard } from "../../src/lib/event-types";
 import { colors, spacing } from "../../src/lib/theme";
 
+const FILTERS_KEY = "kiro_discover_filters";
 const ACTIONS_HEIGHT = 72;
 const ACTIONS_MARGIN = 20;
 
@@ -18,13 +22,15 @@ export default function DiscoverScreen() {
   const [cards, setCards] = useState<EventCard[] | null>(null);
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const cursorRef = useRef<string | null>(null);
+  const [filters, setFilters] = useState<DiscoveryFilters>(EMPTY_FILTERS);
+  const filtersRef = useRef(filters);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const historyRef = useRef<EventCard[]>([]);
 
-  const loadPage = useCallback(async (afterCursor?: string) => {
-    const params = new URLSearchParams({ limit: "10" });
-    if (afterCursor) params.set("cursor", afterCursor);
+  const loadPage = useCallback(async (activeFilters: DiscoveryFilters, afterCursor?: string) => {
+    const query = filtersToQuery(activeFilters, afterCursor ?? null);
     const token = getAccessToken();
-    const res = await fetch(`${API_URL}/api/v1/discovery?${params.toString()}`, {
+    const res = await fetch(`${API_URL}/api/v1/discovery?limit=10${query ? `&${query}` : ""}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     });
     if (!res.ok) return;
@@ -34,8 +40,50 @@ export default function DiscoverScreen() {
   }, []);
 
   useEffect(() => {
-    void loadPage();
+    void (async () => {
+      let initial = EMPTY_FILTERS;
+      try {
+        const raw = await SecureStore.getItemAsync(FILTERS_KEY);
+        if (raw) initial = { ...EMPTY_FILTERS, ...(JSON.parse(raw) as Partial<DiscoveryFilters>) };
+      } catch {
+        // No saved filters — start unfiltered.
+      }
+      filtersRef.current = initial;
+      setFilters(initial);
+      await loadPage(initial);
+    })();
   }, [loadPage]);
+
+  /** §7 — apply, remember on this device, and mirror the profile-mappable part to the account. */
+  async function applyFilters(next: DiscoveryFilters) {
+    filtersRef.current = next;
+    setFilters(next);
+    historyRef.current = [];
+    void SecureStore.setItemAsync(FILTERS_KEY, JSON.stringify(next)).catch(() => {});
+    const token = getAccessToken();
+    if (token) {
+      void fetch(`${API_URL}/api/v1/discovery/preferences`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          preferredCityId: next.cityId,
+          preferredDistrictIds: next.districtIds,
+          preferredCategoryIds: next.categoryIds,
+          preferredFormat: next.format === "any" ? null : next.format,
+          freeOnly: next.freeOnly,
+          maxBudget: next.maxPrice !== null && next.maxPrice < 2000 ? next.maxPrice : null,
+        }),
+      }).catch(() => {});
+    }
+    setCards(null);
+    await loadPage(next);
+  }
+
+  async function shareEvent(event: EventCard) {
+    const url = `${API_URL}/events/${event.slug}`;
+    await Share.share({ message: `${event.title}
+${url}`, url, title: event.title }).catch(() => {});
+  }
 
   async function recordInteraction(eventId: string, interaction: "PASS" | "OPEN") {
     const token = getAccessToken();
@@ -52,7 +100,7 @@ export default function DiscoverScreen() {
     setCards((prev) => {
       if (!prev) return prev;
       const rest = prev.filter((c) => c.id !== event.id);
-      if (rest.length < 3 && cursorRef.current) void loadPage(cursorRef.current);
+      if (rest.length < 3 && cursorRef.current) void loadPage(filtersRef.current, cursorRef.current);
       return rest;
     });
   }
@@ -133,9 +181,26 @@ export default function DiscoverScreen() {
           ))
       )}
 
-      <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]} pointerEvents="none">
+      <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]} pointerEvents="box-none">
         <Text style={styles.headerTitle}>{t("nav.discover")}</Text>
+        <View style={styles.headerActions}>
+          {top && (
+            <Pressable onPress={() => void shareEvent(top)} style={styles.headerButton} accessibilityLabel={t("discover.share")}>
+              <Ionicons name="share-social-outline" size={22} color={colors.white} />
+            </Pressable>
+          )}
+          <Pressable onPress={() => setFiltersOpen(true)} style={styles.headerButton} accessibilityLabel={t("discover.filters")}>
+            <Ionicons name="options-outline" size={22} color={colors.white} />
+            {countActiveFilters(filters) > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{countActiveFilters(filters)}</Text>
+              </View>
+            )}
+          </Pressable>
+        </View>
       </View>
+
+      <FiltersSheet visible={filtersOpen} filters={filters} onApply={(f) => void applyFilters(f)} onClose={() => setFiltersOpen(false)} />
 
       {top && (
         <View style={[styles.actions, { bottom: ACTIONS_MARGIN }]}>
@@ -202,7 +267,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   emptyButtonText: { color: colors.foreground, fontWeight: "600" },
-  header: { position: "absolute", top: 0, left: 0, right: 0, paddingHorizontal: spacing.lg },
+  header: { position: "absolute", top: 0, left: 0, right: 0, paddingHorizontal: spacing.lg, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  headerActions: { flexDirection: "row", gap: spacing.sm },
+  headerButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" },
+  badge: { position: "absolute", top: -2, right: -2, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: colors.accentTo, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
+  badgeText: { color: colors.white, fontSize: 11, fontWeight: "800" },
   headerTitle: { color: colors.white, fontSize: 24, fontWeight: "800", textShadowColor: "rgba(0,0,0,0.5)", textShadowRadius: 6 },
   actions: {
     position: "absolute",

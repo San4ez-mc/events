@@ -2,7 +2,11 @@
   "expo": {
     "name": "Кіро",
     "slug": "kiro",
-    "scheme": "kiro",
+    "scheme": [
+      "kiro",
+      "space.fineko.kiro",
+      "com.googleusercontent.apps.257175906055-ae1pea6dav87793tbpsub09j7u5tkn6q"
+    ],
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,7 +19,7 @@
     "android": {
       "package": "space.fineko.kiro",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#21232d",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -28,7 +32,14 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Кіро потребує доступу до фото та відео, щоб додати їх до вашої події."
+        }
+      ],
+      "expo-web-browser"
     ],
     "extra": {
       "router": {},

@@ -1,14 +1,29 @@
 {
-  "cli": { "version": ">= 16.0.0", "appVersionSource": "remote" },
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
   "build": {
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_API_URL": "https://kiro.fineko.space" }
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://kiro.fineko.space",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "257175906055-2o5q0jlm3cavm1tihvscjs8tpg67ec6l.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "257175906055-ae1pea6dav87793tbpsub09j7u5tkn6q.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "257175906055-jj6l2l6s8diik63egdvul74nde3mfg8p.apps.googleusercontent.com"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "env": { "EXPO_PUBLIC_API_URL": "https://kiro.fineko.space" }
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://kiro.fineko.space",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "257175906055-2o5q0jlm3cavm1tihvscjs8tpg67ec6l.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "257175906055-ae1pea6dav87793tbpsub09j7u5tkn6q.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "257175906055-jj6l2l6s8diik63egdvul74nde3mfg8p.apps.googleusercontent.com"
+      }
     }
   }
 }

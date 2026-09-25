@@ -77,6 +77,8 @@ export function SwipeCard({
   const cover = event.media[0];
   const place = [event.city?.nameUk, event.district?.nameUk].filter(Boolean).join(", ");
   const isFree = event.priceType === "FREE";
+  const social = event.social;
+  const goingLabel = event.capacity ? `${social?.registeredCount ?? 0} / ${event.capacity}` : String(social?.registeredCount ?? 0);
 
   return (
     <Animated.View
@@ -129,6 +131,53 @@ export function SwipeCard({
               <Text style={styles.meta}>{t("events.wizard.formatOnline")}</Text>
             </View>
           )}
+          {event.description ? (
+            <Text style={styles.description} numberOfLines={2}>
+              {event.description}
+            </Text>
+          ) : null}
+          {social && (
+            <View style={styles.socialRow}>
+              <View style={styles.metaRow}>
+                <Ionicons name="people" size={16} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.going}>
+                  {goingLabel} <Text style={styles.goingLabel}>{t("discover.participants")}</Text>
+                </Text>
+              </View>
+              <View style={styles.avatars}>
+                {social.attendeePreviews.map((p, i) => (
+                  <View key={p.id} style={[styles.avatarWrap, i > 0 && { marginLeft: -8 }]}>
+                    {p.avatarUrl ? (
+                      <Image source={{ uri: p.avatarUrl }} style={styles.avatar} />
+                    ) : (
+                      <View style={[styles.avatar, styles.avatarFallback]}>
+                        <Text style={styles.avatarInitial}>{(p.name ?? "?").slice(0, 1).toUpperCase()}</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+                {social.registeredCount > social.attendeePreviews.length && (
+                  <View style={[styles.avatar, styles.avatarMore, social.attendeePreviews.length > 0 && { marginLeft: -8 }]}>
+                    <Text style={styles.avatarInitial}>+{social.registeredCount - social.attendeePreviews.length}</Text>
+                  </View>
+                )}
+              </View>
+              {social.friendsGoingCount > 0 && (
+                <View style={styles.friendsChip}>
+                  <Ionicons name="people-circle" size={14} color={colors.white} />
+                  <Text style={styles.friendsText}>
+                    {social.friendsGoingCount} {t("discover.going")}
+                  </Text>
+                </View>
+              )}
+              {social.organizerRating.average !== null && (
+                <View style={styles.metaRow}>
+                  <Ionicons name="star" size={14} color="#fcd34d" />
+                  <Text style={styles.rating}>{social.organizerRating.average.toFixed(1)}</Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
         {isTop && (
@@ -160,6 +209,19 @@ const styles = StyleSheet.create({
   title: { color: colors.white, fontSize: 28, fontWeight: "800", lineHeight: 33 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   meta: { color: "rgba(255,255,255,0.9)", fontSize: 15 },
+  description: { color: "rgba(255,255,255,0.75)", fontSize: 14, lineHeight: 19, marginTop: 2 },
+  socialRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 12, marginTop: 4 },
+  going: { color: colors.white, fontSize: 14, fontWeight: "700" },
+  goingLabel: { color: "rgba(255,255,255,0.7)", fontWeight: "400" },
+  avatars: { flexDirection: "row", alignItems: "center" },
+  avatarWrap: {},
+  avatar: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: "rgba(0,0,0,0.45)" },
+  avatarFallback: { backgroundColor: colors.accentFrom, alignItems: "center", justifyContent: "center" },
+  avatarMore: { backgroundColor: "rgba(255,255,255,0.25)", alignItems: "center", justifyContent: "center", minWidth: 26, paddingHorizontal: 4 },
+  avatarInitial: { color: colors.white, fontSize: 10, fontWeight: "700" },
+  friendsChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,255,255,0.18)", borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3 },
+  friendsText: { color: colors.white, fontSize: 12, fontWeight: "700" },
+  rating: { color: "#fcd34d", fontSize: 13, fontWeight: "700" },
   stamp: { position: "absolute", top: 110, borderWidth: 4, borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 4 },
   stampPass: { left: spacing.lg, borderColor: "#f43f5e", transform: [{ rotate: "-12deg" }] },
   stampOpen: { right: spacing.lg, borderColor: "#34d399", transform: [{ rotate: "12deg" }] },

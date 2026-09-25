@@ -23,6 +23,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Кіро",
   description: "Платформа пошуку подій та розваг — гортай, обирай, записуйся.",
+  openGraph: {
+    title: "Кіро",
+    description: "Гортай, обирай, записуйся.",
+    images: ["/logo.jpg"],
+  },
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

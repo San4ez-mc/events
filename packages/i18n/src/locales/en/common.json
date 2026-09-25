@@ -205,7 +205,8 @@
     "savedEmpty": "You haven't saved anything yet",
     "registered": "registered",
     "today": "Today",
-    "tomorrow": "Tomorrow"
+    "tomorrow": "Tomorrow",
+    "share": "Share"
   },
   "search": {
     "placeholder": "Search events, categories, organizers, cities…",
@@ -529,5 +530,55 @@
     "reset": "Reset",
     "apply": "Show events",
     "saved": "Filters saved"
+  },
+  "create": {
+    "subtitle": "Create an event in a few steps",
+    "step": "Step",
+    "of": "of",
+    "loginRequired": "Sign in to create an event",
+    "stepBasics": "Basics",
+    "stepMedia": "Photos & video",
+    "stepWhen": "When & where",
+    "stepPrice": "Price & seats",
+    "stepPreview": "Publish",
+    "date": "Date",
+    "time": "Start time",
+    "timeHint": "HH:MM, e.g. 19:00",
+    "dateHint": "YYYY-MM-DD",
+    "duration": "Duration, hours",
+    "addMedia": "Add photo or video",
+    "mediaHint": "Up to 10 files. The first photo becomes the cover.",
+    "uploading": "Uploading…",
+    "next": "Next",
+    "back": "Back",
+    "saving": "Saving draft…",
+    "titleTooShort": "Enter an event title",
+    "summary": "Check before publishing",
+    "openEvent": "Open event",
+    "createAnother": "Create another",
+    "shareEvent": "Share",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "saturday": "Saturday",
+    "sunday": "Sunday",
+    "minPeople": "Minimum participants",
+    "maxPeople": "Maximum participants",
+    "optional": "optional"
+  },
+  "myEvents": {
+    "upcoming": "Upcoming",
+    "pending": "Pending",
+    "saved": "Saved",
+    "past": "Past",
+    "organized": "Organized by me",
+    "empty": {
+      "upcoming": "No confirmed upcoming events. Time to pick something fun!",
+      "pending": "No applications waiting for approval.",
+      "saved": "You haven't saved anything yet. Tap the heart on an event card.",
+      "past": "No past events yet.",
+      "mine": "You haven't created events yet. The Create tab is waiting for you!"
+    },
+    "open": "My events",
+    "openHint": "Upcoming, pending, saved, past"
   }
 }
