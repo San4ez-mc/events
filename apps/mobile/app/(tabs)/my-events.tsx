@@ -5,6 +5,7 @@ import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useTranslations } from "../../src/lib/locale-context";
 import type { CursorPage, RegistrationWithEvent } from "../../src/lib/event-types";
 import { colors, radius, spacing } from "../../src/lib/theme";
+import { ScreenHeader, EmptyState } from "../../src/components/ui/ScreenHeader";
 
 const STATUS_LABEL_KEYS: Record<string, string> = {
   PENDING: "registration.pending",
@@ -36,7 +37,7 @@ export default function MyEventsScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>{t("nav.myEvents")}</Text>
+      <ScreenHeader title={t("nav.myEvents")} subtitle={t("screens.myEventsSubtitle")} icon="ticket" />
 
       <FlatList
         data={items ?? []}
@@ -56,14 +57,14 @@ export default function MyEventsScreen() {
             </View>
           </Pressable>
         )}
-        ListEmptyComponent={items !== null ? <Text style={styles.empty}>{t("common.empty")}</Text> : null}
+        ListEmptyComponent={items !== null ? <EmptyState icon="ticket-outline" text={t("screens.myEventsEmpty")} /> : null}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
+  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: spacing.lg },
   header: { color: colors.foreground, fontSize: 22, fontWeight: "700", marginBottom: spacing.md },
   row: { flexDirection: "row", gap: spacing.sm, paddingVertical: spacing.sm, alignItems: "center" },
   thumb: { width: 48, height: 64, borderRadius: radius.sm, backgroundColor: colors.surface },

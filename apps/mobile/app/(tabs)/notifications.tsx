@@ -3,6 +3,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useTranslations } from "../../src/lib/locale-context";
 import { colors, spacing } from "../../src/lib/theme";
+import { ScreenHeader, EmptyState } from "../../src/components/ui/ScreenHeader";
 
 interface NotificationItem {
   id: string;
@@ -41,7 +42,7 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>{t("nav.notifications")}</Text>
+      <ScreenHeader title={t("nav.notifications")} subtitle={t("screens.notificationsSubtitle")} icon="notifications" />
 
       <FlatList
         data={items ?? []}
@@ -58,14 +59,14 @@ export default function NotificationsScreen() {
             <Text style={styles.date}>{new Date(item.createdAt).toLocaleString(locale === "uk" ? "uk-UA" : "en-US")}</Text>
           </Pressable>
         )}
-        ListEmptyComponent={items !== null ? <Text style={styles.empty}>{t("common.empty")}</Text> : null}
+        ListEmptyComponent={items !== null ? <EmptyState icon="notifications-outline" text={t("screens.notificationsEmpty")} /> : null}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
+  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: spacing.lg },
   header: { color: colors.foreground, fontSize: 22, fontWeight: "700", marginBottom: spacing.md },
   row: { paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: 2 },
   rowUnread: { opacity: 1 },

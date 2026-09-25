@@ -50,5 +50,5 @@ npx eas-cli build -p android --profile preview
 
 The build points the app at `https://kiro.fineko.space`, so step 1-2 must be
 done first. iOS builds and both stores need paid developer accounts
-(Apple $99/yr, Google Play $25 once); `com.kiro.app` is still a placeholder
+(Apple $99/yr, Google Play $25 once); `space.fineko.kiro` is still a placeholder
 bundle ID, so decide the final one before the first store build.

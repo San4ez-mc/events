@@ -674,7 +674,7 @@ audit — admin routes, phone-friendly UI.
       infrastructure/deploy/deploy.sh` на сервері. Лишилось власникові:
       збірка APK (потрібен акаунт expo.dev) і Google Play.
 - [ ] App Store / Play Store: bundle ID/applicationId (зараз **заглушка**
-      `com.kiro.app` — навмисно не фіналізований, узгодити перед реальним
+      `space.fineko.kiro` — навмисно не фіналізований, узгодити перед реальним
       submit), Apple Developer + Google Play акаунти (створює власник —
       агент не може вводити платіжні дані), іконки в правильному форматі
       (див. `docs/brand/README.md`), privacy policy, App Privacy /

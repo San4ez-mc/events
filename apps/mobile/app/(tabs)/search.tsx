@@ -6,6 +6,7 @@ import { useTranslations } from "../../src/lib/locale-context";
 import { TextField } from "../../src/components/ui/TextField";
 import type { CursorPage, EventCard } from "../../src/lib/event-types";
 import { colors, radius, spacing } from "../../src/lib/theme";
+import { ScreenHeader, EmptyState } from "../../src/components/ui/ScreenHeader";
 
 export default function SearchScreen() {
   const { t } = useTranslations();
@@ -26,7 +27,7 @@ export default function SearchScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>{t("nav.search")}</Text>
+      <ScreenHeader title={t("nav.search")} subtitle={t("screens.searchSubtitle")} icon="search" />
       <TextField
         label={t("nav.search")}
         value={query}
@@ -58,7 +59,11 @@ export default function SearchScreen() {
           </Pressable>
         )}
         ListEmptyComponent={
-          query.trim() && results !== null ? <Text style={styles.empty}>{t("common.empty")}</Text> : null
+          query.trim() && results !== null ? (
+            <EmptyState icon="sad-outline" text={t("screens.searchNothing")} />
+          ) : (
+            <EmptyState icon="sparkles" title={t("screens.searchHintTitle")} text={t("screens.searchHintText")} />
+          )
         }
       />
     </View>
@@ -66,7 +71,7 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg, gap: spacing.md },
+  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: spacing.lg, gap: spacing.md },
   header: { color: colors.foreground, fontSize: 22, fontWeight: "700" },
   list: { flex: 1, marginTop: spacing.sm },
   row: { flexDirection: "row", gap: spacing.sm, paddingVertical: spacing.sm, alignItems: "center" },

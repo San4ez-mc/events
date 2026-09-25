@@ -10,10 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kiro.app"
+      "bundleIdentifier": "space.fineko.kiro"
     },
     "android": {
-      "package": "com.kiro.app",
+      "package": "space.fineko.kiro",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
