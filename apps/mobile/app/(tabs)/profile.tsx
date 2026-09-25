@@ -102,6 +102,14 @@ export default function ProfileScreen() {
           <Button title={t("common.save")} onPress={() => void handleSave()} loading={saving} disabled={!loaded} />
         </View>
 
+        <Pressable style={styles.row} onPress={() => router.push("/friends")}>
+          <Ionicons name="people" size={22} color={colors.accentFrom} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowText}>{t("friends.title")}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        </Pressable>
+
         <Pressable style={styles.row} onPress={() => router.push("/my-events")}>
           <Ionicons name="ticket" size={22} color={colors.accentFrom} />
           <View style={{ flex: 1 }}>

@@ -26,6 +26,8 @@ export default function RootLayout() {
               <Stack.Screen name="login" options={{ headerShown: false, presentation: "modal" }} />
               <Stack.Screen name="register" options={{ headerShown: false, presentation: "modal" }} />
               <Stack.Screen name="event/[slug]" options={{ title: "" }} />
+              <Stack.Screen name="users/[id]" options={{ title: "" }} />
+              <Stack.Screen name="friends" options={{ title: "" }} />
             </Stack>
           </AuthProvider>
         </LocaleProvider>

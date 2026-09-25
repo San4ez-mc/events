@@ -37,6 +37,11 @@
               "scheme": "https",
               "host": "kiro.fineko.space",
               "pathPrefix": "/events"
+            },
+            {
+              "scheme": "https",
+              "host": "kiro.fineko.space",
+              "pathPrefix": "/users"
             }
           ],
           "category": [

@@ -241,7 +241,7 @@ export default function EventDetailScreen() {
       {organizer && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("events.page.organizer")}</Text>
-          <View style={styles.organizerCard}>
+          <Pressable style={styles.organizerCard} onPress={() => router.push(`/users/${organizer.id}`)}>
             {organizer.avatarUrl ? (
               <Image source={{ uri: organizer.avatarUrl }} style={styles.orgAvatar} />
             ) : (
@@ -265,7 +265,7 @@ export default function EventDetailScreen() {
                 </Text>
               </View>
             </View>
-          </View>
+          </Pressable>
         </View>
       )}
 
