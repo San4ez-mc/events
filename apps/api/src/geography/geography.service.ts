@@ -1,4 +1,6 @@
 import { Injectable } from "@nestjs/common";
+import type { SuggestDistrictDto } from "./dto/suggest-district.dto";
+import type { UpdateDistrictDto } from "../admin/dto/update-district.dto";
 import { PrismaService } from "../prisma/prisma.service";
 import { ApiException } from "../common/exceptions/api.exception";
 import { ResourceNotFoundException } from "../common/exceptions/common-exceptions";
@@ -55,6 +57,49 @@ export class GeographyService {
       where: { cityId, status: "ACTIVE" },
       orderBy: { nameUk: "asc" },
     });
+  }
+
+  /** §37 — community-suggested district: PENDING (invisible) until approved by an admin. */
+  async suggestDistrict(userId: string, dto: SuggestDistrictDto) {
+    const city = await this.prisma.city.findUnique({ where: { id: dto.cityId } });
+    if (!city || city.status !== "ACTIVE") throw new ResourceNotFoundException("City not found");
+    const existing = await this.prisma.district.findUnique({ where: { cityId_nameUk: { cityId: dto.cityId, nameUk: dto.nameUk.trim() } } });
+    if (existing) return existing; // idempotent: same name -> same row, whatever its status
+    return this.prisma.district.create({
+      data: {
+        cityId: dto.cityId,
+        nameUk: dto.nameUk.trim(),
+        nameEn: dto.nameEn?.trim() || null,
+        status: "PENDING",
+        source: "USER_CREATED",
+        createdByUserId: userId,
+      },
+    });
+  }
+
+  listAllDistrictsForAdmin(cityId?: string) {
+    return this.prisma.district.findMany({
+      where: { cityId },
+      orderBy: [{ status: "asc" }, { nameUk: "asc" }],
+      select: { id: true, cityId: true, nameUk: true, nameEn: true, status: true, source: true, createdAt: true },
+    });
+  }
+
+  async adminUpdateDistrict(adminId: string, id: string, dto: UpdateDistrictDto, ip?: string) {
+    const before = await this.prisma.district.findUnique({ where: { id } });
+    if (!before) throw new ResourceNotFoundException("District not found");
+    if (before.status === "MERGED") throw new ApiException("VALIDATION_ERROR", "A merged district can't be edited", 400);
+    const updated = await this.prisma.district.update({ where: { id }, data: dto });
+    await this.auditLog.record({
+      actorUserId: adminId,
+      action: dto.status && dto.status !== before.status ? `DISTRICT_${dto.status}` : "DISTRICT_UPDATE",
+      entityType: "District",
+      entityId: id,
+      before: { nameUk: before.nameUk, nameEn: before.nameEn, status: before.status },
+      after: dto,
+      ip,
+    });
+    return updated;
   }
 
   /** §77 — same behavior as category merge (§76): never hard-delete, repoint events, notify owners. */
