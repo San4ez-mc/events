@@ -313,3 +313,13 @@ payment-provider credentials), admin screens.
 With the VPS unreachable, all migrations (incl. `event_faq_items`, `search_trigram_indexes`, `event_price_options`)
 were applied to a throw-away local Postgres and the full API e2e suite was run: **162 passed, 5 failed** — the 5 are
 `event-media` (needs MinIO/S3 on the VPS, environmental). New tests for notifications, FAQ and ticket types pass.
+
+### D5. Final pass
+
+- Mobile moderator screen (moderation queue + review moderation) DONE — visible only to MODERATOR/ADMIN/SUPER_ADMIN.
+- Video posters DONE: `ffmpeg` frame extraction (set `FFMPEG_PATH` if not on PATH; install `ffmpeg` on the VPS), silent fallback otherwise.
+- Browser E2E (Playwright, 14 tests desktop + 390px) passes against a local stack; it found and fixed a soft-404 and an API keep-alive/proxy reset.
+- Deliberately NOT done (decision, not oversight):
+  - **pg-boss worker (#16):** reminders/completion run as an in-process `@nestjs/schedule` cron; correct for the current single API instance. Move to a queue when a second instance or retries are needed.
+  - **Generated typed client (#24):** web/mobile use small hand-written types + `fetch`; migrating is a large mechanical refactor with no user-visible effect.
+- Blocked on external input: SMTP provider credentials, `ANDROID_SHA256_CERTS`, `APPLE_TEAM_ID`, Apple Developer account, WayForPay/Mono merchant keys, Sentry DSN.
