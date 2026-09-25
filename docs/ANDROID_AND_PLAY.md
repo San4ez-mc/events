@@ -66,4 +66,14 @@ npx eas-cli submit -p android --latest              # або завантажт�
 - Бекенд на `https://kiro.fineko.space` працює, реєстрація/вхід проходять.
 - У мобільному наживо не пройдено: вхід, пошук, "Мої події", сповіщення,
   профіль, реєстрація на подію. Пройдіть їх на реальному пристрої з APK.
-- Створення й керування подіями є тільки у вебі (свідоме обмеження).
+- Створення, редагування й керування подіями (реєстрації, статистика) тепер є і в додатку.
+
+## Після першої збірки: Google-вхід і глибокі посилання
+1. Відбитки ключа: `cd apps/mobile && npx eas-cli credentials` -> Android -> ваш профіль ->
+   покажіть keystore: потрібні **SHA-1** і **SHA-256**.
+2. Google Cloud Console -> Credentials -> OAuth client типу **Android** (package `space.fineko.kiro`) ->
+   вставте **SHA-1**. Без цього вхід через Google в APK не працюватиме.
+3. Глибокі посилання (відкриття `kiro.fineko.space/events/...` у додатку): на VPS у `apps/web` середовищі
+   додайте `ANDROID_SHA256_CERTS=<SHA-256>` (кілька через кому) і перезапустіть `kiro-web`. Для Play-збірки
+   додайте також SHA-256 із Play Console -> App integrity (App signing key).
+4. Якщо міняєте `applicationId` - оновіть його в `app.json`, Google Cloud і тут.
