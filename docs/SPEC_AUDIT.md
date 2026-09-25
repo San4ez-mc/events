@@ -284,3 +284,20 @@ Implemented since the table above was written (code in `main`; not yet deployed 
 | #23 feature flags | DONE (`system_settings` flags, public `/config/flags`, admin toggle; enforced for Google login, chat, places, analytics). Sentry not done |
 | #10 SMTP | Waiting for provider credentials |
 | #12, #13, #19, #20, #22, #24 | Not started (need schema migrations / large refactors) |
+
+### D2. Later the same day
+
+| Item | State |
+|---|---|
+| #12 FAQ | DONE: `event_faq_items` (migration `20260925120000`), `PUT /events/:id/faq`, wizard editor, web + mobile display |
+| #13 ticket types | DONE: `event_price_options` (migration `20260925122000`), `PUT /events/:id/price-options`, tier chosen at registration with per-tier capacity, web + mobile UI |
+| #19 series | DONE: edit all upcoming occurrences (`PATCH /event-series/:id`), delete upcoming drafts; web page |
+| #20 search | pg_trgm extension + trigram indexes migration (`20260925121000`); ranking unchanged (trigram relevance) |
+| #7 districts | DONE: user suggestions (`POST /geography/districts`, PENDING), admin list/approve/rename/archive/merge |
+| #8 mobile | + reviews, follow event, save/report; still missing: subscribe-with-category, credits purchase, edit event, onboarding |
+| #16, #22, #24 | Not done (pg-boss worker, media derivatives/video thumbnails, generated typed client) |
+| #10, #25 | Blocked on external credentials/accounts |
+
+All new migrations were generated with `prisma migrate diff` (no DB needed) and have NOT yet been applied/tested against
+Postgres — the VPS was unreachable. `deploy.sh` applies them on deploy; the new e2e tests in `spec-gaps.e2e-spec.ts`
+(notifications, FAQ, ticket types) have not been run yet.
