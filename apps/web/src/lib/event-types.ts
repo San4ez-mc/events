@@ -65,6 +65,20 @@ export interface RegistrationField {
 }
 
 export interface EventDetail extends EventSummary {
+  social?: SocialProof;
+  addressLocked?: boolean;
+  latitude?: string | null;
+  longitude?: string | null;
+  organizer?: {
+    id: string;
+    name: string | null;
+    nickname: string | null;
+    avatarUrl: string | null;
+    bio: string | null;
+    eventsCount: number;
+    rating: { average: number | null; reviewsCount: number };
+  };
+  participants?: { id: string; name: string | null; avatarUrl: string | null }[];
   description: string | null;
   language: string;
   timezone: string;
@@ -144,7 +158,19 @@ export interface CursorPage<T> {
 }
 
 /** Shape returned by GET /discovery, GET /search, GET /discovery/saved (Phase 3). */
+
+/** UX §3/§83 — counts and opt-in previews attached to every card by the API. */
+export interface SocialProof {
+  registeredCount: number;
+  attendeePreviews: { id: string; name: string | null; avatarUrl: string | null }[];
+  friendsGoingCount: number;
+  organizerRating: { average: number | null; reviewsCount: number };
+}
+
 export interface EventCard extends EventSummary {
+  description?: string | null;
+  capacity?: number | null;
+  social?: SocialProof;
   category: { id: string; nameUk: string; nameEn: string } | null;
   city: { id: string; nameUk: string; nameEn: string } | null;
   district: { id: string; nameUk: string } | null;

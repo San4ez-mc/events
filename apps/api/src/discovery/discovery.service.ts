@@ -8,6 +8,7 @@ import { ResourceNotFoundException } from "../common/exceptions/common-exception
 import { decodeScoredCursor, encodeScoredCursor, sliceAfterScoredCursor } from "../common/utils/scored-cursor";
 import { buildPublicEventWhere } from "../common/utils/public-event-filters";
 import { EVENT_CARD_INCLUDE, type EventCard } from "../common/utils/event-card-include";
+import { SocialProofService, type SocialProof } from "../common/social-proof/social-proof.service";
 import type { DiscoveryQueryDto } from "./dto/discovery-query.dto";
 import type { RecordInteractionDto } from "./dto/record-interaction.dto";
 import type { UpdateDiscoveryPreferencesDto } from "./dto/update-discovery-preferences.dto";
@@ -28,10 +29,13 @@ const DISCOVERY_CANDIDATE_CAP = 500;
 
 @Injectable()
 export class DiscoveryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly socialProof: SocialProofService,
+  ) {}
 
   /** §57/§58 — ranked, filtered, cursor-paginated discovery feed. */
-  async getFeed(userId: string | undefined, query: DiscoveryQueryDto): Promise<CursorPage<EventCard>> {
+  async getFeed(userId: string | undefined, query: DiscoveryQueryDto): Promise<CursorPage<EventCard & { social: SocialProof }>> {
     const limit = Math.min(query.limit ?? PAGINATION.defaultLimit, PAGINATION.maxLimit);
     const cursor = query.cursor ? decodeScoredCursor(query.cursor) : null;
 
@@ -49,6 +53,7 @@ export class DiscoveryService {
     });
 
     const scored = candidates
+      .filter((event) => this.startsInHourWindow(event.startsAt, query.hourFrom, query.hourTo, event.timezone))
       .map((event) => ({ ...event, score: this.scoreEvent(event, preferences, now) }))
       .sort((a, b) => (b.score !== a.score ? b.score - a.score : a.id.localeCompare(b.id)));
 
@@ -58,7 +63,10 @@ export class DiscoveryService {
     const last = page[page.length - 1];
 
     return {
-      items: page.map(({ score: _score, ...event }) => event),
+      items: await this.socialProof.attach(
+        page.map(({ score: _score, ...event }) => event),
+        userId,
+      ),
       nextCursor: hasMore && last ? encodeScoredCursor(last.score, last.id) : null,
       hasMore,
     };
@@ -91,7 +99,7 @@ export class DiscoveryService {
   }
 
   /** "Мої → Збережені" (UX §5). */
-  async listSaved(userId: string, query: CursorPageQuery): Promise<CursorPage<EventCard>> {
+  async listSaved(userId: string, query: CursorPageQuery): Promise<CursorPage<EventCard & { social: SocialProof }>> {
     const limit = Math.min(query.limit ?? PAGINATION.defaultLimit, PAGINATION.maxLimit);
 
     const saved = await this.prisma.savedEvent.findMany({
@@ -106,7 +114,10 @@ export class DiscoveryService {
     const page = hasMore ? saved.slice(0, limit) : saved;
 
     return {
-      items: page.map((s) => s.event),
+      items: await this.socialProof.attach(
+        page.map((s) => s.event),
+        userId,
+      ),
       nextCursor: hasMore ? page[page.length - 1]!.id : null,
       hasMore,
     };
@@ -120,6 +131,15 @@ export class DiscoveryService {
 
   async updatePreferences(userId: string, dto: UpdateDiscoveryPreferencesDto) {
     return this.prisma.userPreferences.update({ where: { userId }, data: dto });
+  }
+
+  /** §7 "Час": ranges like morning/day/evening/night. Evaluated in the event timezone; from > to wraps past midnight. */
+  private startsInHourWindow(startsAt: Date | null, from: number | undefined, to: number | undefined, timezone: string): boolean {
+    if (from == null || to == null || !startsAt) return true;
+    const hour = Number(
+      new Intl.DateTimeFormat("en-GB", { hour: "numeric", hourCycle: "h23", timeZone: timezone || "Europe/Kyiv" }).format(startsAt),
+    );
+    return from <= to ? hour >= from && hour < to : hour >= from || hour < to;
   }
 
   private buildFeedWhere(

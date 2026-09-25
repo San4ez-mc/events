@@ -9,7 +9,17 @@ export interface EventMedia {
   focalY: string | null;
 }
 
+export interface SocialProof {
+  registeredCount: number;
+  attendeePreviews: { id: string; name: string | null; avatarUrl: string | null }[];
+  friendsGoingCount: number;
+  organizerRating: { average: number | null; reviewsCount: number };
+}
+
 export interface EventCard {
+  description?: string | null;
+  capacity?: number | null;
+  social?: SocialProof;
   id: string;
   slug: string;
   title: string;
@@ -26,6 +36,7 @@ export interface EventCard {
 }
 
 export interface EventDetail extends EventCard {
+  participants?: { id: string; name: string | null; avatarUrl: string | null }[];
   description: string | null;
   addressText: string | null;
   onlineUrl: string | null;

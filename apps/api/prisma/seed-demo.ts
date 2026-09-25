@@ -110,6 +110,31 @@ const EVENTS: EventSeed[] = [
   },
 ];
 
+/** A public CC0 sample clip (MDN) so the gallery has a real video to play. */
+const SAMPLE_VIDEO = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+
+/** Tops each event up to 4-6 photos (and a video on every 3rd event) so galleries look realistic. Idempotent. */
+async function ensureGallery(eventId: string, i: number) {
+  const target = 4 + (i % 3); // 4..6 files
+  const have = await prisma.eventMedia.count({ where: { eventId } });
+  if (have >= target) return;
+  const rows = [];
+  for (let n = have; n < target; n++) {
+    const isVideo = n === target - 1 && i % 3 === 0;
+    const seed = `kiro-event-${i + 1}-${n}`;
+    rows.push({
+      eventId, sortOrder: n,
+      type: isVideo ? ("VIDEO" as const) : ("IMAGE" as const),
+      width: 900, height: 1200,
+      durationSeconds: isVideo ? 6 : null,
+      originalUrl: isVideo ? SAMPLE_VIDEO : pic(seed, 900, 1200),
+      displayUrl: isVideo ? SAMPLE_VIDEO : pic(seed, 900, 1200),
+      thumbnailUrl: pic(seed, 300, 400),
+    });
+  }
+  await prisma.eventMedia.createMany({ data: rows });
+}
+
 async function main() {
   const passwordHash = await argon2.hash(randomBytes(24).toString("base64url"), { type: argon2.argon2id });
 
@@ -169,6 +194,8 @@ async function main() {
           },
         });
     if (!existing) created++;
+
+    await ensureGallery(event.id, i);
 
     for (const [j, who] of e.going.entries()) {
       const status: RegistrationStatus = e.approval && j === e.going.length - 1 ? "PENDING" : e.price ? "CONFIRMED" : "REGISTERED";

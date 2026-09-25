@@ -14,6 +14,7 @@ import { ACTIVE_REGISTRATION_STATUSES } from "../common/constants/registration-a
 import { NotificationsService } from "../notifications/notifications.service";
 import { FriendsService } from "../friends/friends.service";
 import { EventAccessService } from "../organizer/event-access.service";
+import { SocialProofService } from "../common/social-proof/social-proof.service";
 import type { CreateEventDto } from "./dto/create-event.dto";
 import type { UpdateEventDto } from "./dto/update-event.dto";
 import type { ListMyEventsDto } from "./dto/list-my-events.dto";
@@ -32,6 +33,7 @@ export class EventsService {
     private readonly notifications: NotificationsService,
     private readonly friendsService: FriendsService,
     private readonly eventAccess: EventAccessService,
+    private readonly socialProof: SocialProofService,
   ) {}
 
   /** §10 — creating a first event is what makes a user an "organizer" (not a role). */
@@ -188,6 +190,7 @@ export class EventsService {
         city: true,
         district: true,
         registrationFields: { orderBy: { sortOrder: "asc" } },
+        owner: { select: { id: true, name: true, nickname: true, avatarUrl: true, bio: true } },
       },
     });
     if (!event) throw new ResourceNotFoundException("Event not found");
@@ -200,8 +203,31 @@ export class EventsService {
       throw new ResourceNotFoundException("Event not found");
     }
 
+    const [withSocial] = await this.socialProof.attach([event], requesterId);
+    const organizerEventsCount = await this.prisma.event.count({
+      where: { ownerId: event.ownerId, status: { in: ["PUBLISHED", "COMPLETED"] } },
+    });
+
+    // UX §10 — the exact address / meeting link is revealed only to the organizer
+    // and to people who are actually registered; everyone else sees the district.
+    const canSeeExactLocation = requesterId ? await this.canSeeExactLocation(event.id, event.ownerId, requesterId) : false;
+    const locationFields = canSeeExactLocation
+      ? {}
+      : { addressText: null, addressDetails: null, googlePlaceId: null, latitude: null, longitude: null, onlineUrl: null };
+    // §10/§83 — the public "Учасники" list: only people who opted in to being shown.
+    const participantRows = await this.prisma.registration.findMany({
+      where: { eventId: event.id, status: { in: ["REGISTERED", "PAYMENT_PENDING", "CONFIRMED"] }, showAsParticipant: true },
+      orderBy: { registeredAt: "asc" },
+      take: 50,
+      select: { user: { select: { id: true, name: true, nickname: true, avatarUrl: true } } },
+    });
+
     return {
-      ...event,
+      ...withSocial!,
+      ...locationFields,
+      addressLocked: !canSeeExactLocation && (event.format === "OFFLINE" || event.format === "ONLINE"),
+      organizer: { ...event.owner, eventsCount: organizerEventsCount, rating: withSocial!.social.organizerRating },
+      participants: participantRows.map((r) => ({ id: r.user.id, name: r.user.name ?? r.user.nickname, avatarUrl: r.user.avatarUrl })),
       friendsGoing: await this.getFriendsGoing(event.id, requesterId),
       reviewSummary: await this.getReviewSummary(event.id),
     };
@@ -486,6 +512,16 @@ export class EventsService {
    * (not PENDING, which just means "applied, not yet approved"), and only
    * for an authenticated viewer with accepted friends.
    */
+  /** Owner, or someone with an active registration (§10: exact address only after registering). */
+  private async canSeeExactLocation(eventId: string, ownerId: string, userId: string): Promise<boolean> {
+    if (ownerId === userId) return true;
+    const registration = await this.prisma.registration.findUnique({
+      where: { eventId_userId: { eventId, userId } },
+      select: { status: true },
+    });
+    return !!registration && ["REGISTERED", "PAYMENT_PENDING", "CONFIRMED", "ATTENDED"].includes(registration.status);
+  }
+
   private async getFriendsGoing(eventId: string, viewerId: string | undefined) {
     if (!viewerId) return { count: 0, previews: [] as { id: string; name: string | null; avatarUrl: string | null }[] };
 

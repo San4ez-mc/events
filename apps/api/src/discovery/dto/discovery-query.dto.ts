@@ -47,7 +47,50 @@ export class DiscoveryQueryDto {
   @Type(() => Number)
   @IsNumber()
   @Min(0)
+  minBudget?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   maxBudget?: number;
+
+  @ApiPropertyOptional({ description: "Only 18+ events" })
+  @IsOptional()
+  @Transform(({ value }) => value === "true" || value === true)
+  @IsBoolean()
+  adultsOnly?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  capacityMin?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  capacityMax?: number;
+
+  @ApiPropertyOptional({ description: "Start-hour window in Europe/Kyiv, 0-23. hourFrom > hourTo wraps past midnight (night)." })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(23)
+  hourFrom?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(24)
+  hourTo?: number;
 
   @ApiPropertyOptional({ enum: EVENT_FORMATS })
   @IsOptional()

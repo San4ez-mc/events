@@ -52,10 +52,16 @@ export function SavedEventsContent() {
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-8">
-      <h1 className="text-lg font-bold accent-gradient-text">{t("discover.savedTitle")}</h1>
+      <h1 className="text-lg font-bold accent-gradient-text">
+        {t("discover.savedTitle")}
+      </h1>
 
-      {loading && items.length === 0 && <p className="text-center text-muted">{t("common.loading")}</p>}
-      {!loading && items.length === 0 && <p className="text-center text-muted">{t("discover.savedEmpty")}</p>}
+      {loading && items.length === 0 && (
+        <p className="text-center text-muted">{t("common.loading")}</p>
+      )}
+      {!loading && items.length === 0 && (
+        <p className="text-center text-muted">{t("discover.savedEmpty")}</p>
+      )}
 
       <div className="flex flex-col gap-2">
         {items.map((event) => (
@@ -64,7 +70,11 @@ export function SavedEventsContent() {
       </div>
 
       {hasMore && (
-        <Button variant="secondary" loading={loading} onClick={() => void loadSaved(cursor, false)}>
+        <Button
+          variant="secondary"
+          loading={loading}
+          onClick={() => void loadSaved(cursor, false)}
+        >
           {t("search.loadMore")}
         </Button>
       )}

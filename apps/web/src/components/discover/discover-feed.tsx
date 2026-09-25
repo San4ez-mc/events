@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ChevronLeft, ChevronRight, Heart, SlidersHorizontal, Undo2, X } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Heart,
+  SlidersHorizontal,
+  Undo2,
+  X,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
@@ -10,19 +18,11 @@ import type { CursorPage, EventCard as EventCardData } from "@/lib/event-types";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "./event-card";
 import { DiscoverFilters, type DiscoveryFilters } from "./discover-filters";
+import { EMPTY_FILTERS, countActiveFilters, filtersToQuery } from "./filters";
 
-const EMPTY_FILTERS: DiscoveryFilters = { cityId: null, categoryId: null, freeOnly: false };
+const FILTERS_STORAGE_KEY = "kiro_discover_filters";
 const SWIPE_DISTANCE = 100;
 const TAP_DISTANCE = 6;
-
-function buildQuery(filters: DiscoveryFilters, cursor: string | null): string {
-  const params = new URLSearchParams();
-  if (filters.cityId) params.set("cityIds", filters.cityId);
-  if (filters.categoryId) params.set("categoryIds", filters.categoryId);
-  if (filters.freeOnly) params.set("freeOnly", "true");
-  if (cursor) params.set("cursor", cursor);
-  return params.toString();
-}
 
 const roundButton =
   "flex items-center justify-center rounded-full border border-border bg-background shadow-md transition active:scale-90 hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40";
@@ -53,16 +53,23 @@ export function DiscoverFeed() {
   const startRef = useRef<{ x: number; y: number } | null>(null);
 
   const fetchPage = useCallback(
-    async (targetFilters: DiscoveryFilters, targetCursor: string | null, reset: boolean) => {
+    async (
+      targetFilters: DiscoveryFilters,
+      targetCursor: string | null,
+      reset: boolean,
+    ) => {
       if (fetchingRef.current) return;
       fetchingRef.current = true;
       if (reset) setLoading(true);
       setError(false);
       try {
         const token = getAccessToken();
-        const res = await fetch(`/api/v1/discovery?${buildQuery(targetFilters, targetCursor)}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        });
+        const res = await fetch(
+          `/api/v1/discovery?${filtersToQuery(targetFilters, targetCursor)}`,
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          },
+        );
         if (!res.ok) throw new Error("discovery fetch failed");
         const body = (await res.json()) as CursorPage<EventCardData>;
         setItems((prev) => (reset ? body.items : [...prev, ...body.items]));
@@ -85,13 +92,55 @@ export function DiscoverFeed() {
   // setState calls don't run inside this effect's own synchronous body.
   useEffect(() => {
     if (authLoading) return;
-    queueMicrotask(() => void fetchPage(filters, null, true));
+    // Restore the last-used filters (saved on this device; also mirrored to the profile on apply — §7).
+    let initial = filters;
+    try {
+      const raw = window.localStorage.getItem(FILTERS_STORAGE_KEY);
+      if (raw)
+        initial = {
+          ...EMPTY_FILTERS,
+          ...(JSON.parse(raw) as Partial<DiscoveryFilters>),
+        };
+    } catch {
+      // Storage blocked or corrupt — fall back to no filters.
+    }
+    queueMicrotask(() => {
+      setFilters(initial);
+      void fetchPage(initial, null, true);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once auth resolves; filter changes are applied explicitly via applyFilters()
   }, [authLoading]);
 
   /** Swaps in a new filter set — called directly from the filter panel's "Apply" click, not reactively. */
   function applyFilters(next: DiscoveryFilters) {
     setFilters(next);
+    try {
+      window.localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // Non-critical.
+    }
+    const token = getAccessToken();
+    if (token) {
+      // Mirror the filters that map onto profile preferences so they follow the user across devices (§7).
+      void fetch("/api/v1/discovery/preferences", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          preferredCityId: next.cityId,
+          preferredDistrictIds: next.districtIds,
+          preferredCategoryIds: next.categoryIds,
+          preferredFormat: next.format === "any" ? null : next.format,
+          freeOnly: next.freeOnly,
+          maxBudget:
+            next.maxPrice !== null && next.maxPrice < 2000
+              ? next.maxPrice
+              : null,
+        }),
+      }).catch(() => {});
+    }
     setIndex(0);
     void fetchPage(next, null, true);
   }
@@ -103,7 +152,9 @@ export function DiscoverFeed() {
     const token = getAccessToken();
     if (!token) return;
     (async () => {
-      const res = await fetch("/api/v1/discovery/saved", { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch("/api/v1/discovery/saved", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) return;
       const body = (await res.json()) as CursorPage<EventCardData>;
       setSavedIds(new Set(body.items.map((e) => e.id)));
@@ -114,14 +165,20 @@ export function DiscoverFeed() {
 
   const current = items[index];
   const upcoming = items[index + 1];
-  const activeFilterCount = (filters.cityId ? 1 : 0) + (filters.categoryId ? 1 : 0) + (filters.freeOnly ? 1 : 0);
+  const activeFilterCount = countActiveFilters(filters);
 
-  async function recordInteraction(eventId: string, interaction: "PASS" | "OPEN") {
+  async function recordInteraction(
+    eventId: string,
+    interaction: "PASS" | "OPEN",
+  ) {
     const token = getAccessToken();
     if (!token) return;
     await fetch(`/api/v1/discovery/${eventId}/interactions`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ interaction }),
     }).catch(() => {
       // Best-effort — a failed interaction log shouldn't block browsing.
@@ -191,7 +248,11 @@ export function DiscoverFeed() {
   function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
     const start = startRef.current;
     if (!start) return;
-    setDrag({ x: e.clientX - start.x, y: (e.clientY - start.y) * 0.3, active: true });
+    setDrag({
+      x: e.clientX - start.x,
+      y: (e.clientY - start.y) * 0.3,
+      active: true,
+    });
   }
 
   function onPointerUp() {
@@ -226,7 +287,9 @@ export function DiscoverFeed() {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-5">
       <div className="relative flex items-center justify-between">
-        <h1 className="text-2xl font-bold accent-gradient-text">{t("nav.discover")}</h1>
+        <h1 className="text-2xl font-bold accent-gradient-text">
+          {t("nav.discover")}
+        </h1>
         <button
           type="button"
           onClick={() => setFiltersOpen((o) => !o)}
@@ -242,18 +305,28 @@ export function DiscoverFeed() {
           )}
         </button>
         {filtersOpen && (
-          <DiscoverFilters filters={filters} onApply={applyFilters} onClose={() => setFiltersOpen(false)} />
+          <DiscoverFilters
+            filters={filters}
+            onApply={applyFilters}
+            onClose={() => setFiltersOpen(false)}
+          />
         )}
       </div>
 
       {loading && items.length === 0 && (
-        <div className="aspect-[3/4] w-full animate-pulse rounded-3xl bg-surface" aria-label={t("discover.loading")} />
+        <div
+          className="aspect-[3/4] w-full animate-pulse rounded-3xl bg-surface"
+          aria-label={t("discover.loading")}
+        />
       )}
 
       {error && items.length === 0 && (
         <div className="flex flex-col items-center gap-3 rounded-3xl bg-surface p-10 text-center text-muted">
           <p>{t("discover.errorLoading")}</p>
-          <Button variant="secondary" onClick={() => void fetchPage(filters, null, true)}>
+          <Button
+            variant="secondary"
+            onClick={() => void fetchPage(filters, null, true)}
+          >
             {t("common.retry")}
           </Button>
         </div>
@@ -273,7 +346,10 @@ export function DiscoverFeed() {
       {current && (
         <div className="relative">
           {upcoming && (
-            <div className="pointer-events-none absolute inset-0 origin-bottom scale-[0.94] opacity-70" aria-hidden="true">
+            <div
+              className="pointer-events-none absolute inset-0 origin-bottom scale-[0.94] opacity-70"
+              aria-hidden="true"
+            >
               <EventCard event={upcoming} locale={locale} t={t} />
             </div>
           )}
@@ -364,10 +440,17 @@ export function DiscoverFeed() {
             title={user ? t("discover.save") : t("discover.signInToSave")}
             aria-label={t("discover.save")}
             className={`h-16 w-16 ${roundButton} ${
-              current && savedIds.has(current.id) ? "accent-gradient border-transparent text-white" : "text-pink-500"
+              current && savedIds.has(current.id)
+                ? "accent-gradient border-transparent text-white"
+                : "text-pink-500"
             }`}
           >
-            <Heart className="h-7 w-7" fill={current && savedIds.has(current.id) ? "currentColor" : "none"} />
+            <Heart
+              className="h-7 w-7"
+              fill={
+                current && savedIds.has(current.id) ? "currentColor" : "none"
+              }
+            />
           </button>
           <button
             type="button"

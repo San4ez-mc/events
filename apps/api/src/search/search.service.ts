@@ -4,6 +4,7 @@ import type { CursorPage } from "@kiro/types";
 import { PrismaService } from "../prisma/prisma.service";
 import { buildPublicEventWhere } from "../common/utils/public-event-filters";
 import { EVENT_CARD_INCLUDE, type EventCard } from "../common/utils/event-card-include";
+import { SocialProofService, type SocialProof } from "../common/social-proof/social-proof.service";
 import { decodeScoredCursor, encodeScoredCursor, sliceAfterScoredCursor } from "../common/utils/scored-cursor";
 import type { SearchQueryDto } from "./dto/search-query.dto";
 
@@ -17,7 +18,10 @@ interface RelevanceRow {
 
 @Injectable()
 export class SearchService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly socialProof: SocialProofService,
+  ) {}
 
   /**
    * §56 — search by title, description, category, organizer, city, district
@@ -27,7 +31,7 @@ export class SearchService {
    * feed's score+id cursor (see DiscoveryService / scored-cursor.ts) — here
    * "score" is trigram relevance instead of the rule-based feed score.
    */
-  async search(query: SearchQueryDto): Promise<CursorPage<EventCard>> {
+  async search(query: SearchQueryDto): Promise<CursorPage<EventCard & { social: SocialProof }>> {
     const limit = Math.min(query.limit ?? PAGINATION.defaultLimit, PAGINATION.maxLimit);
     const cursor = query.cursor ? decodeScoredCursor(query.cursor) : null;
     const now = new Date();
@@ -93,7 +97,7 @@ export class SearchService {
     const items = page.map((p) => eventById.get(p.id)).filter((e): e is EventCard => e != null);
 
     return {
-      items,
+      items: await this.socialProof.attach(items, undefined),
       nextCursor: hasMore && last ? encodeScoredCursor(last.score, last.id) : null,
       hasMore,
     };

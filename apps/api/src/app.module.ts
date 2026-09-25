@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { SocialProofModule } from "./common/social-proof/social-proof.module";
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_FILTER, APP_GUARD } from "@nestjs/core";
@@ -63,6 +64,7 @@ import { AdminModule } from "./admin/admin.module";
     // §42 — powers EventLifecycleScheduler (reminders, auto-completion, under-subscribed warnings).
     ScheduleModule.forRoot(),
     PrismaModule,
+    SocialProofModule,
     MailModule,
     StorageModule,
     AuthModule,

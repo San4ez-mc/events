@@ -47,6 +47,11 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
     });
   }, [authLoading, user, event.id]);
 
+  // Tells sibling blocks (e.g. the exact-location card) to re-fetch what a registered user may see.
+  useEffect(() => {
+    if (registration !== undefined) window.dispatchEvent(new Event("kiro:registration-changed"));
+  }, [registration]);
+
   async function submit() {
     const token = getAccessToken();
     if (!token) return;
