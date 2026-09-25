@@ -18,7 +18,8 @@ mkdir -p "$BACKUP_DIR"
 umask 077
 
 # Database: custom-format dump (pg_restore-able, compressed).
-sudo -u postgres pg_dump --format=custom --file="$BACKUP_DIR/db-$DB_NAME-$STAMP.dump" "$DB_NAME"
+# Redirect by root (not --file): the postgres OS user cannot write into the root-owned backup dir.
+sudo -u postgres pg_dump --format=custom "$DB_NAME" > "$BACKUP_DIR/db-$DB_NAME-$STAMP.dump"
 
 # Media: mirror the bucket with the MinIO client if it is configured (alias `kiro`).
 if command -v mc >/dev/null 2>&1 && mc alias list kiro >/dev/null 2>&1; then
