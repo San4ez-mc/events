@@ -42,7 +42,7 @@ export default function SearchScreen() {
         data={results ?? []}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <Pressable style={styles.row} onPress={() => router.push(`/event/${item.slug}`)}>
+          <Pressable style={styles.row} onPress={() => router.push(`/event/${item.slug}?src=search`)}>
             {item.media[0] ? (
               <Image source={{ uri: item.media[0].thumbnailUrl }} style={styles.thumb} />
             ) : (

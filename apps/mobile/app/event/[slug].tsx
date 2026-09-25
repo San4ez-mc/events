@@ -8,11 +8,13 @@ import { useTranslations } from "../../src/lib/locale-context";
 import { Button } from "../../src/components/ui/Button";
 import { RegistrationFieldInput } from "../../src/components/registration/RegistrationFieldInput";
 import { EventGallery } from "../../src/components/event/EventGallery";
+import { EventChat } from "../../src/components/event/EventChat";
+import { sourceFromParam, track } from "../../src/lib/analytics";
 import type { EventDetail, Registration } from "../../src/lib/event-types";
 import { colors, radius, spacing } from "../../src/lib/theme";
 
 export default function EventDetailScreen() {
-  const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { slug, src } = useLocalSearchParams<{ slug: string; src?: string }>();
   const { user, isLoading: authLoading } = useAuth();
   const { t, locale } = useTranslations();
 
@@ -35,6 +37,13 @@ export default function EventDetailScreen() {
   useEffect(() => {
     void loadEvent();
   }, [loadEvent]);
+
+  // §45 — one VIEW per opened event, with where the user came from.
+  const eventId = event?.id;
+  const eventStatus = event?.status;
+  useEffect(() => {
+    if (eventId && eventStatus === "PUBLISHED") track(eventId, "VIEW", sourceFromParam(src));
+  }, [eventId, eventStatus, src]);
 
   useEffect(() => {
     if (authLoading || !event) return;
@@ -146,7 +155,7 @@ export default function EventDetailScreen() {
         <Text style={[styles.title, { flex: 1 }]}>{event.title}</Text>
         <Pressable
           style={styles.shareButton}
-          onPress={() => void Share.share({ message: `${event.title}\n${API_URL}/events/${event.slug}`, url: `${API_URL}/events/${event.slug}` }).catch(() => {})}
+          onPress={() => { track(event.id, "SHARE"); void Share.share({ message: `${event.title}\n${API_URL}/events/${event.slug}`, url: `${API_URL}/events/${event.slug}` }).catch(() => {}); }}
           accessibilityLabel={t("discover.share")}
         >
           <Ionicons name="share-social-outline" size={22} color={colors.foreground} />
@@ -275,6 +284,8 @@ export default function EventDetailScreen() {
           </ScrollView>
         </View>
       )}
+
+      <EventChat eventId={event.id} refreshKey={registration?.status ?? "none"} />
 
       <View style={styles.registrationBox}>
         {error && <Text style={styles.error}>{error}</Text>}

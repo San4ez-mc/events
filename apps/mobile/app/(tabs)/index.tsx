@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useTranslations } from "../../src/lib/locale-context";
+import { track } from "../../src/lib/analytics";
 import { SwipeCard } from "../../src/components/discover/SwipeCard";
 import { FiltersSheet } from "../../src/components/discover/FiltersSheet";
 import type { CursorPage, EventCard } from "../../src/lib/event-types";
@@ -80,6 +81,7 @@ export default function DiscoverScreen() {
   }
 
   async function shareEvent(event: EventCard) {
+    track(event.id, "SHARE");
     const url = `${API_URL}/events/${event.slug}`;
     await Share.share({ message: `${event.title}
 ${url}`, url, title: event.title }).catch(() => {});
@@ -112,7 +114,7 @@ ${url}`, url, title: event.title }).catch(() => {});
 
   function open(event: EventCard) {
     void recordInteraction(event.id, "OPEN");
-    router.push(`/event/${event.slug}`);
+    router.push(`/event/${event.slug}?src=swipe`);
     advance(event);
   }
 
@@ -150,6 +152,14 @@ ${url}`, url, title: event.title }).catch(() => {});
 
   const visible = cards.slice(0, 2);
   const top = visible[0];
+  // §35 — one impression per card that reaches the top of the stack.
+  const lastImpression = useRef<string | null>(null);
+  useEffect(() => {
+    if (top && lastImpression.current !== top.id) {
+      lastImpression.current = top.id;
+      track(top.id, "IMPRESSION");
+    }
+  }, [top]);
   const infoInset = ACTIONS_HEIGHT + ACTIONS_MARGIN * 2;
 
   return (
