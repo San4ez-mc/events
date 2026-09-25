@@ -307,3 +307,9 @@ Postgres — the VPS was unreachable. `deploy.sh` applies them on deploy; the ne
 Mobile now also has: follow organizer with category chips, edit event (same steps as creation; participants are
 notified on date/place changes), onboarding after registration. Still missing on mobile: credits purchase (needs
 payment-provider credentials), admin screens.
+
+### D4. Verification (local Postgres)
+
+With the VPS unreachable, all migrations (incl. `event_faq_items`, `search_trigram_indexes`, `event_price_options`)
+were applied to a throw-away local Postgres and the full API e2e suite was run: **162 passed, 5 failed** — the 5 are
+`event-media` (needs MinIO/S3 on the VPS, environmental). New tests for notifications, FAQ and ticket types pass.
