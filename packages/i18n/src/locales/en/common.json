@@ -200,7 +200,8 @@
         "inappropriate": "Inappropriate content",
         "wrongInfo": "Wrong information",
         "other": "Other"
-      }
+      },
+      "follow": "Follow this event"
     }
   },
   "credits": {

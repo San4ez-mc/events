@@ -9,6 +9,7 @@ import { Button } from "../../src/components/ui/Button";
 import { RegistrationFieldInput } from "../../src/components/registration/RegistrationFieldInput";
 import { EventGallery } from "../../src/components/event/EventGallery";
 import { EventChat } from "../../src/components/event/EventChat";
+import { ReviewsSection } from "../../src/components/event/ReviewsSection";
 import { sourceFromParam, track } from "../../src/lib/analytics";
 import type { EventDetail, Registration } from "../../src/lib/event-types";
 import { colors, radius, spacing } from "../../src/lib/theme";
@@ -25,6 +26,7 @@ export default function EventDetailScreen() {
   const [joinWaitlist, setJoinWaitlist] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [following, setFollowing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadEvent = useCallback(async () => {
@@ -63,6 +65,34 @@ export default function EventDetailScreen() {
       if (res.ok) setRegistration((await res.json()).registration);
     })();
   }, [authLoading, user, event]);
+
+  // UX §25 — follow the event; needs the current subscription state once the event is known.
+  const followId = event?.id;
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!followId || !token) return;
+    (async () => {
+      const res = await fetch(`${API_URL}/api/v1/subscriptions/mine`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) return;
+      const subs = (await res.json()) as { scope: string; eventId: string | null }[];
+      setFollowing(subs.some((s) => s.scope === "EVENT" && s.eventId === followId));
+    })();
+  }, [followId, user]);
+
+  async function toggleFollow() {
+    const token = getAccessToken();
+    if (!token || !event) {
+      router.push("/login");
+      return;
+    }
+    const next = !following;
+    setFollowing(next);
+    const res = await fetch(`${API_URL}/api/v1/events/${event.id}/subscribe`, {
+      method: next ? "POST" : "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => null);
+    if (!res?.ok) setFollowing(!next);
+  }
 
   async function toggleSave() {
     const token = getAccessToken();
@@ -202,6 +232,9 @@ export default function EventDetailScreen() {
         >
           <Ionicons name="share-social-outline" size={22} color={colors.foreground} />
         </Pressable>
+        <Pressable style={styles.shareButton} onPress={() => void toggleFollow()} accessibilityLabel={t("events.actions.follow")}>
+          <Ionicons name={following ? "notifications" : "notifications-outline"} size={21} color={following ? colors.accentFrom : colors.foreground} />
+        </Pressable>
         <Pressable style={styles.shareButton} onPress={reportEvent} accessibilityLabel={t("events.actions.report")}>
           <Ionicons name="flag-outline" size={20} color={colors.foreground} />
         </Pressable>
@@ -329,6 +362,8 @@ export default function EventDetailScreen() {
           </ScrollView>
         </View>
       )}
+
+      <ReviewsSection eventId={event.id} eventStatus={event.status} summary={event.reviewSummary} />
 
       <EventChat eventId={event.id} refreshKey={registration?.status ?? "none"} />
 
