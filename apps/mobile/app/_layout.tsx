@@ -31,6 +31,7 @@ export default function RootLayout() {
               <Stack.Screen name="manage/[id]" options={{ title: "" }} />
               <Stack.Screen name="edit/[id]" options={{ title: "" }} />
               <Stack.Screen name="welcome" options={{ headerShown: false }} />
+              <Stack.Screen name="admin" options={{ title: "" }} />
             </Stack>
           </AuthProvider>
         </LocaleProvider>

@@ -102,6 +102,16 @@ export default function ProfileScreen() {
           <Button title={t("common.save")} onPress={() => void handleSave()} loading={saving} disabled={!loaded} />
         </View>
 
+        {user && ["MODERATOR", "ADMIN", "SUPER_ADMIN"].includes(user.role) && (
+          <Pressable style={styles.row} onPress={() => router.push("/admin")}>
+            <Ionicons name="shield-checkmark" size={22} color={colors.accentFrom} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rowText}>{t("nav.admin")}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+          </Pressable>
+        )}
+
         <Pressable style={styles.row} onPress={() => router.push("/friends")}>
           <Ionicons name="people" size={22} color={colors.accentFrom} />
           <View style={{ flex: 1 }}>
