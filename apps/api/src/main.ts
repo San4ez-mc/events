@@ -30,7 +30,12 @@ async function bootstrap() {
   }
 
   const port = configService.get("PORT", { infer: true });
-  await app.listen(port);
+  const server = await app.listen(port);
+  // The Next.js server proxies /api/* here over kept-alive sockets. Node's default 5s idle timeout closes them
+  // right as the proxy reuses one ("socket hang up" / ECONNRESET on the first request after a pause), so keep
+  // sockets open longer than any proxy's idle window (headersTimeout must exceed keepAliveTimeout).
+  server.keepAliveTimeout = 65_000;
+  server.headersTimeout = 66_000;
 }
 
 bootstrap().catch((error) => {

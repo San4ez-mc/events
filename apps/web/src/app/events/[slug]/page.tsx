@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { fetchPublicEventBySlug } from "@/lib/server-api";
@@ -35,8 +36,9 @@ export async function generateMetadata({ params }: PageProps<"/events/[slug]">):
   };
 }
 
-export default async function EventSlugPage({ params }: PageProps<"/events/[slug]">) {
+export default async function EventSlugPage({ params, searchParams }: PageProps<"/events/[slug]">) {
   const { slug } = await params;
+  const { preview } = await searchParams;
   const event = await fetchPublicEventBySlug(slug);
 
   if (event) {
@@ -50,9 +52,9 @@ export default async function EventSlugPage({ params }: PageProps<"/events/[slug
     );
   }
 
-  // Not found (or not public) via the unauthenticated server fetch — could
-  // still be the owner's own unpublished draft; let the client retry with
-  // their access token rather than immediately rendering a hard 404.
+  // Not public via the unauthenticated server fetch. Only an explicit owner/admin preview link (?preview=1)
+  // may retry client-side with a token; everything else is a real 404 so crawlers never index soft-404s.
+  if (preview !== "1") notFound();
   return <DraftPreview slug={slug} />;
 }
 

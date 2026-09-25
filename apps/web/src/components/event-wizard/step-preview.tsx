@@ -80,7 +80,7 @@ export function StepPreview({
   return (
     <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-border p-10 text-center">
       <p className="text-muted">{t("events.wizard.previewHint")}</p>
-      <Link href={`/events/${slug}`} target="_blank">
+      <Link href={`/events/${slug}?preview=1`} target="_blank">
         <Button variant="secondary">{t("events.wizard.openPreview")}</Button>
       </Link>
 

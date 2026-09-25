@@ -77,7 +77,7 @@ export default function AdminEventDetailPage() {
     <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">{event.title}</h1>
-        <Link href={`/events/${event.slug}`} target="_blank" className="text-sm text-muted underline">
+        <Link href={`/events/${event.slug}?preview=1`} target="_blank" className="text-sm text-muted underline">
           {event.slug}
         </Link>
       </div>

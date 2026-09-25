@@ -64,7 +64,7 @@ import { AdminModule } from "./admin/admin.module";
       },
     }),
     // §87 — global default; individual auth endpoints layer stricter @Throttle() limits.
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: process.env.NODE_ENV === "test" ? 10_000 : 120 }]),
     // §42 — powers EventLifecycleScheduler (reminders, auto-completion, under-subscribed warnings).
     ScheduleModule.forRoot(),
     PrismaModule,
