@@ -135,6 +135,11 @@ export default function MyEventsScreen() {
               {item.status && <Text style={styles.status}>{t(STATUS_LABEL_KEYS[item.status] ?? item.status)}</Text>}
               {tab === "mine" && <Text style={styles.status}>{item.event.status}</Text>}
               {tab === "mine" && (
+                <Pressable onPress={() => router.push(`/edit/${item.event.id}`)} hitSlop={8}>
+                  <Text style={[styles.status, { textDecorationLine: "underline" }]}>{t("myEvents.edit")}</Text>
+                </Pressable>
+              )}
+              {tab === "mine" && (
                 <Pressable onPress={() => router.push(`/manage/${item.event.id}`)} hitSlop={8}>
                   <Text style={[styles.status, { textDecorationLine: "underline" }]}>
                     {t("organizerRegistrations.viewRegistrations")} · {t("organizerTools.stats")}

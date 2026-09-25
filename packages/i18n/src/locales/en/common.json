@@ -689,7 +689,8 @@
       "mine": "You haven't created events yet. The Create tab is waiting for you!"
     },
     "open": "My events",
-    "openHint": "Upcoming, pending, saved, past"
+    "openHint": "Upcoming, pending, saved, past",
+    "edit": "Edit"
   },
   "chat": {
     "title": "Event chat",
@@ -708,5 +709,9 @@
     "freeOnly": "Show free events only",
     "done": "Done",
     "skip": "Skip"
+  },
+  "subscriptions": {
+    "followOrganizer": "Follow this organizer",
+    "allEvents": "All events"
   }
 }

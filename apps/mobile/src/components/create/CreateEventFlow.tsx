@@ -99,7 +99,7 @@ async function authed(path: string, init: RequestInit = {}) {
 }
 
 /** Spec §31/§68: title -> media -> category/when/where -> price/seats -> publish, with the draft autosaved on every step. */
-export function CreateEventFlow() {
+export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) {
   const { user, isLoading } = useAuth();
   const { t, locale } = useTranslations();
   const [step, setStep] = useState(0);
@@ -114,6 +114,7 @@ export function CreateEventFlow() {
   const [error, setError] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [outcome, setOutcome] = useState<null | "PUBLISHED" | "PENDING_MODERATION" | "REJECTED">(null);
+  const [publishedAlready, setPublishedAlready] = useState(false);
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
   const name = (n: Named) => (locale === "uk" ? n.nameUk : (n.nameEn ?? n.nameUk));
 
@@ -128,6 +129,48 @@ export function CreateEventFlow() {
       })
       .catch(() => {});
   }, []);
+
+  // Edit mode: load the organizer's event into the same form the wizard uses.
+  useEffect(() => {
+    if (!editEventId) return;
+    void authed(`/events/${editEventId}`)
+      .then((e) => {
+        const start = e.startsAt ? new Date(e.startsAt) : null;
+        const end = e.endsAt ? new Date(e.endsAt) : null;
+        const p2 = (n: number) => String(n).padStart(2, "0");
+        setEventId(e.id);
+        setSlug(e.slug);
+        setPublishedAlready(e.status === "PUBLISHED");
+        setMedia((e.media ?? []) as MediaItem[]);
+        setForm({
+          ...INITIAL,
+          title: e.title,
+          description: e.description ?? "",
+          categoryId: e.categoryId ?? null,
+          format: e.format,
+          date: start ? `${start.getFullYear()}-${p2(start.getMonth() + 1)}-${p2(start.getDate())}` : INITIAL.date,
+          time: start ? `${p2(start.getHours())}:${p2(start.getMinutes())}` : INITIAL.time,
+          duration: start && end ? String(Math.max(0.5, (end.getTime() - start.getTime()) / 3_600_000)) : INITIAL.duration,
+          cityId: e.cityId ?? null,
+          districtId: e.districtId ?? null,
+          addressText: e.addressText ?? "",
+          googlePlaceId: e.googlePlaceId ?? null,
+          latitude: e.latitude != null ? Number(e.latitude) : null,
+          longitude: e.longitude != null ? Number(e.longitude) : null,
+          onlineUrl: e.onlineUrl ?? "",
+          priceType: e.priceType,
+          price: e.price ? String(Number(e.price)) : "",
+          capacity: e.capacity?.toString() ?? "",
+          minParticipants: e.minParticipants?.toString() ?? "",
+          approvalMode: e.approvalMode,
+          visibility: e.visibility,
+          adultsOnly: (e.ageRestriction ?? 0) >= 18,
+          rules: e.rules ?? "",
+          paymentUrl: e.paymentUrl ?? "",
+        });
+      })
+      .catch(() => setError(t("common.somethingWentWrong")));
+  }, [editEventId, t]);
 
   useEffect(() => {
     if (!form.cityId) {
@@ -165,6 +208,7 @@ export function CreateEventFlow() {
       const hours = Math.max(0.5, Number(form.duration) || 2);
       return {
         format: form.format,
+        ...(publishedAlready ? { notifyParticipants: true } : {}),
         startsAt: start?.toISOString(),
         endsAt: start ? new Date(start.getTime() + hours * 3_600_000).toISOString() : undefined,
         ...(form.format === "OFFLINE"
@@ -552,6 +596,8 @@ export function CreateEventFlow() {
           {step > 0 && <Button title={t("create.back")} variant="secondary" onPress={() => setStep((s) => s - 1)} style={{ flex: 1 }} />}
           {step < STEPS - 1 ? (
             <Button title={t("create.next")} onPress={() => void next()} loading={busy} style={{ flex: 2 }} />
+          ) : publishedAlready ? (
+            <Button title={t("common.save")} onPress={() => (slug ? router.replace(`/event/${slug}`) : router.back())} style={{ flex: 2 }} />
           ) : (
             <Button title={t("events.wizard.publish")} onPress={() => void publish()} loading={busy} style={{ flex: 2 }} />
           )}

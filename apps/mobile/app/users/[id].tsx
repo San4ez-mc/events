@@ -5,6 +5,7 @@ import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useAuth } from "../../src/lib/auth-context";
 import { useTranslations } from "../../src/lib/locale-context";
 import { Button } from "../../src/components/ui/Button";
+import { OrganizerFollow } from "../../src/components/social/OrganizerFollow";
 import type { EventCard } from "../../src/lib/event-types";
 import { colors, radius, spacing } from "../../src/lib/theme";
 
@@ -122,6 +123,8 @@ export default function PublicProfileScreen() {
         {profile.relationshipStatus === "PENDING_RECEIVED" && <Button title={t("profile.pendingReceived")} variant="secondary" onPress={() => router.push("/friends")} />}
         {profile.relationshipStatus === "FRIENDS" && <Button title={`✓ ${t("profile.friends")}`} variant="secondary" onPress={() => router.push("/friends")} />}
       </View>
+
+      {user && profile.relationshipStatus !== "SELF" && profile.eventsCreatedCount > 0 && <OrganizerFollow organizerId={profile.id} />}
 
       {profile.upcomingEvents.length > 0 && (
         <>
