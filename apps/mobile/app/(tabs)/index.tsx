@@ -56,6 +56,17 @@ export default function DiscoverScreen() {
   }, [loadPage]);
 
   /** §7 — apply, remember on this device, and mirror the profile-mappable part to the account. */
+  /** End-of-feed "Look again": forget the skipped events server-side, then reload from the top. */
+  async function seeAgain() {
+    const token = getAccessToken();
+    if (token) {
+      await fetch(`${API_URL}/api/v1/discovery/passes`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+    }
+    historyRef.current = [];
+    setCards(null);
+    await loadPage(filtersRef.current);
+  }
+
   async function applyFilters(next: DiscoveryFilters) {
     filtersRef.current = next;
     setFilters(next);
@@ -142,6 +153,16 @@ ${url}`, url, title: event.title }).catch(() => {});
     }).catch(() => {});
   }
 
+  // §35 — one impression per card that reaches the top of the stack. (Hooks must stay above the early return below.)
+  const lastImpression = useRef<string | null>(null);
+  const topId = cards?.[0]?.id;
+  useEffect(() => {
+    if (topId && lastImpression.current !== topId) {
+      lastImpression.current = topId;
+      track(topId, "IMPRESSION");
+    }
+  }, [topId]);
+
   if (cards === null) {
     return (
       <View style={styles.center}>
@@ -152,22 +173,23 @@ ${url}`, url, title: event.title }).catch(() => {});
 
   const visible = cards.slice(0, 2);
   const top = visible[0];
-  // §35 — one impression per card that reaches the top of the stack.
-  const lastImpression = useRef<string | null>(null);
-  useEffect(() => {
-    if (top && lastImpression.current !== top.id) {
-      lastImpression.current = top.id;
-      track(top.id, "IMPRESSION");
-    }
-  }, [top]);
   const infoInset = ACTIONS_HEIGHT + ACTIONS_MARGIN * 2;
 
   return (
     <View style={styles.container}>
       {visible.length === 0 ? (
         <View style={styles.center}>
-          <Ionicons name="checkmark-circle-outline" size={64} color={colors.muted} />
-          <Text style={styles.empty}>{t("discover.empty")}</Text>
+          <Ionicons name="sparkles" size={64} color={colors.accentFrom} />
+          <Text style={styles.endTitle}>{t("discover.endTitle")}</Text>
+          <Text style={styles.empty}>{t("discover.endText")}</Text>
+          <Pressable onPress={() => void seeAgain()} style={[styles.emptyButton, styles.emptyButtonPrimary]}>
+            <Ionicons name="refresh" size={18} color={colors.white} />
+            <Text style={[styles.emptyButtonText, { color: colors.white }]}>{t("discover.seeAgain")}</Text>
+          </Pressable>
+          <Pressable onPress={() => setFiltersOpen(true)} style={styles.emptyButton}>
+            <Ionicons name="options-outline" size={18} color={colors.foreground} />
+            <Text style={styles.emptyButtonText}>{t("discover.changeFilters")}</Text>
+          </Pressable>
           {historyRef.current.length > 0 && (
             <Pressable onPress={undo} style={styles.emptyButton}>
               <Ionicons name="arrow-undo" size={18} color={colors.foreground} />
@@ -265,7 +287,9 @@ function RoundButton({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.md, padding: spacing.xl },
-  empty: { color: colors.muted, textAlign: "center", fontSize: 15 },
+  empty: { color: colors.muted, textAlign: "center", fontSize: 15, paddingHorizontal: spacing.xl },
+  endTitle: { color: colors.foreground, fontSize: 22, fontWeight: "800", textAlign: "center" },
+  emptyButtonPrimary: { backgroundColor: colors.accentFrom, borderColor: "transparent" },
   emptyButton: {
     flexDirection: "row",
     alignItems: "center",

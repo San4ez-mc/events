@@ -1,4 +1,6 @@
-import { StyleSheet, Text, TextInput, View, type KeyboardTypeOptions } from "react-native";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, TextInput, View, type KeyboardTypeOptions } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, radius, spacing } from "../../lib/theme";
 
 interface TextFieldProps {
@@ -25,27 +27,37 @@ export function TextField({
   multiline,
   error,
 }: TextFieldProps) {
+  const [hidden, setHidden] = useState(true);
+  const isPassword = !!secureTextEntry;
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
+      <View>
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={colors.muted}
-        secureTextEntry={secureTextEntry}
+        secureTextEntry={isPassword && hidden}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
         multiline={multiline}
         accessibilityLabel={label}
-        style={[styles.input, multiline && styles.multiline]}
+        style={[styles.input, multiline && styles.multiline, isPassword && { paddingRight: 44 }]}
       />
+        {isPassword && (
+          <Pressable onPress={() => setHidden((h) => !h)} hitSlop={8} style={styles.eye} accessibilityLabel={hidden ? "Show password" : "Hide password"}>
+            <Ionicons name={hidden ? "eye-outline" : "eye-off-outline"} size={20} color={colors.muted} />
+          </Pressable>
+        )}
+      </View>
       {error && <Text style={styles.error}>{error}</Text>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  eye: { position: "absolute", right: 0, top: 0, bottom: 0, width: 44, alignItems: "center", justifyContent: "center" },
   container: { gap: spacing.xs },
   label: { color: colors.foreground, fontSize: 13, fontWeight: "500" },
   input: {

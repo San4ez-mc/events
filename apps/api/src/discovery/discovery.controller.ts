@@ -45,6 +45,12 @@ export class DiscoveryController {
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete("passes")
+  resetPasses(@CurrentUser() user: AuthenticatedUser) {
+    return this.discoveryService.resetPasses(user.id);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Post(":eventId/interactions")
   recordInteraction(
     @CurrentUser() user: AuthenticatedUser,

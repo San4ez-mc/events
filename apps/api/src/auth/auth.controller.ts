@@ -189,7 +189,8 @@ export class AuthController {
         secure: isProd,
         sameSite: "lax",
         path: "/api/v1/auth",
-        expires: tokens.refreshTokenExpiresAt,
+        // No "remember me" -> a session cookie (dropped when the browser closes).
+        ...(tokens.persistent ? { expires: tokens.refreshTokenExpiresAt } : {}),
       });
       return {};
     }

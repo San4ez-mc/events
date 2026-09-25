@@ -7,6 +7,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Heart,
+  PartyPopper,
+  RotateCcw,
   Share2,
   SlidersHorizontal,
   Undo2,
@@ -41,6 +43,7 @@ export function DiscoverFeed() {
 
   const [filters, setFilters] = useState<DiscoveryFilters>(EMPTY_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [restarting, setRestarting] = useState(false);
   const [items, setItems] = useState<EventCardData[]>([]);
   const [index, setIndex] = useState(0);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -164,6 +167,23 @@ export function DiscoverFeed() {
       // Non-critical — the heart just won't pre-fill for already-saved events.
     });
   }, [user]);
+
+  /** End-of-feed "Look again": forget the skipped events server-side, then reload the feed from the top. */
+  async function seeAgain() {
+    setRestarting(true);
+    try {
+      const token = getAccessToken();
+      if (token) {
+        await fetch("/api/v1/discovery/passes", {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => {});
+      }
+      await fetchPage(filters, null, true);
+    } finally {
+      setRestarting(false);
+    }
+  }
 
   const current = items[index];
   // §35 — one impression per card shown.
@@ -384,12 +404,33 @@ export function DiscoverFeed() {
       )}
 
       {!loading && !error && !current && (
-        <div className="flex aspect-[3/4] w-full flex-col items-center justify-center gap-4 rounded-3xl bg-surface p-10 text-center text-muted">
-          <p>{t("discover.empty")}</p>
-          {index > 0 && (
-            <Button variant="secondary" onClick={handleUndo}>
-              <Undo2 className="h-4 w-4" /> {t("discover.undo")}
+        <div className="flex aspect-[3/4] w-full flex-col items-center justify-center gap-4 rounded-3xl bg-surface p-10 text-center">
+          <span className="accent-gradient flex h-16 w-16 items-center justify-center rounded-full text-white">
+            <PartyPopper className="h-8 w-8" aria-hidden="true" />
+          </span>
+          <h2 className="text-xl font-bold text-foreground">
+            {t("discover.endTitle")}
+          </h2>
+          <p className="max-w-xs text-sm text-muted">{t("discover.endText")}</p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button onClick={() => void seeAgain()} loading={restarting}>
+              <RotateCcw className="h-4 w-4" aria-hidden="true" />{" "}
+              {t("discover.seeAgain")}
             </Button>
+            <Button variant="secondary" onClick={() => setFiltersOpen(true)}>
+              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />{" "}
+              {t("discover.changeFilters")}
+            </Button>
+          </div>
+          {index > 0 && (
+            <button
+              type="button"
+              onClick={handleUndo}
+              className="inline-flex items-center gap-1 text-sm text-muted hover:underline"
+            >
+              <Undo2 className="h-4 w-4" aria-hidden="true" />{" "}
+              {t("discover.undo")}
+            </button>
           )}
         </div>
       )}

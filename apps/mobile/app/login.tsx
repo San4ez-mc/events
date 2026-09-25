@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, router } from "expo-router";
-import { Linking, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { API_URL } from "../src/lib/api-client";
 import { useAuth, ApiRequestError } from "../src/lib/auth-context";
 import { useTranslations } from "../src/lib/locale-context";
@@ -15,6 +16,7 @@ export default function LoginScreen() {
   const { t } = useTranslations();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +24,7 @@ export default function LoginScreen() {
     setError(null);
     setLoading(true);
     try {
-      await login(email.trim(), password);
+      await login(email.trim(), password, rememberMe);
       router.replace("/");
     } catch (err) {
       setError(err instanceof ApiRequestError ? t(`errors.${err.code}`) : t("common.somethingWentWrong"));
@@ -38,6 +40,11 @@ export default function LoginScreen() {
       <View style={styles.form}>
         <TextField label={t("auth.login.email")} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
         <TextField label={t("auth.login.password")} value={password} onChangeText={setPassword} secureTextEntry />
+
+        <Pressable onPress={() => setRememberMe((v) => !v)} style={styles.remember} accessibilityRole="checkbox" accessibilityState={{ checked: rememberMe }}>
+          <Ionicons name={rememberMe ? "checkbox" : "square-outline"} size={22} color={rememberMe ? colors.accentFrom : colors.muted} />
+          <Text style={styles.rememberText}>{t("auth.login.rememberMe")}</Text>
+        </Pressable>
 
         {error && <Text style={styles.error}>{error}</Text>}
 
@@ -57,6 +64,8 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  remember: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  rememberText: { color: colors.foreground, fontSize: 14 },
   title: { color: colors.foreground, fontSize: 30, fontWeight: "800", textAlign: "center" },
   form: { gap: spacing.md },
   error: { color: colors.danger, fontSize: 13, textAlign: "center" },

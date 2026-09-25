@@ -52,7 +52,8 @@
       "submit": "Sign in",
       "noAccount": "Don't have an account?",
       "signUp": "Sign up",
-      "forgotPassword": "Forgot password?"
+      "forgotPassword": "Forgot password?",
+      "rememberMe": "Remember me"
     },
     "register": {
       "title": "Create account",
@@ -91,7 +92,9 @@
       "success": "Email verified",
       "resend": "Resend"
     },
-    "logout": "Log out"
+    "logout": "Log out",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "events": {
     "location": {
@@ -263,7 +266,11 @@
     "registered": "registered",
     "today": "Today",
     "tomorrow": "Tomorrow",
-    "share": "Share"
+    "share": "Share",
+    "endTitle": "That's all for now!",
+    "endText": "You've seen every event that matches your filters. Look again, or change the filters?",
+    "seeAgain": "Look again",
+    "changeFilters": "Change filters"
   },
   "search": {
     "placeholder": "Search events, categories, organizers, cities…",

@@ -15,11 +15,16 @@ import { randomUUID } from "node:crypto";
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000; // 1h
 
+/** Lifetime of a refresh token when the user did not tick "remember me". */
+const SHORT_SESSION_MS = 24 * 60 * 60 * 1000;
+
 export interface AuthTokens {
   accessToken: string;
   accessTokenExpiresInSeconds: number;
   refreshToken: string;
   refreshTokenExpiresAt: Date;
+  /** false = "don't remember me": the web cookie is a session cookie and the token lives only a day. */
+  persistent: boolean;
 }
 
 export interface SafeUser {
@@ -90,7 +95,7 @@ export class AuthService {
       data: { lastLoginAt: new Date() },
     });
 
-    const tokens = await this.issueTokenPair(user.id, user.email);
+    const tokens = await this.issueTokenPair(user.id, user.email, dto.rememberMe ?? true);
     return { user: this.toSafeUser(user), tokens };
   }
 
@@ -169,7 +174,10 @@ export class AuthService {
     }
 
     const { token: newRawToken, hash: newHash } = this.tokenService.generateRefreshToken();
-    const newExpiresAt = this.tokenService.refreshTokenExpiryDate();
+    // A rotated token keeps the lifetime class the login chose ("remember me" or short session).
+    const originalLifetimeMs = stored.expiresAt.getTime() - stored.createdAt.getTime();
+    const persistent = originalLifetimeMs > SHORT_SESSION_MS * 2;
+    const newExpiresAt = new Date(Date.now() + originalLifetimeMs);
 
     const [, newStored] = await this.prisma.$transaction([
       this.prisma.refreshToken.update({
@@ -198,6 +206,7 @@ export class AuthService {
       accessTokenExpiresInSeconds: access.expiresInSeconds,
       refreshToken: newRawToken,
       refreshTokenExpiresAt: newExpiresAt,
+      persistent,
     };
   }
 
@@ -295,10 +304,10 @@ export class AuthService {
     await this.mailService.sendVerificationEmail(email, verifyUrl);
   }
 
-  private async issueTokenPair(userId: string, email: string): Promise<AuthTokens> {
+  private async issueTokenPair(userId: string, email: string, remember = true): Promise<AuthTokens> {
     const access = this.tokenService.signAccessToken({ sub: userId, email });
     const { token: refreshToken, hash } = this.tokenService.generateRefreshToken();
-    const expiresAt = this.tokenService.refreshTokenExpiryDate();
+    const expiresAt = remember ? this.tokenService.refreshTokenExpiryDate() : new Date(Date.now() + SHORT_SESSION_MS);
 
     await this.prisma.refreshToken.create({
       data: {
@@ -314,6 +323,7 @@ export class AuthService {
       accessTokenExpiresInSeconds: access.expiresInSeconds,
       refreshToken,
       refreshTokenExpiresAt: expiresAt,
+      persistent: remember,
     };
   }
 

@@ -93,6 +93,11 @@ export class DiscoveryService {
     });
   }
 
+  /** "Look again": forgets the viewer's PASS swipes so skipped events return to the feed (saved/opened ones are untouched). */
+  async resetPasses(userId: string): Promise<void> {
+    await this.prisma.eventInteraction.deleteMany({ where: { userId, interaction: "PASS" } });
+  }
+
   /** UX §5 — save is not a registration. Idempotent: saving twice is a no-op. */
   async saveEvent(userId: string, eventId: string): Promise<void> {
     const event = await this.prisma.event.findUnique({ where: { id: eventId }, select: { id: true } });

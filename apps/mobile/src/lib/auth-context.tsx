@@ -16,7 +16,7 @@ export interface SessionUser {
 interface AuthContextValue {
   user: SessionUser | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<void>;
   register: (input: { email: string; password: string; name?: string; nickname?: string }) => Promise<void>;
   logout: () => Promise<void>;
@@ -48,16 +48,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, rememberMe = true) => {
     const res = await fetch(`${API_URL}/api/v1/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, rememberMe }),
     });
     const body = await res.json();
     if (!res.ok) throw new ApiRequestError(body);
     setAccessToken(body.accessToken);
-    await setStoredRefreshToken(body.refreshToken);
+    // Without "remember me" the refresh token is not kept on the device: the session ends when the app is closed.
+    await setStoredRefreshToken(rememberMe ? body.refreshToken : null);
     setUser(body.user);
   }, []);
 

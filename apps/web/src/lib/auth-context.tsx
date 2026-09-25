@@ -18,7 +18,7 @@ interface AuthContextValue {
   user: SessionUser | null;
   /** True only during the initial silent-refresh attempt on first load. */
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<void>;
   register: (input: { email: string; password: string; name?: string; nickname?: string }) => Promise<void>;
   logout: () => Promise<void>;
@@ -55,12 +55,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, rememberMe = true) => {
     const res = await fetch("/api/v1/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Client-Platform": "web" },
       credentials: "include",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, rememberMe }),
     });
     const body = await res.json();
     if (!res.ok) throw new ApiRequestError(body);

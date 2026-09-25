@@ -18,6 +18,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -26,7 +27,7 @@ export default function LoginPage() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await login(email, password);
+      await login(email, password, rememberMe);
       router.push(searchParams.get("next") ?? "/organizer/events");
     } catch (err) {
       setError(
@@ -65,6 +66,16 @@ export default function LoginPage() {
             required
             autoComplete="current-password"
           />
+
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 accent-[var(--accent-from)]"
+            />
+            {t("auth.login.rememberMe")}
+          </label>
 
           {error && (
             <p role="alert" className="text-sm text-danger">
