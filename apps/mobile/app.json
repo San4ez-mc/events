@@ -14,7 +14,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "space.fineko.kiro"
+      "bundleIdentifier": "space.fineko.kiro",
+      "associatedDomains": [
+        "applinks:kiro.fineko.space"
+      ]
     },
     "android": {
       "package": "space.fineko.kiro",
@@ -24,7 +27,24 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "kiro.fineko.space",
+              "pathPrefix": "/events"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
