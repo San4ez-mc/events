@@ -339,7 +339,8 @@
       "districts": "Райони",
       "payments": "Платежі",
       "credits": "Кредити",
-      "audit": "Журнал дій"
+      "audit": "Журнал дій",
+      "reviews": "Відгуки"
     },
     "dashboard": {
       "title": "Адміністрування",
@@ -422,6 +423,12 @@
       "action": "Дія",
       "entity": "Сутність",
       "actor": "Хто"
+    },
+    "reviews": {
+      "title": "Відгуки",
+      "hide": "Сховати",
+      "remove": "Видалити",
+      "restore": "Відновити"
     }
   },
   "reviews": {

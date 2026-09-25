@@ -339,7 +339,8 @@
       "districts": "Districts",
       "payments": "Payments",
       "credits": "Credits",
-      "audit": "Audit log"
+      "audit": "Audit log",
+      "reviews": "Reviews"
     },
     "dashboard": {
       "title": "Admin",
@@ -422,6 +423,12 @@
       "action": "Action",
       "entity": "Entity",
       "actor": "By"
+    },
+    "reviews": {
+      "title": "Reviews",
+      "hide": "Hide",
+      "remove": "Remove",
+      "restore": "Restore"
     }
   },
   "reviews": {

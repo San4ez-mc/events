@@ -18,6 +18,7 @@ import { AdminCreditsController } from "./credits/admin-credits.controller";
 import { AdminPaymentsController } from "./payments/admin-payments.controller";
 import { AdminAuditController } from "./audit/admin-audit.controller";
 import { AdminAnalyticsController } from "./analytics/admin-analytics.controller";
+import { AdminReviewsController } from "./reviews/admin-reviews.controller";
 import { AdminAnalyticsService } from "./analytics/admin-analytics.service";
 
 /** §72/§73/§115 Phase 10 — every `/admin/*` route. Access is gated per-controller via `@Roles`, not here. */
@@ -34,6 +35,7 @@ import { AdminAnalyticsService } from "./analytics/admin-analytics.service";
     AdminPaymentsController,
     AdminAuditController,
     AdminAnalyticsController,
+    AdminReviewsController,
   ],
   providers: [AdminEventsService, AdminModerationService, AdminAnalyticsService],
 })
