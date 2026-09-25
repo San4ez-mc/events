@@ -271,7 +271,19 @@
     "friendsGoingMany": "friends are going",
     "noRating": "No ratings yet",
     "reviewsCountOne": "review",
-    "reviewsCountMany": "reviews"
+    "reviewsCountMany": "reviews",
+    "changePhoto": "Change photo",
+    "birthDate": "Date of birth",
+    "birthDateHint": "Only used to hide 18+ events from minors. Never shown publicly.",
+    "notifyPush": "Push notifications",
+    "notifyEmail": "Email notifications",
+    "notifyFriends": "Friend activity",
+    "notifySubscriptions": "New events from organizers you follow",
+    "notifyReminders": "Event reminders",
+    "hideSocialLinks": "Hide social links on my profile",
+    "hideUpcomingEvents": "Hide upcoming events on my profile",
+    "hideAttendanceHistory": "Hide attendance history",
+    "viewPublic": "How others see it"
   },
   "admin": {
     "accessDenied": "You don't have access to the admin panel",

@@ -1,5 +1,7 @@
-import { Body, Controller, Get, Param, Patch, Req } from "@nestjs/common";
-import { ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Get, Param, Patch, Post, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { ApiConsumes, ApiTags } from "@nestjs/swagger";
+import { ApiException } from "../common/exceptions/api.exception";
 import type { Request } from "express";
 import { Public } from "../common/decorators/public.decorator";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -25,6 +27,14 @@ export class UsersController {
   @Patch("me")
   updateMe(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateProfileDto) {
     return this.usersService.updateProfile(user.id, dto);
+  }
+
+  @Post("me/avatar")
+  @ApiConsumes("multipart/form-data")
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 5 * 1024 * 1024 } }))
+  uploadAvatar(@CurrentUser() user: AuthenticatedUser, @UploadedFile() file: Express.Multer.File | undefined) {
+    if (!file) throw new ApiException("VALIDATION_ERROR", "No file uploaded", 400, { file: ["Required"] });
+    return this.usersService.uploadAvatar(user.id, file);
   }
 
   @Patch("me/preferences")

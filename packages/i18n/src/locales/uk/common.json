@@ -271,7 +271,19 @@
     "friendsGoingMany": "твоїх друзів йдуть",
     "noRating": "Ще немає оцінок",
     "reviewsCountOne": "відгук",
-    "reviewsCountMany": "відгуків"
+    "reviewsCountMany": "відгуків",
+    "changePhoto": "Змінити фото",
+    "birthDate": "Дата народження",
+    "birthDateHint": "Потрібна лише щоб ховати події 18+ від неповнолітніх. Публічно не показується.",
+    "notifyPush": "Push-сповіщення",
+    "notifyEmail": "Сповіщення на email",
+    "notifyFriends": "Активність друзів",
+    "notifySubscriptions": "Нові події організаторів, на яких ви підписані",
+    "notifyReminders": "Нагадування про події",
+    "hideSocialLinks": "Сховати соцмережі в профілі",
+    "hideUpcomingEvents": "Сховати майбутні події в профілі",
+    "hideAttendanceHistory": "Сховати історію відвідувань",
+    "viewPublic": "Як бачать інші"
   },
   "admin": {
     "accessDenied": "У вас немає доступу до адмін-панелі",

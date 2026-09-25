@@ -523,11 +523,6 @@ export class EventsService {
     };
   }
 
-  /**
-   * §34/UX §4's "👥 N твої друзі йдуть" — only counts actually-going statuses
-   * (not PENDING, which just means "applied, not yet approved"), and only
-   * for an authenticated viewer with accepted friends.
-   */
   /** Owner, or someone with an active registration (§10: exact address only after registering). */
   private async canSeeExactLocation(eventId: string, ownerId: string, userId: string): Promise<boolean> {
     if (ownerId === userId) return true;
@@ -538,6 +533,11 @@ export class EventsService {
     return !!registration && ["REGISTERED", "PAYMENT_PENDING", "CONFIRMED", "ATTENDED"].includes(registration.status);
   }
 
+  /**
+   * §34/UX §4's "👥 N твої друзі йдуть" — only counts actually-going statuses
+   * (not PENDING, which just means "applied, not yet approved"), and only
+   * for an authenticated viewer with accepted friends.
+   */
   private async getFriendsGoing(eventId: string, viewerId: string | undefined) {
     if (!viewerId) return { count: 0, previews: [] as { id: string; name: string | null; avatarUrl: string | null }[] };
 

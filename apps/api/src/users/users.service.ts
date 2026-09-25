@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import sharp from "sharp";
 import type { UserRole, UserStatus } from "@kiro/types";
 import { PAGINATION } from "@kiro/config";
 import type { CursorPage } from "@kiro/types";
@@ -8,6 +9,7 @@ import { ResourceNotFoundException } from "../common/exceptions/common-exception
 import { EVENT_CARD_INCLUDE } from "../common/utils/event-card-include";
 import { FriendsService } from "../friends/friends.service";
 import { AuditLogService } from "../audit/audit-log.service";
+import { StorageService } from "../storage/storage.service";
 import type { UpdateProfileDto } from "./dto/update-profile.dto";
 import type { UpdateUserPreferencesDto } from "./dto/update-user-preferences.dto";
 import type { AdminListUsersDto } from "./dto/admin-list-users.dto";
@@ -28,6 +30,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly friendsService: FriendsService,
     private readonly auditLog: AuditLogService,
+    private readonly storage: StorageService,
   ) {}
 
   async getFullProfile(userId: string) {
@@ -53,6 +56,26 @@ export class UsersService {
     });
     const { passwordHash: _passwordHash, ...safe } = user;
     return safe;
+  }
+
+  /** Square 512px JPEG, re-encoded so EXIF/GPS metadata is dropped (§23). */
+  async uploadAvatar(userId: string, file: Express.Multer.File) {
+    if (!file.mimetype.startsWith("image/")) {
+      throw new ApiException("VALIDATION_ERROR", "Avatar must be an image", 400, { file: ["Not an image"] });
+    }
+    let buffer: Buffer;
+    try {
+      buffer = await sharp(file.buffer, { failOn: "none" })
+        .rotate()
+        .resize(512, 512, { fit: "cover" })
+        .jpeg({ quality: 85 })
+        .toBuffer();
+    } catch {
+      throw new ApiException("VALIDATION_ERROR", "Unreadable image", 400, { file: ["Unreadable image"] });
+    }
+    const { url } = await this.storage.putObject(`avatars/${userId}/${Date.now()}.jpg`, buffer, "image/jpeg");
+    await this.prisma.user.update({ where: { id: userId }, data: { avatarUrl: url } });
+    return { avatarUrl: url };
   }
 
   async updatePreferences(userId: string, dto: UpdateUserPreferencesDto) {
