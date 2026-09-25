@@ -566,7 +566,8 @@
     "EVENT_REQUIRES_MODERATION": "This event needs moderation before publishing",
     "PAYMENT_REQUIRED": "Payment required",
     "AGE_RESTRICTED": "This event is not available for your age",
-    "BIRTHDATE_REQUIRED": "Add your date of birth in your profile to register for an 18+ event"
+    "BIRTHDATE_REQUIRED": "Add your date of birth in your profile to register for an 18+ event",
+    "FEATURE_DISABLED": "This feature is temporarily disabled"
   },
   "filters": {
     "title": "Filters",

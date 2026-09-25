@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { Ionicons } from "@expo/vector-icons";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
+import { API_URL } from "../../lib/api-client";
 import { ApiRequestError, useAuth } from "../../lib/auth-context";
 import { useTranslations } from "../../lib/locale-context";
 import { colors, radius, spacing } from "../../lib/theme";
@@ -56,7 +57,15 @@ function GoogleButton({ onSuccess }: { onSuccess: () => void }) {
 
 /** §9 — Google sign-in. Renders nothing when no client ID was configured at build time. */
 export function GoogleSignInButton({ onSuccess }: { onSuccess: () => void }) {
-  if (!WEB_ID && !IOS_ID && !ANDROID_ID) return null;
+  const [enabled, setEnabled] = useState(true);
+  // §95 — the SOCIAL_LOGIN flag can switch Google sign-in off without a release.
+  useEffect(() => {
+    fetch(`${API_URL}/api/v1/config/flags`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((flags) => flags && setEnabled(flags.SOCIAL_LOGIN !== false))
+      .catch(() => {});
+  }, []);
+  if (!enabled || (!WEB_ID && !IOS_ID && !ANDROID_ID)) return null;
   return <GoogleButton onSuccess={onSuccess} />;
 }
 

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { FeatureFlagsService } from "../flags/feature-flags.service";
 import { ConfigService } from "@nestjs/config";
 import type { EnvConfig } from "../config/env.validation";
 import { ApiException } from "../common/exceptions/api.exception";
@@ -36,7 +37,10 @@ export class PlacesService {
     { at: number; value: PlaceDetails }
   >();
 
-  constructor(configService: ConfigService<EnvConfig, true>) {
+  constructor(
+    configService: ConfigService<EnvConfig, true>,
+    private readonly flags: FeatureFlagsService,
+  ) {
     this.apiKey = configService.get("GOOGLE_MAPS_API_KEY", { infer: true });
   }
 
@@ -55,6 +59,7 @@ export class PlacesService {
     sessionToken: string | undefined,
     locale: "uk" | "en",
   ): Promise<PlaceSuggestion[]> {
+    await this.flags.assertEnabled("PLACES_AUTOCOMPLETE");
     const key = this.requireKey();
     const res = await fetch(AUTOCOMPLETE_URL, {
       method: "POST",

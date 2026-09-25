@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { FeatureFlagsService } from "../flags/feature-flags.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ApiException } from "../common/exceptions/api.exception";
 import { ResourceNotFoundException } from "../common/exceptions/common-exceptions";
@@ -25,7 +26,10 @@ const AUTHOR_SELECT = {
  */
 @Injectable()
 export class ChatService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly flags: FeatureFlagsService,
+  ) {}
 
   private async assertAccess(
     eventId: string,
@@ -69,6 +73,7 @@ export class ChatService {
 
   /** Newest `PAGE_SIZE` messages (oldest first), or the page before `beforeId` for "load earlier". */
   async list(eventId: string, userId: string, beforeId?: string) {
+    await this.flags.assertEnabled("EVENT_CHAT");
     const { isModerator } = await this.assertAccess(eventId, userId);
 
     const before = beforeId
@@ -108,6 +113,7 @@ export class ChatService {
   }
 
   async post(eventId: string, userId: string, text: string) {
+    await this.flags.assertEnabled("EVENT_CHAT");
     await this.assertAccess(eventId, userId);
     const message = await this.prisma.eventChatMessage.create({
       data: { eventId, authorId: userId, text },

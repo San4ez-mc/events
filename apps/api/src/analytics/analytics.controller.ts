@@ -74,6 +74,7 @@ export class AnalyticsController {
   constructor(
     private readonly analytics: AnalyticsService,
     private readonly tokenService: TokenService,
+    private readonly flags: FeatureFlagsService,
   ) {}
 
   @Public()
@@ -81,6 +82,7 @@ export class AnalyticsController {
   @HttpCode(HttpStatus.ACCEPTED)
   @Post("events")
   async track(@Body() dto: TrackBatchDto, @Req() req: Request) {
+    if (!(await this.flags.isEnabled("ANALYTICS_TRACKING"))) return { accepted: 0 };
     const auth = req.headers.authorization;
     const userId = auth?.startsWith("Bearer ")
       ? this.tokenService.tryVerifyAccessToken(auth.slice(7))?.sub

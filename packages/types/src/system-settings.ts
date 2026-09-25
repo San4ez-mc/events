@@ -18,3 +18,10 @@ export const SYSTEM_SETTING_DEFAULTS = {
   [SystemSettingKey.FEED_PASS_COOLDOWN_DAYS]: 30,
   [SystemSettingKey.DEFAULT_REMINDER_HOURS]: [24, 1] as number[],
 } as const;
+
+/** Runtime feature flags (§95) — stored as `flag.<key>` booleans in `system_settings`. Everything is on unless switched off. */
+import { FeatureFlagKey } from "./enums";
+export const FEATURE_FLAG_KEYS = Object.values(FeatureFlagKey) as FeatureFlagKey[];
+export const FEATURE_FLAG_DEFAULTS: Record<FeatureFlagKey, boolean> = Object.fromEntries(
+  FEATURE_FLAG_KEYS.map((key) => [key, key !== "AI_CATEGORY_SUGGESTIONS" && key !== "MEDIA_AUTO_MODERATION"]),
+) as Record<FeatureFlagKey, boolean>;

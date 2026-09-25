@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { ChatModule } from "./chat/chat.module";
+import { FlagsModule } from "./flags/flags.module";
 import { AnalyticsModule } from "./analytics/analytics.module";
 import { PlacesModule } from "./places/places.module";
 import { SocialProofModule } from "./common/social-proof/social-proof.module";
@@ -69,6 +70,7 @@ import { AdminModule } from "./admin/admin.module";
     PrismaModule,
     SocialProofModule,
     PlacesModule,
+    FlagsModule,
     ChatModule,
     AnalyticsModule,
     MailModule,

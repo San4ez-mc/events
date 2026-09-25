@@ -51,9 +51,18 @@ export function GoogleSignInButton({ onSuccess }: { onSuccess: () => void }) {
   const { t, locale } = useTranslations();
   const container = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [enabled, setEnabled] = useState(true);
+
+  // §95 — the SOCIAL_LOGIN flag can switch Google sign-in off without a deploy.
+  useEffect(() => {
+    fetch("/api/v1/config/flags")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((flags) => flags && setEnabled(flags.SOCIAL_LOGIN !== false))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
-    if (!CLIENT_ID) return;
+    if (!CLIENT_ID || !enabled) return;
     let cancelled = false;
     loadGsi()
       .then(() => {

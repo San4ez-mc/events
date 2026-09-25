@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as argon2 from "argon2";
 import type { EnvConfig } from "../config/env.validation";
+import { FeatureFlagsService } from "../flags/feature-flags.service";
 import { ApiException } from "../common/exceptions/api.exception";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../mail/mail.service";
@@ -41,6 +42,7 @@ export class AuthService {
     private readonly mailService: MailService,
     private readonly configService: ConfigService<EnvConfig, true>,
     private readonly googleTokenVerifier: GoogleTokenVerifier,
+    private readonly flags: FeatureFlagsService,
   ) {}
 
   async register(dto: RegisterDto): Promise<{ user: SafeUser; tokens: AuthTokens }> {
@@ -99,6 +101,7 @@ export class AuthService {
    * "forgot password").
    */
   async loginWithGoogle(idToken: string): Promise<{ user: SafeUser; tokens: AuthTokens }> {
+    await this.flags.assertEnabled("SOCIAL_LOGIN");
     const identity = await this.googleTokenVerifier.verify(idToken);
     if (!identity.emailVerified) {
       throw new ApiException("INVALID_GOOGLE_TOKEN", "Google email is not verified", 401);
