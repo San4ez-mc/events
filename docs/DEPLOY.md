@@ -52,3 +52,20 @@ The build points the app at `https://kiro.fineko.space`, so step 1-2 must be
 done first. iOS builds and both stores need paid developer accounts
 (Apple $99/yr, Google Play $25 once); `space.fineko.kiro` is still a placeholder
 bundle ID, so decide the final one before the first store build.
+
+## Backups & restore (§108)
+
+`infrastructure/deploy/backup.sh` makes a nightly `pg_dump` of DB `kiro`
+(custom format, 14-day rotation in `/var/backups/kiro`) and mirrors the MinIO
+bucket if an `mc` alias named `kiro` exists. Install once (see the header of
+the script): copy to `/usr/local/bin/kiro-backup` and add the `/etc/cron.d`
+line. Nothing outside the Kiro DB/bucket is touched.
+
+Restore the database (into a scratch DB first to verify, then swap):
+
+```bash
+sudo -u postgres createdb kiro_restore
+sudo -u postgres pg_restore --no-owner -d kiro_restore /var/backups/kiro/db-kiro-<stamp>.dump
+```
+
+Restore media: `mc mirror /var/backups/kiro/media kiro/kiro`.
