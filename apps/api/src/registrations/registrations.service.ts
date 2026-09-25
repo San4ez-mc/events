@@ -33,6 +33,22 @@ export class RegistrationsService {
    * as the credits ledger's per-user lock) so two concurrent registrations
    * can't both read "1 spot left" and both take it.
    */
+  /** §39 — an age-restricted event needs a known birth date; minors are refused. */
+  private async assertOldEnough(tx: Prisma.TransactionClient, userId: string, minAge: number | null): Promise<void> {
+    if (!minAge) return;
+    const user = await tx.user.findUnique({ where: { id: userId }, select: { birthDate: true } });
+    if (!user?.birthDate) {
+      throw new ApiException("BIRTHDATE_REQUIRED", "Add your date of birth to register for an age-restricted event", 403);
+    }
+    const now = new Date();
+    let age = now.getUTCFullYear() - user.birthDate.getUTCFullYear();
+    const beforeBirthday =
+      now.getUTCMonth() < user.birthDate.getUTCMonth() ||
+      (now.getUTCMonth() === user.birthDate.getUTCMonth() && now.getUTCDate() < user.birthDate.getUTCDate());
+    if (beforeBirthday) age -= 1;
+    if (age < minAge) throw new ApiException("AGE_RESTRICTED", `This event is only for ages ${minAge}+`, 403);
+  }
+
   async register(eventId: string, userId: string, dto: CreateRegistrationDto) {
     const registration = await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${eventId}))`;
@@ -43,6 +59,7 @@ export class RegistrationsService {
       });
       if (!event) throw new ResourceNotFoundException("Event not found");
       this.assertRegistrationOpen(event);
+      await this.assertOldEnough(tx, userId, event.ageRestriction);
 
       const existing = await tx.registration.findUnique({
         where: { eventId_userId: { eventId, userId } },

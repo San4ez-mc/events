@@ -557,7 +557,9 @@
     "ALREADY_REGISTERED": "You're already registered for this event",
     "INSUFFICIENT_LISTING_CREDITS": "Not enough listing credits",
     "EVENT_REQUIRES_MODERATION": "This event needs moderation before publishing",
-    "PAYMENT_REQUIRED": "Payment required"
+    "PAYMENT_REQUIRED": "Payment required",
+    "AGE_RESTRICTED": "This event is not available for your age",
+    "BIRTHDATE_REQUIRED": "Add your date of birth in your profile to register for an 18+ event"
   },
   "filters": {
     "title": "Filters",

@@ -557,7 +557,9 @@
     "ALREADY_REGISTERED": "Ви вже зареєстровані на цю подію",
     "INSUFFICIENT_LISTING_CREDITS": "Недостатньо кредитів на публікацію",
     "EVENT_REQUIRES_MODERATION": "Подія потребує модерації перед публікацією",
-    "PAYMENT_REQUIRED": "Потрібна оплата"
+    "PAYMENT_REQUIRED": "Потрібна оплата",
+    "AGE_RESTRICTED": "Ця подія не для вашого віку",
+    "BIRTHDATE_REQUIRED": "Вкажіть дату народження в профілі, щоб записатися на подію 18+"
   },
   "filters": {
     "title": "Фільтри",
