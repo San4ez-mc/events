@@ -6,7 +6,10 @@ import { useTranslations } from "../../lib/locale-context";
 import { colors, radius, spacing } from "../../lib/theme";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
-const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
+// A swipe counts after ~14% of the screen width, or as soon as it is a quick flick (velocity in px/ms),
+// so a light, short gesture is enough. (It used to need ~28% of the width.)
+const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.14;
+const FLICK_VELOCITY = 0.3;
 
 function formatDate(iso: string, locale: string): string {
   const date = new Date(iso);
@@ -51,17 +54,19 @@ export function SwipeCard({
 
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) => isTopRef.current && Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
+      onMoveShouldSetPanResponder: (_, g) => isTopRef.current && Math.abs(g.dx) > 5 && Math.abs(g.dx) > Math.abs(g.dy),
+      // Take over from the inner Pressable early, so the card follows the finger from the first few pixels.
+      onMoveShouldSetPanResponderCapture: (_, g) => isTopRef.current && Math.abs(g.dx) > 5 && Math.abs(g.dx) > Math.abs(g.dy) * 1.2,
       onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], { useNativeDriver: false }),
       onPanResponderRelease: (_, g) => {
-        if (g.dx > SWIPE_THRESHOLD) {
-          Animated.timing(pan, { toValue: { x: SCREEN_WIDTH * 1.5, y: g.dy }, duration: 180, useNativeDriver: false }).start(() =>
+        if (g.dx > SWIPE_THRESHOLD || g.vx > FLICK_VELOCITY) {
+          Animated.timing(pan, { toValue: { x: SCREEN_WIDTH * 1.5, y: g.dy }, duration: 140, useNativeDriver: false }).start(() =>
             onOpenRef.current(),
           );
           return;
         }
-        if (g.dx < -SWIPE_THRESHOLD) {
-          Animated.timing(pan, { toValue: { x: -SCREEN_WIDTH * 1.5, y: g.dy }, duration: 180, useNativeDriver: false }).start(() =>
+        if (g.dx < -SWIPE_THRESHOLD || g.vx < -FLICK_VELOCITY) {
+          Animated.timing(pan, { toValue: { x: -SCREEN_WIDTH * 1.5, y: g.dy }, duration: 140, useNativeDriver: false }).start(() =>
             onPassRef.current(),
           );
           return;

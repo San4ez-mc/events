@@ -4,16 +4,19 @@ import * as SecureStore from "expo-secure-store";
 import { EMPTY_FILTERS, countActiveFilters, filtersToQuery, type DiscoveryFilters } from "@kiro/types";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useTranslations } from "../../src/lib/locale-context";
 import { track } from "../../src/lib/analytics";
 import { SwipeCard } from "../../src/components/discover/SwipeCard";
 import { FiltersSheet } from "../../src/components/discover/FiltersSheet";
+import { ActionToast, type ToastData } from "../../src/components/discover/ActionToast";
+import { FeedTutorial } from "../../src/components/discover/FeedTutorial";
 import type { CursorPage, EventCard } from "../../src/lib/event-types";
 import { colors, spacing } from "../../src/lib/theme";
 
 const FILTERS_KEY = "kiro_discover_filters";
+const TUTORIAL_KEY = "kiro_feed_tutorial_done";
 const ACTIONS_HEIGHT = 72;
 const ACTIONS_MARGIN = 20;
 
@@ -27,6 +30,31 @@ export default function DiscoverScreen() {
   const filtersRef = useRef(filters);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const historyRef = useRef<EventCard[]>([]);
+  const [toast, setToast] = useState<ToastData | null>(null);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
+  const { tutorial } = useLocalSearchParams<{ tutorial?: string }>();
+
+  /** Short "what just happened" banner (see ActionToast). */
+  const notify = useCallback((icon: ToastData["icon"], color: string, text: string, actionLabel?: string, onAction?: () => void) => {
+    setToast({ id: Date.now(), icon, color, text, actionLabel, onAction });
+  }, []);
+
+  // First launch: show the interactive tour once. Profile -> "Show tips" replays it by passing ?tutorial=<timestamp>.
+  useEffect(() => {
+    void SecureStore.getItemAsync(TUTORIAL_KEY)
+      .then((done) => {
+        if (!done) setTutorialOpen(true);
+      })
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (tutorial) setTutorialOpen(true);
+  }, [tutorial]);
+
+  function closeTutorial() {
+    setTutorialOpen(false);
+    void SecureStore.setItemAsync(TUTORIAL_KEY, "1").catch(() => {});
+  }
 
   const loadPage = useCallback(async (activeFilters: DiscoveryFilters, afterCursor?: string) => {
     const query = filtersToQuery(activeFilters, afterCursor ?? null);
@@ -55,7 +83,6 @@ export default function DiscoverScreen() {
     })();
   }, [loadPage]);
 
-  /** §7 — apply, remember on this device, and mirror the profile-mappable part to the account. */
   /** End-of-feed "Look again": forget the skipped events server-side, then reload from the top. */
   async function seeAgain() {
     const token = getAccessToken();
@@ -67,6 +94,7 @@ export default function DiscoverScreen() {
     await loadPage(filtersRef.current);
   }
 
+  /** §7 — apply, remember on this device, and mirror the profile-mappable part to the account. */
   async function applyFilters(next: DiscoveryFilters) {
     filtersRef.current = next;
     setFilters(next);
@@ -121,6 +149,7 @@ ${url}`, url, title: event.title }).catch(() => {});
   function pass(event: EventCard) {
     void recordInteraction(event.id, "PASS");
     advance(event);
+    notify("close-circle", "#f43f5e", t("discover.feedback.passed"), t("discover.undo"), undo);
   }
 
   function open(event: EventCard) {
@@ -131,16 +160,20 @@ ${url}`, url, title: event.title }).catch(() => {});
 
   function undo() {
     const last = historyRef.current.pop();
-    if (last) setCards((prev) => [last, ...(prev ?? [])]);
+    if (last) {
+      setCards((prev) => [last, ...(prev ?? [])]);
+      notify("arrow-undo-circle", "#f59e0b", t("discover.feedback.undone"));
+    }
   }
 
   async function toggleSave(event: EventCard) {
     const token = getAccessToken();
     if (!token) {
-      router.push("/login");
+      notify("lock-closed", "#f59e0b", t("discover.feedback.loginToSave"), t("auth.login.title"), () => router.push("/login"));
       return;
     }
     const wasSaved = saved.has(event.id);
+    notify(wasSaved ? "heart-dislike-circle" : "heart-circle", "#ec4899", wasSaved ? t("discover.feedback.unsaved") : t("discover.feedback.saved"));
     setSaved((prev) => {
       const next = new Set(prev);
       if (wasSaved) next.delete(event.id);
@@ -167,6 +200,7 @@ ${url}`, url, title: event.title }).catch(() => {});
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.accentFrom} />
+        <FeedTutorial visible={tutorialOpen} onClose={closeTutorial} />
       </View>
     );
   }
@@ -231,6 +265,9 @@ ${url}`, url, title: event.title }).catch(() => {});
           </Pressable>
         </View>
       </View>
+
+      <ActionToast toast={toast} top={insets.top + spacing.sm + 42 + spacing.md} />
+      <FeedTutorial visible={tutorialOpen} onClose={closeTutorial} />
 
       <FiltersSheet visible={filtersOpen} filters={filters} onApply={(f) => void applyFilters(f)} onClose={() => setFiltersOpen(false)} />
 

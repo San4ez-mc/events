@@ -270,7 +270,15 @@
     "endTitle": "That's all for now!",
     "endText": "You've seen every event that matches your filters. Look again, or change the filters?",
     "seeAgain": "Look again",
-    "changeFilters": "Change filters"
+    "changeFilters": "Change filters",
+    "feedback": {
+      "passed": "Passed: this event leaves your feed",
+      "saved": "Saved to My events → Saved",
+      "unsaved": "Removed from saved",
+      "undone": "Brought back the previous event",
+      "loginToSave": "Sign in to save events"
+    },
+    "showTips": "Show tips"
   },
   "search": {
     "placeholder": "Search events, categories, organizers, cities…",
@@ -722,5 +730,35 @@
   "subscriptions": {
     "followOrganizer": "Follow this organizer",
     "allEvents": "All events"
+  },
+  "tutorial": {
+    "skip": "Skip",
+    "swipeHint": "Drag the card with your finger — a short swipe is enough",
+    "tapHint": "Tap the highlighted button",
+    "praise": "Nice!",
+    "praise_left": "That's \"pass\": the event disappears from your feed.",
+    "praise_right": "That's \"open\": you'll see the event page.",
+    "praise_tap": "Got it!",
+    "demoTitle": "Sample event",
+    "demoMeta": "Today · 7 PM · Free",
+    "swipe_left_title": "Swipe left — pass",
+    "swipe_left_text": "Not interested? Drag the card to the left. The event leaves your feed and we won't show it again. Try it now.",
+    "swipe_right_title": "Swipe right — open",
+    "swipe_right_text": "Like it? Drag the card to the right (or just tap it) to open the event: description, place, participants and the Register button.",
+    "tap_pass_title": "Cross — pass too",
+    "tap_pass_text": "Does the same as swiping left. Handy when you hold the phone with one hand.",
+    "tap_save_title": "Heart — save for later",
+    "tap_save_text": "The event stays in My events → Saved. It is not a registration. Come back when you have time.",
+    "tap_open_title": "Arrow — open",
+    "tap_open_text": "Same as swiping right: opens the event page where you can register.",
+    "tap_undo_title": "Back arrow — undo",
+    "tap_undo_text": "Swiped the wrong way? This brings back the previous event.",
+    "tap_share_title": "Share",
+    "tap_share_text": "Send the event to friends as a link in any messenger.",
+    "tap_filters_title": "Filters",
+    "tap_filters_text": "Pick city, district, date, price, format and more. The number on the button shows how many filters are on.",
+    "done_title": "That's it!",
+    "done_text": "Browse the feed, save what you like and register for events. You can replay this tour in Profile → Show tips.",
+    "start": "Let's go"
   }
 }
