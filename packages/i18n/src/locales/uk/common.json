@@ -204,7 +204,11 @@
       "tierName": "Назва",
       "tierPrice": "Ціна",
       "tierCapacity": "Місць",
-      "addTier": "Додати тип квитка"
+      "addTier": "Додати тип квитка",
+      "addDistrict": "Не знайшли свій район? Додати новий",
+      "addDistrictPlaceholder": "Назва району",
+      "addDistrictAdd": "Додати",
+      "addDistrictSubmitted": "Додано. Район з'явиться у списку для інших після перевірки."
     },
     "actions": {
       "save": "Зберегти",

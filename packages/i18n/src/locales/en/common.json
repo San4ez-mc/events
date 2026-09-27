@@ -204,7 +204,11 @@
       "tierName": "Name",
       "tierPrice": "Price",
       "tierCapacity": "Seats",
-      "addTier": "Add a ticket type"
+      "addTier": "Add a ticket type",
+      "addDistrict": "Can't find your district? Add a new one",
+      "addDistrictPlaceholder": "District name",
+      "addDistrictAdd": "Add",
+      "addDistrictSubmitted": "Added. It will appear in the list for others after review."
     },
     "actions": {
       "save": "Save",

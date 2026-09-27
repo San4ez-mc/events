@@ -428,4 +428,14 @@ describe("Spec gaps (e2e)", () => {
       expect(after.body.items.map((m: { text: string }) => m.text)).not.toContain("hello from attendee");
     });
   });
+  describe("geography (§37)", () => {
+    it("always lists Kyiv first, search or not", async () => {
+      const all = await http().get("/api/v1/geography/cities").expect(200);
+      expect(all.body[0].slug).toBe("kyiv");
+
+      const searched = await http().get("/api/v1/geography/cities?search=и").expect(200); // matches Kyiv plus other cities
+      expect(searched.body.length).toBeGreaterThan(1);
+      expect(searched.body[0].slug).toBe("kyiv");
+    });
+  });
 });

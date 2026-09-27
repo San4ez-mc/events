@@ -148,6 +148,9 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   const [categories, setCategories] = useState<Named[]>([]);
   const [cities, setCities] = useState<Named[]>([]);
   const [districts, setDistricts] = useState<Named[]>([]);
+  const [newDistrictName, setNewDistrictName] = useState("");
+  const [addingDistrict, setAddingDistrict] = useState(false);
+  const [districtAdded, setDistrictAdded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
@@ -220,6 +223,25 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
       .then((d) => setDistricts(d as Named[]))
       .catch(() => {});
   }, [form.cityId]);
+
+  // §37 — a district missing from the list gets suggested to the API; it stays PENDING (invisible
+  // to other users) until an admin approves it, but selecting it here still attaches it to this event.
+  async function addDistrict() {
+    const nameUk = newDistrictName.trim();
+    if (!nameUk || !form.cityId) return;
+    setAddingDistrict(true);
+    try {
+      const created = await authed<Named>("/geography/districts", { method: "POST", body: JSON.stringify({ cityId: form.cityId, nameUk }) });
+      setDistricts((d) => [...d, created]);
+      set({ districtId: created.id });
+      setNewDistrictName("");
+      setDistrictAdded(true);
+    } catch {
+      setError(t("common.somethingWentWrong"));
+    } finally {
+      setAddingDistrict(false);
+    }
+  }
 
   const loadBalance = useCallback(async () => {
     try {
@@ -436,7 +458,10 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   const start = startsAt();
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    // Android needs an explicit "height" behavior (not the no-op `undefined`) to actually shrink
+    // available space when the keyboard opens — otherwise the Description/Rules fields end up
+    // hidden behind the keyboard with nothing to scroll them into view.
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView style={styles.flex} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ScreenHeader title={t("nav.create")} subtitle={t("create.subtitle")} icon="add-circle" />
 
@@ -521,9 +546,31 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
                 <Section title={t("events.wizard.city")}>
                   <SearchPicker options={cityOptions} selected={form.cityId ? [form.cityId] : []} multi={false} onChange={(ids) => set({ cityId: ids[0] ?? null, districtId: null })} placeholder={t("filters.search")} emptyLabel={t("filters.noResults")} />
                 </Section>
-                {form.cityId && districtOptions.length > 0 && (
+                {form.cityId && (
                   <Section title={`${t("events.wizard.district")} (${t("create.optional")})`}>
-                    <SearchPicker options={districtOptions} selected={form.districtId ? [form.districtId] : []} multi={false} onChange={(ids) => set({ districtId: ids[0] ?? null })} placeholder={t("filters.search")} emptyLabel={t("filters.noResults")} />
+                    {districtOptions.length > 0 && (
+                      <SearchPicker options={districtOptions} selected={form.districtId ? [form.districtId] : []} multi={false} onChange={(ids) => set({ districtId: ids[0] ?? null })} placeholder={t("filters.search")} emptyLabel={t("filters.noResults")} />
+                    )}
+                    <View style={styles.addDistrictRow}>
+                      <TextInput
+                        value={newDistrictName}
+                        onChangeText={(v) => {
+                          setNewDistrictName(v);
+                          setDistrictAdded(false);
+                        }}
+                        placeholder={t("events.wizard.addDistrictPlaceholder")}
+                        placeholderTextColor={colors.muted}
+                        style={[styles.input, styles.addDistrictInput]}
+                      />
+                      <Pressable
+                        onPress={() => void addDistrict()}
+                        disabled={!newDistrictName.trim() || addingDistrict}
+                        style={[styles.addDistrictButton, (!newDistrictName.trim() || addingDistrict) && { opacity: 0.5 }]}
+                      >
+                        {addingDistrict ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={styles.addDistrictButtonText}>{t("events.wizard.addDistrictAdd")}</Text>}
+                      </Pressable>
+                    </View>
+                    <Text style={styles.hint}>{districtAdded ? t("events.wizard.addDistrictSubmitted") : t("events.wizard.addDistrict")}</Text>
                   </Section>
                 )}
                 <Field label={t("events.wizard.addressText")}>
@@ -668,6 +715,11 @@ const styles = StyleSheet.create({
   label: { color: colors.foreground, fontSize: 14, fontWeight: "700" },
   input: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, color: colors.foreground, paddingHorizontal: spacing.md, paddingVertical: 12, fontSize: 15 },
   multiline: { minHeight: 110, textAlignVertical: "top" },
+  hint: { color: colors.muted, fontSize: 12 },
+  addDistrictRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
+  addDistrictInput: { flex: 1 },
+  addDistrictButton: { backgroundColor: colors.accentFrom, borderRadius: radius.md, paddingHorizontal: spacing.lg, alignItems: "center", justifyContent: "center" },
+  addDistrictButtonText: { color: colors.white, fontSize: 14, fontWeight: "700" },
   row: { flexDirection: "row", gap: spacing.md },
   mediaGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   mediaCell: { width: "31%", aspectRatio: 3 / 4, borderRadius: radius.md, overflow: "hidden", backgroundColor: colors.surface },

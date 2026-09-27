@@ -29,7 +29,8 @@ export function AuthBackdrop({ children }: { children: ReactNode }) {
       {DECOR.map((d) => (
         <Ionicons key={d.icon} name={d.icon} size={d.size} color={colors.accentFrom} style={[styles.decor, d.style, { transform: [{ rotate: d.rotate }] }]} />
       ))}
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      {/* Android needs "height" (not the no-op `undefined`) to actually shrink space for the keyboard. */}
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.card}>{children}</View>
         </ScrollView>

@@ -22,8 +22,8 @@ export class GeographyService {
     });
   }
 
-  listCities(params: { regionId?: string; search?: string }) {
-    return this.prisma.city.findMany({
+  async listCities(params: { regionId?: string; search?: string }) {
+    const cities = await this.prisma.city.findMany({
       where: {
         status: "ACTIVE",
         regionId: params.regionId,
@@ -38,6 +38,14 @@ export class GeographyService {
       },
       orderBy: { nameUk: "asc" },
     });
+    // Kyiv is the capital and by far the most-used city — every client (web filters, the
+    // mobile create-event wizard, mobile filters) should show it first, not alphabetically.
+    const kyivIndex = cities.findIndex((c) => c.slug === "kyiv");
+    if (kyivIndex > 0) {
+      const [kyiv] = cities.splice(kyivIndex, 1);
+      if (kyiv) cities.unshift(kyiv);
+    }
+    return cities;
   }
 
   async getCityBySlug(slug: string) {

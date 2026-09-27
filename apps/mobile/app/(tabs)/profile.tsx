@@ -178,7 +178,8 @@ export default function ProfileScreen() {
   const initial = (form.name || user.name || user.nickname || email || user.email).slice(0, 1).toUpperCase();
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    // Android needs "height" (not the no-op `undefined`) to actually shrink space for the keyboard.
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView style={styles.flex} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ScreenHeader title={t("nav.profile")} subtitle={t("screens.profileSubtitle")} icon="person" />
 
