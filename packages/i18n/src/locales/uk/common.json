@@ -40,7 +40,9 @@
     "yes": "Так",
     "no": "Ні",
     "free": "Безкоштовно",
-    "delete": "Видалити"
+    "delete": "Видалити",
+    "edit": "Редагувати",
+    "more": "Ще"
   },
   "auth": {
     "orContinueWith": "або",
@@ -365,7 +367,15 @@
     "deleteAccountHint": "Персональні дані буде стерто, майбутні події скасовано. Це незворотно.",
     "deleteAccountMore": "Що саме буде видалено",
     "deleteAccountConfirm": "Ви впевнені? Акаунт і дані буде видалено назавжди.",
-    "deleteAccountYes": "Так, видалити назавжди"
+    "deleteAccountYes": "Так, видалити назавжди",
+    "changePassword": "Змінити пароль",
+    "currentPassword": "Поточний пароль",
+    "newPassword": "Новий пароль",
+    "passwordChanged": "Пароль змінено",
+    "changeEmail": "Змінити email",
+    "newEmail": "Новий email",
+    "emailChangedCheckInbox": "Email змінено. Перевірте нову скриньку, щоб підтвердити її.",
+    "security": "Безпека"
   },
   "admin": {
     "accessDenied": "У вас немає доступу до адмін-панелі",

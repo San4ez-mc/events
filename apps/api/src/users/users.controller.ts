@@ -12,6 +12,7 @@ import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { SetSocialLinksDto } from "./dto/set-social-links.dto";
 import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
+import { ChangeEmailDto } from "./dto/change-email.dto";
 import { UpdateUserPreferencesDto } from "./dto/update-user-preferences.dto";
 import { RateLimit } from "../common/throttle";
 
@@ -47,6 +48,14 @@ export class UsersController {
   @Post("me/password")
   async changePassword(@CurrentUser() user: AuthenticatedUser, @Body() dto: ChangePasswordDto) {
     await this.usersService.changePassword(user.id, dto);
+  }
+
+  /** New address goes back to unverified; a verification email is sent to it, same as at registration. */
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RateLimit(5)
+  @Post("me/email")
+  async changeEmail(@CurrentUser() user: AuthenticatedUser, @Body() dto: ChangeEmailDto) {
+    await this.usersService.changeEmail(user.id, dto);
   }
 
   /** Account deletion required by Google Play / GDPR: erases personal data (see UsersService.deleteAccount). */

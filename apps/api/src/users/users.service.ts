@@ -12,10 +12,12 @@ import { EVENT_CARD_INCLUDE } from "../common/utils/event-card-include";
 import { FriendsService } from "../friends/friends.service";
 import { AuditLogService } from "../audit/audit-log.service";
 import { StorageService } from "../storage/storage.service";
+import { AuthService } from "../auth/auth.service";
 import { localizeNotification } from "../notifications/notification-i18n";
 import type { UpdateProfileDto } from "./dto/update-profile.dto";
 import type { SetSocialLinksDto } from "./dto/set-social-links.dto";
 import type { ChangePasswordDto } from "./dto/change-password.dto";
+import type { ChangeEmailDto } from "./dto/change-email.dto";
 import type { UpdateUserPreferencesDto } from "./dto/update-user-preferences.dto";
 import type { AdminListUsersDto } from "./dto/admin-list-users.dto";
 
@@ -36,6 +38,7 @@ export class UsersService {
     private readonly friendsService: FriendsService,
     private readonly auditLog: AuditLogService,
     private readonly storage: StorageService,
+    private readonly authService: AuthService,
   ) {}
 
   async getFullProfile(userId: string) {
@@ -172,6 +175,27 @@ export class UsersService {
       throw new ApiException("INVALID_CREDENTIALS", "Current password is incorrect", 401);
     }
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await argon2.hash(dto.newPassword) } });
+  }
+
+  /**
+   * Changing the address itself requires re-proving identity with the current
+   * password (there's no session step-up otherwise); the new address goes back
+   * to unverified and gets the normal verification email so it's actually
+   * reachable, mirroring how registration verifies a fresh address.
+   */
+  async changeEmail(userId: string, dto: ChangeEmailDto): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true, email: true } });
+    if (!user) throw new ResourceNotFoundException("User not found");
+    if (!(await argon2.verify(user.passwordHash, dto.currentPassword))) {
+      throw new ApiException("INVALID_CREDENTIALS", "Current password is incorrect", 401);
+    }
+    if (dto.newEmail === user.email) return;
+
+    const existing = await this.prisma.user.findUnique({ where: { email: dto.newEmail } });
+    if (existing) throw new ApiException("EMAIL_ALREADY_REGISTERED", "This email is already registered", 409);
+
+    await this.prisma.user.update({ where: { id: userId }, data: { email: dto.newEmail, emailVerifiedAt: null } });
+    await this.authService.sendVerificationEmail(userId, dto.newEmail);
   }
 
   async updatePreferences(userId: string, dto: UpdateUserPreferencesDto) {

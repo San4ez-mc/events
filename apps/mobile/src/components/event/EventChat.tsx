@@ -18,7 +18,7 @@ interface Message {
  * answers 403 to everyone else, in which case nothing is rendered. New
  * messages arrive by light polling (no websockets in the MVP).
  */
-export function EventChat({ eventId, refreshKey }: { eventId: string; refreshKey?: string }) {
+export function EventChat({ eventId, refreshKey, onInputFocus }: { eventId: string; refreshKey?: string; onInputFocus?: () => void }) {
   const { t, locale } = useTranslations();
   const [messages, setMessages] = useState<Message[]>([]);
   const [allowed, setAllowed] = useState(false);
@@ -122,6 +122,7 @@ export function EventChat({ eventId, refreshKey }: { eventId: string; refreshKey
             placeholder={t("chat.placeholder")}
             placeholderTextColor={colors.muted}
             onSubmitEditing={() => void send()}
+            onFocus={onInputFocus}
             returnKeyType="send"
           />
           <Pressable

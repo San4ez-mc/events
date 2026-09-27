@@ -3,6 +3,7 @@ import { Animated, Dimensions, Image, PanResponder, Pressable, StyleSheet, Text,
 import { Ionicons } from "@expo/vector-icons";
 import type { EventCard } from "../../lib/event-types";
 import { useTranslations } from "../../lib/locale-context";
+import { formatCurrency, formatShortDateTime } from "../../lib/format";
 import { colors, radius, spacing } from "../../lib/theme";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -10,14 +11,6 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 // so a light, short gesture is enough. (It used to need ~28% of the width.)
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.14;
 const FLICK_VELOCITY = 0.3;
-
-function formatDate(iso: string, locale: string): string {
-  const date = new Date(iso);
-  const tag = locale === "uk" ? "uk-UA" : "en-US";
-  const day = date.toLocaleDateString(tag, { weekday: "short", day: "numeric", month: "long" });
-  const time = date.toLocaleTimeString(tag, { hour: "2-digit", minute: "2-digit" });
-  return `${day} · ${time}`;
-}
 
 /**
  * UX §65/§66 — swipe left => PASS, swipe right (or tap) => OPEN. Full-bleed card
@@ -111,7 +104,7 @@ export function SwipeCard({
             )}
             <View style={[styles.chip, isFree ? styles.chipFree : styles.chipPaid]}>
               <Text style={[styles.chipText, !isFree && { color: "#111" }]}>
-                {isFree ? t("common.free") : `${event.price ?? "?"} ${event.currency}`}
+                {isFree ? t("common.free") : `${event.price ?? "?"} ${formatCurrency(event.currency)}`}
               </Text>
             </View>
           </View>
@@ -121,7 +114,7 @@ export function SwipeCard({
           {event.startsAt && (
             <View style={styles.metaRow}>
               <Ionicons name="calendar-outline" size={16} color="rgba(255,255,255,0.75)" />
-              <Text style={styles.meta}>{formatDate(event.startsAt, locale)}</Text>
+              <Text style={styles.meta}>{formatShortDateTime(event.startsAt)}</Text>
             </View>
           )}
           {event.format === "OFFLINE" && place ? (

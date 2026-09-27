@@ -290,7 +290,8 @@ export class AuthService {
     ]);
   }
 
-  private async sendVerificationEmail(userId: string, email: string): Promise<void> {
+  /** Also reused by UsersService.changeEmail to re-verify a user's new address. */
+  async sendVerificationEmail(userId: string, email: string): Promise<void> {
     const { token, hash } = this.tokenService.generateSecureToken();
     await this.prisma.emailVerificationToken.create({
       data: {

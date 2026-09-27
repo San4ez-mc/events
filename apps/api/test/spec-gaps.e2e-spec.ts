@@ -383,6 +383,30 @@ describe("Spec gaps (e2e)", () => {
       await http().post("/api/v1/auth/login").send({ email, password: "N3wStrongPass" }).expect(200);
     });
 
+    it("changes the email only with the correct password, and re-requires verification", async () => {
+      const email = `${prefix}em-${Date.now()}@example.com`;
+      const newEmail = `${prefix}em-new-${Date.now()}@example.com`;
+      const reg = await http().post("/api/v1/auth/register").send({ email, password: "Str0ngPass", name: "Email Tester" }).expect(201);
+      const token = reg.body.accessToken as string;
+      const userId = reg.body.user.id as string;
+      await prisma.user.update({ where: { id: userId }, data: { emailVerifiedAt: new Date() } });
+
+      await http().post("/api/v1/users/me/email").set("Authorization", `Bearer ${token}`).send({ newEmail, currentPassword: "WrongPass1" }).expect(401);
+
+      const takenEmail = `${prefix}em-taken-${Date.now()}@example.com`;
+      await http().post("/api/v1/auth/register").send({ email: takenEmail, password: "Str0ngPass", name: "Taken" }).expect(201);
+      await http().post("/api/v1/users/me/email").set("Authorization", `Bearer ${token}`).send({ newEmail: takenEmail, currentPassword: "Str0ngPass" }).expect(409);
+
+      await http().post("/api/v1/users/me/email").set("Authorization", `Bearer ${token}`).send({ newEmail, currentPassword: "Str0ngPass" }).expect(204);
+
+      const updated = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+      expect(updated.email).toBe(newEmail);
+      expect(updated.emailVerifiedAt).toBeNull();
+
+      await http().post("/api/v1/auth/login").send({ email, password: "Str0ngPass" }).expect(401);
+      await http().post("/api/v1/auth/login").send({ email: newEmail, password: "Str0ngPass" }).expect(200);
+    });
+
     it("accepts feedback with and without a signed-in user", async () => {
       await http().post("/api/v1/feedback").send({ kind: "problem", text: "The feed is empty", platform: "android", appVersion: "1.0.0", buildNumber: 3, device: "Test phone" }).expect(204);
       const u = await newUser("fb");

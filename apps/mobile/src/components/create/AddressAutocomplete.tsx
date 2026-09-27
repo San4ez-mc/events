@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { API_URL, getAccessToken } from "../../lib/api-client";
+import { API_URL, getAccessToken, refreshAccessToken } from "../../lib/api-client";
 import { useTranslations } from "../../lib/locale-context";
 import { colors, radius, spacing } from "../../lib/theme";
 
@@ -42,9 +42,16 @@ export function AddressAutocomplete({ value, onPick, placeholder }: { value: str
     }
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`${API_URL}/api/v1/places/autocomplete?q=${encodeURIComponent(q)}&sessionToken=${session.current}&locale=${locale}`, {
+        // A long create-event session can outlive the short-lived access token; refresh once and retry
+        // instead of showing "address search unavailable" for what's really just an expired session.
+        let res = await fetch(`${API_URL}/api/v1/places/autocomplete?q=${encodeURIComponent(q)}&sessionToken=${session.current}&locale=${locale}`, {
           headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
         });
+        if (res.status === 401 && (await refreshAccessToken())) {
+          res = await fetch(`${API_URL}/api/v1/places/autocomplete?q=${encodeURIComponent(q)}&sessionToken=${session.current}&locale=${locale}`, {
+            headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
+          });
+        }
         if (!res.ok) {
           setUnavailable(true);
           setItems([]);

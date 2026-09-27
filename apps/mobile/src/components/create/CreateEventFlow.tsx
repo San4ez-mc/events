@@ -3,7 +3,7 @@ import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, Sc
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { API_URL, getAccessToken } from "../../lib/api-client";
+import { API_URL, getAccessToken, refreshAccessToken } from "../../lib/api-client";
 import { ApiRequestError, useAuth } from "../../lib/auth-context";
 import { useTranslations } from "../../lib/locale-context";
 import { Button } from "../ui/Button";
@@ -23,6 +23,35 @@ interface MediaItem {
   type: "IMAGE" | "VIDEO";
   thumbnailUrl: string;
   displayUrl: string;
+}
+/** Shape of GET /events/:id, as loaded into the wizard's Form when editing an existing event. */
+interface EventDetail {
+  id: string;
+  slug: string;
+  status: "PUBLISHED" | "PENDING_MODERATION" | "REJECTED" | string;
+  media?: MediaItem[];
+  title: string;
+  description: string | null;
+  categoryId: string | null;
+  format: "OFFLINE" | "ONLINE";
+  startsAt: string | null;
+  endsAt: string | null;
+  cityId: string | null;
+  districtId: string | null;
+  addressText: string | null;
+  googlePlaceId: string | null;
+  latitude: number | string | null;
+  longitude: number | string | null;
+  onlineUrl: string | null;
+  priceType: "FREE" | "PAID";
+  price: number | string | null;
+  capacity: number | string | null;
+  minParticipants: number | string | null;
+  approvalMode: "AUTO" | "ORGANIZER_APPROVAL";
+  visibility: "PUBLIC" | "PRIVATE";
+  ageRestriction: number | null;
+  rules: string | null;
+  paymentUrl: string | null;
 }
 interface Form {
   title: string;
@@ -87,15 +116,24 @@ const INITIAL: Form = {
   paymentUrl: "",
 };
 
-async function authed(path: string, init: RequestInit = {}) {
+/**
+ * The create flow can take several minutes to fill in (photos, address lookup, several steps), long enough for the
+ * short-lived access token to expire mid-flow — every request would then fail with "AUTH_REQUIRED" even though the
+ * user never left the screen. On a 401 we silently refresh the session once and retry before giving up.
+ */
+async function authed<T = unknown>(path: string, init: RequestInit = {}, retried = false): Promise<T> {
   const token = getAccessToken();
   const res = await fetch(`${API_URL}/api/v1${path}`, {
     ...init,
     headers: { Authorization: `Bearer ${token ?? ""}`, ...(init.body && !(init.body instanceof FormData) ? { "Content-Type": "application/json" } : {}), ...init.headers },
   });
+  if (res.status === 401 && !retried) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) return authed<T>(path, init, true);
+  }
   const body = await res.json().catch(() => null);
   if (!res.ok) throw new ApiRequestError(body);
-  return body;
+  return body as T;
 }
 
 /** Spec §31/§68: title -> media -> category/when/where -> price/seats -> publish, with the draft autosaved on every step. */
@@ -133,7 +171,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   // Edit mode: load the organizer's event into the same form the wizard uses.
   useEffect(() => {
     if (!editEventId) return;
-    void authed(`/events/${editEventId}`)
+    void authed<EventDetail>(`/events/${editEventId}`)
       .then((e) => {
         const start = e.startsAt ? new Date(e.startsAt) : null;
         const end = e.endsAt ? new Date(e.endsAt) : null;
@@ -185,7 +223,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
 
   const loadBalance = useCallback(async () => {
     try {
-      setBalance((await authed("/credits/balance")).balance);
+      setBalance((await authed<{ balance: number }>("/credits/balance")).balance);
     } catch {
       /* balance is informational */
     }
@@ -243,17 +281,17 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
     if (currentStep === 0) {
       if (form.title.trim().length < 3) throw new Error(t("create.titleTooShort"));
       if (!eventId) {
-        const created = await authed("/events", { method: "POST", body: JSON.stringify({ title: form.title.trim() }) });
+        const created = await authed<{ id: string; slug: string }>("/events", { method: "POST", body: JSON.stringify({ title: form.title.trim() }) });
         setEventId(created.id);
         setSlug(created.slug);
         const extra = payloadFor(0);
         if (Object.values(extra).some((v) => v !== undefined)) {
-          const updated = await authed(`/events/${created.id}`, { method: "PATCH", body: JSON.stringify(extra) });
+          const updated = await authed<{ slug: string }>(`/events/${created.id}`, { method: "PATCH", body: JSON.stringify(extra) });
           setSlug(updated.slug ?? created.slug);
         }
         return;
       }
-      const updated = await authed(`/events/${eventId}`, { method: "PATCH", body: JSON.stringify({ title: form.title.trim(), ...payloadFor(0) }) });
+      const updated = await authed<{ slug: string }>(`/events/${eventId}`, { method: "PATCH", body: JSON.stringify({ title: form.title.trim(), ...payloadFor(0) }) });
       setSlug(updated.slug ?? slug);
       return;
     }
@@ -294,7 +332,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
         const data = new FormData();
         const mime = asset.mimeType ?? (asset.type === "video" ? "video/mp4" : "image/jpeg");
         data.append("file", { uri: asset.uri, name: asset.fileName ?? `upload.${mime.split("/")[1] ?? "jpg"}`, type: mime } as unknown as Blob);
-        const uploaded = await authed(`/events/${eventId}/media`, { method: "POST", body: data });
+        const uploaded = await authed<MediaItem>(`/events/${eventId}/media`, { method: "POST", body: data });
         setMedia((m) => [...m, uploaded]);
       }
     } catch (err) {
@@ -313,7 +351,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   async function claimFree() {
     setBusy(true);
     try {
-      setBalance((await authed("/credits/claim-free", { method: "POST" })).balance);
+      setBalance((await authed<{ balance: number }>("/credits/claim-free", { method: "POST" })).balance);
       setError(null);
     } catch {
       /* stays as is */
@@ -327,7 +365,9 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
     setBusy(true);
     setError(null);
     try {
-      const published = await authed(`/events/${eventId}/publish`, { method: "POST" });
+      const published = await authed<{ slug: string; status: "PUBLISHED" | "PENDING_MODERATION" | "REJECTED" }>(`/events/${eventId}/publish`, {
+        method: "POST",
+      });
       setSlug(published.slug ?? slug);
       setOutcome(published.status);
     } catch (err) {

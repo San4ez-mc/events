@@ -75,8 +75,9 @@ export function FeedTutorial({ visible, onClose }: { visible: boolean; onClose: 
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        {/* Top row: progress + skip */}
-        <View style={[styles.topRow, { paddingTop: insets.top + spacing.sm + 42 + spacing.md }]}>
+        {/* Top row: progress + skip. box-none — its own padding area must not swallow taps meant for the
+            mock header buttons (share/filters), which sit visually inside this row's bounding box. */}
+        <View pointerEvents="box-none" style={[styles.topRow, { paddingTop: insets.top + spacing.sm + 42 + spacing.md }]}>
           <View style={styles.dots}>
             {STEPS.map((_, i) => (
               <View key={i} style={[styles.dot, i === index && styles.dotOn, i < index && styles.dotDone]} />

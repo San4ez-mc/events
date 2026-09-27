@@ -40,7 +40,9 @@
     "yes": "Yes",
     "no": "No",
     "free": "Free",
-    "delete": "Delete"
+    "delete": "Delete",
+    "edit": "Edit",
+    "more": "More"
   },
   "auth": {
     "orContinueWith": "or",
@@ -365,7 +367,15 @@
     "deleteAccountHint": "Your personal data will be erased and upcoming events cancelled. This cannot be undone.",
     "deleteAccountMore": "What exactly is deleted",
     "deleteAccountConfirm": "Are you sure? Your account and data will be deleted permanently.",
-    "deleteAccountYes": "Yes, delete permanently"
+    "deleteAccountYes": "Yes, delete permanently",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "passwordChanged": "Password changed",
+    "changeEmail": "Change email",
+    "newEmail": "New email",
+    "emailChangedCheckInbox": "Email changed. Check the new inbox to confirm it.",
+    "security": "Security"
   },
   "admin": {
     "accessDenied": "You don't have access to the admin panel",

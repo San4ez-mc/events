@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { ApiRequestError, useAuth } from "../../src/lib/auth-context";
@@ -11,13 +11,14 @@ import { EventGallery } from "../../src/components/event/EventGallery";
 import { EventChat } from "../../src/components/event/EventChat";
 import { ReviewsSection } from "../../src/components/event/ReviewsSection";
 import { sourceFromParam, track } from "../../src/lib/analytics";
+import { formatCurrency, formatShortDateTime } from "../../src/lib/format";
 import type { EventDetail, Registration } from "../../src/lib/event-types";
 import { colors, radius, spacing } from "../../src/lib/theme";
 
 export default function EventDetailScreen() {
   const { slug, src } = useLocalSearchParams<{ slug: string; src?: string }>();
   const { user, isLoading: authLoading } = useAuth();
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
 
   const [event, setEvent] = useState<EventDetail | null | undefined>(undefined);
   const [registration, setRegistration] = useState<Registration | null | undefined>(undefined);
@@ -29,6 +30,8 @@ export default function EventDetailScreen() {
   const [following, setFollowing] = useState(false);
   const [tierId, setTierId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
   const loadEvent = useCallback(async () => {
     const token = getAccessToken();
@@ -110,25 +113,29 @@ export default function EventDetailScreen() {
     if (!res?.ok) setSaved(!next);
   }
 
-  function reportEvent() {
-    const token = getAccessToken();
-    if (!token || !event) {
+  const REPORT_REASONS = ["spam", "fraud", "inappropriate", "wrongInfo", "other"] as const;
+
+  function openReportMenu() {
+    if (!getAccessToken() || !event) {
       router.push("/login");
       return;
     }
-    const send = async (reason: string) => {
-      const res = await fetch(`${API_URL}/api/v1/reports`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ targetType: "EVENT", targetId: event.id, reason }),
-      }).catch(() => null);
-      Alert.alert(res?.ok ? t("events.actions.reportSent") : t("common.somethingWentWrong"));
-    };
-    const reasons = ["spam", "fraud", "inappropriate", "wrongInfo", "other"] as const;
-    Alert.alert(t("events.actions.report"), undefined, [
-      ...reasons.map((r) => ({ text: t(`events.actions.reasons.${r}`), onPress: () => void send(t(`events.actions.reasons.${r}`)) })),
-      { text: t("common.cancel"), style: "cancel" as const },
-    ]);
+    setReportOpen(true);
+  }
+
+  // A native Alert with 5 reasons + Cancel (6 buttons) silently drops buttons past the 3rd on Android — that's
+  // why "Скасувати" used to disappear and the popup felt stuck. A real Modal has no such limit and is always
+  // dismissable (backdrop tap, hardware back, or the close button).
+  async function sendReport(reason: string) {
+    const token = getAccessToken();
+    setReportOpen(false);
+    if (!token || !event) return;
+    const res = await fetch(`${API_URL}/api/v1/reports`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ targetType: "EVENT", targetId: event.id, reason }),
+    }).catch(() => null);
+    Alert.alert(res?.ok ? t("events.actions.reportSent") : t("common.somethingWentWrong"));
   }
 
   async function submit() {
@@ -216,14 +223,23 @@ export default function EventDetailScreen() {
         : null;
   const applyLabel = event.approvalMode === "ORGANIZER_APPROVAL" ? t("registration.apply") : t("registration.register");
 
+  const isOwner = !!user && !!organizer && organizer.id === user.id;
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.galleryBleed}>
         <EventGallery media={event.media} />
       </View>
 
       <View style={styles.titleRow}>
         <Text style={[styles.title, { flex: 1 }]}>{event.title}</Text>
+        {isOwner && (
+          <Pressable style={styles.shareButton} onPress={() => router.push(`/edit/${event.id}`)} accessibilityLabel={t("common.edit")}>
+            <Ionicons name="pencil-outline" size={20} color={colors.foreground} />
+          </Pressable>
+        )}
         <Pressable style={styles.shareButton} onPress={() => void toggleSave()} accessibilityLabel={saved ? t("events.actions.saved") : t("events.actions.save")}>
           <Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={22} color={saved ? colors.accentFrom : colors.foreground} />
         </Pressable>
@@ -237,16 +253,16 @@ export default function EventDetailScreen() {
         <Pressable style={styles.shareButton} onPress={() => void toggleFollow()} accessibilityLabel={t("events.actions.follow")}>
           <Ionicons name={following ? "notifications" : "notifications-outline"} size={21} color={following ? colors.accentFrom : colors.foreground} />
         </Pressable>
-        <Pressable style={styles.shareButton} onPress={reportEvent} accessibilityLabel={t("events.actions.report")}>
-          <Ionicons name="flag-outline" size={20} color={colors.foreground} />
+        <Pressable style={styles.shareButton} onPress={openReportMenu} accessibilityLabel={t("common.more")}>
+          <Ionicons name="ellipsis-horizontal" size={20} color={colors.foreground} />
         </Pressable>
       </View>
 
       <View style={styles.metaRow}>
-        {event.startsAt && <Text style={styles.meta}>{new Date(event.startsAt).toLocaleString(locale === "uk" ? "uk-UA" : "en-US")}</Text>}
+        {event.startsAt && <Text style={styles.meta}>{formatShortDateTime(event.startsAt)}</Text>}
         {event.format === "OFFLINE" && event.city && <Text style={styles.meta}>{event.city.nameUk}</Text>}
         {event.format === "ONLINE" && <Text style={styles.meta}>{t("events.wizard.formatOnline")}</Text>}
-        <Text style={styles.meta}>{event.priceType === "FREE" ? t("common.free") : `${event.price ?? "?"} ${event.currency}`}</Text>
+        <Text style={styles.meta}>{event.priceType === "FREE" ? t("common.free") : `${event.price ?? "?"} ${formatCurrency(event.currency)}`}</Text>
       </View>
 
       {social && (
@@ -346,7 +362,7 @@ export default function EventDetailScreen() {
           <Text style={styles.sectionTitle}>{t("registration.ticketType")}</Text>
           {event.priceOptions.map((o) => (
             <Text key={o.id} style={styles.meta}>
-              {o.name} — {Number(o.price) === 0 ? t("common.free") : `${Number(o.price)} ${event.currency}`}
+              {o.name} — {Number(o.price) === 0 ? t("common.free") : `${Number(o.price)} ${formatCurrency(event.currency)}`}
               {o.soldOut ? ` (${t("events.page.soldOut")})` : ""}
             </Text>
           ))}
@@ -372,7 +388,7 @@ export default function EventDetailScreen() {
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md }}>
             {event.participants.map((p) => (
-              <View key={p.id} style={styles.participant}>
+              <Pressable key={p.id} style={styles.participant} onPress={() => router.push(`/users/${p.id}`)}>
                 {p.avatarUrl ? (
                   <Image source={{ uri: p.avatarUrl }} style={styles.pAvatar} />
                 ) : (
@@ -383,7 +399,7 @@ export default function EventDetailScreen() {
                 <Text style={styles.pName} numberOfLines={1}>
                   {p.name}
                 </Text>
-              </View>
+              </Pressable>
             ))}
           </ScrollView>
         </View>
@@ -391,7 +407,11 @@ export default function EventDetailScreen() {
 
       <ReviewsSection eventId={event.id} eventStatus={event.status} summary={event.reviewSummary} />
 
-      <EventChat eventId={event.id} refreshKey={registration?.status ?? "none"} />
+      <EventChat
+        eventId={event.id}
+        refreshKey={registration?.status ?? "none"}
+        onInputFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150)}
+      />
 
       <View style={styles.registrationBox}>
         {error && <Text style={styles.error}>{error}</Text>}
@@ -399,7 +419,30 @@ export default function EventDetailScreen() {
       </View>
 
       {event.priceType === "PAID" && <Text style={styles.disclaimer}>{t("events.page.paidDisclaimer")}</Text>}
-    </ScrollView>
+      </ScrollView>
+      </KeyboardAvoidingView>
+
+      <Modal visible={reportOpen} transparent animationType="fade" onRequestClose={() => setReportOpen(false)}>
+        <Pressable style={styles.reportBackdrop} onPress={() => setReportOpen(false)}>
+          <Pressable style={styles.reportSheet} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.reportHeader}>
+              <Text style={styles.reportTitle}>{t("events.actions.report")}</Text>
+              <Pressable onPress={() => setReportOpen(false)} hitSlop={10} accessibilityLabel={t("common.cancel")}>
+                <Ionicons name="close" size={22} color={colors.foreground} />
+              </Pressable>
+            </View>
+            {REPORT_REASONS.map((r) => (
+              <Pressable key={r} style={styles.reportRow} onPress={() => void sendReport(t(`events.actions.reasons.${r}`))}>
+                <Text style={styles.reportRowText}>{t(`events.actions.reasons.${r}`)}</Text>
+              </Pressable>
+            ))}
+            <Pressable style={styles.reportCancel} onPress={() => setReportOpen(false)}>
+              <Text style={styles.reportCancelText}>{t("common.cancel")}</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
   );
 
   function renderRegistration() {
@@ -428,7 +471,7 @@ export default function EventDetailScreen() {
                   {o.name}
                   {o.soldOut ? ` · ${t("events.page.soldOut")}` : ""}
                 </Text>
-                <Text style={styles.tierName}>{Number(o.price) === 0 ? t("common.free") : `${Number(o.price)} ${event.currency}`}</Text>
+                <Text style={styles.tierName}>{Number(o.price) === 0 ? t("common.free") : `${Number(o.price)} ${formatCurrency(event.currency)}`}</Text>
               </Pressable>
             ))}
           </View>
@@ -522,4 +565,12 @@ const styles = StyleSheet.create({
   form: { gap: spacing.sm },
   error: { color: colors.danger, fontSize: 13, textAlign: "center" },
   muted: { color: colors.muted, fontSize: 14, textAlign: "center" },
+  reportBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  reportSheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, paddingBottom: spacing.xl, paddingTop: spacing.md },
+  reportHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.lg, paddingBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
+  reportTitle: { color: colors.foreground, fontSize: 16, fontWeight: "700" },
+  reportRow: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
+  reportRowText: { color: colors.foreground, fontSize: 15 },
+  reportCancel: { marginTop: spacing.md, marginHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.md, backgroundColor: colors.surface, alignItems: "center" },
+  reportCancelText: { color: colors.foreground, fontSize: 15, fontWeight: "700" },
 });
