@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import sharp from "sharp";
+import * as argon2 from "argon2";
+import { randomBytes } from "node:crypto";
 import type { UserRole, UserStatus } from "@kiro/types";
 import { PAGINATION } from "@kiro/config";
 import type { CursorPage } from "@kiro/types";
@@ -10,6 +12,7 @@ import { EVENT_CARD_INCLUDE } from "../common/utils/event-card-include";
 import { FriendsService } from "../friends/friends.service";
 import { AuditLogService } from "../audit/audit-log.service";
 import { StorageService } from "../storage/storage.service";
+import { localizeNotification } from "../notifications/notification-i18n";
 import type { UpdateProfileDto } from "./dto/update-profile.dto";
 import type { SetSocialLinksDto } from "./dto/set-social-links.dto";
 import type { UpdateUserPreferencesDto } from "./dto/update-user-preferences.dto";
@@ -85,6 +88,79 @@ export class UsersService {
       this.prisma.userSocialLink.createMany({ data: dto.links.map((l) => ({ userId, type: l.type, url: l.url })) }),
     ]);
     return this.prisma.userSocialLink.findMany({ where: { userId }, select: { type: true, url: true }, orderBy: { createdAt: "asc" } });
+  }
+
+  /**
+   * Play Store / GDPR account deletion. Personal data is erased or anonymised, upcoming events by this user are
+   * cancelled (their participants are told), and their own registrations are cancelled. Rows other people's data
+   * depends on (chat messages, past events) stay, but no longer point to a person: the user becomes "deleted".
+   */
+  async deleteAccount(userId: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, role: true, status: true } });
+    if (!user || user.status === "DELETED") throw new ResourceNotFoundException("User not found");
+    if (user.role === "SUPER_ADMIN") {
+      throw new ApiException("FORBIDDEN", "A super admin account can't be deleted; hand the role over first", 403);
+    }
+
+    const now = new Date();
+    const upcomingEvents = await this.prisma.event.findMany({
+      where: { ownerId: userId, status: { in: ["DRAFT", "PUBLISHED", "PENDING_MODERATION"] }, OR: [{ startsAt: null }, { startsAt: { gt: now } }] },
+      select: { id: true, title: true, status: true },
+    });
+    const publishedIds = upcomingEvents.filter((e) => e.status === "PUBLISHED").map((e) => e.id);
+    const registrants = publishedIds.length
+      ? await this.prisma.registration.findMany({
+          where: { eventId: { in: publishedIds }, status: { in: ["PENDING", "REGISTERED", "PAYMENT_PENDING", "CONFIRMED", "WAITLISTED"] } },
+          select: { userId: true, eventId: true, user: { select: { locale: true } } },
+        })
+      : [];
+    const titleById = new Map(upcomingEvents.map((e) => [e.id, e.title]));
+
+    const placeholderHash = await argon2.hash(randomBytes(32).toString("hex"));
+
+    await this.prisma.$transaction([
+      // Tell participants of the organizer's upcoming published events, then cancel those events.
+      ...registrants.map((r) => {
+        const text = localizeNotification(r.user.locale, "Event cancelled", `"${titleById.get(r.eventId) ?? ""}" was cancelled because the organizer left Kiro.`);
+        return this.prisma.notification.create({
+          data: { userId: r.userId, type: "EVENT_CANCELLED", title: text.title, body: text.body, payloadJson: { eventId: r.eventId } },
+        });
+      }),
+      this.prisma.event.updateMany({
+        where: { id: { in: upcomingEvents.map((e) => e.id) } },
+        data: { status: "CANCELLED", cancelledAt: now },
+      }),
+      // The user's own registrations no longer hold a seat.
+      this.prisma.registration.updateMany({
+        where: { userId, status: { in: ["PENDING", "REGISTERED", "PAYMENT_PENDING", "CONFIRMED", "WAITLISTED"] } },
+        data: { status: "CANCELLED", cancelledAt: now },
+      }),
+      // Personal data and sessions.
+      this.prisma.refreshToken.deleteMany({ where: { userId } }),
+      this.prisma.userDevice.deleteMany({ where: { userId } }),
+      this.prisma.userSocialLink.deleteMany({ where: { userId } }),
+      this.prisma.savedEvent.deleteMany({ where: { userId } }),
+      this.prisma.eventInteraction.deleteMany({ where: { userId } }),
+      this.prisma.eventReview.deleteMany({ where: { authorUserId: userId } }),
+      this.prisma.friendship.deleteMany({ where: { OR: [{ requesterId: userId }, { addresseeId: userId }] } }),
+      this.prisma.subscription.deleteMany({ where: { OR: [{ userId }, { organizerId: userId }] } }),
+      this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          status: "DELETED",
+          email: `deleted-${userId}@deleted.invalid`,
+          emailVerifiedAt: null,
+          name: null,
+          nickname: null,
+          bio: null,
+          phone: null,
+          phoneVerifiedAt: null,
+          birthDate: null,
+          avatarUrl: null,
+          passwordHash: placeholderHash,
+        },
+      }),
+    ]);
   }
 
   async updatePreferences(userId: string, dto: UpdateUserPreferencesDto) {

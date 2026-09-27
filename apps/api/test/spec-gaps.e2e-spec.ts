@@ -340,4 +340,33 @@ describe("Spec gaps (e2e)", () => {
       expect(tiers.find((t) => t.name === "Standard")).toMatchObject({ soldOut: false, taken: 1 });
     });
   });
+  describe("account deletion and app version", () => {
+    it("erases personal data, cancels upcoming events with a notice, and blocks further sign-in", async () => {
+      const { organizer, id } = await publishedEvent();
+      const attendee = await newUser("del-att");
+      await register(id, attendee.token).expect(201);
+
+      await http().delete("/api/v1/users/me").set("Authorization", `Bearer ${organizer.token}`).send({}).expect(400); // needs { confirm: true }
+      await http().delete("/api/v1/users/me").set("Authorization", `Bearer ${organizer.token}`).send({ confirm: true }).expect(204);
+
+      const gone = await prisma.user.findUniqueOrThrow({ where: { id: organizer.id } });
+      expect(gone.status).toBe("DELETED");
+      expect(gone.email).toMatch(/^deleted-/);
+      expect(gone.name).toBeNull();
+
+      const event = await prisma.event.findUniqueOrThrow({ where: { id } });
+      expect(event.status).toBe("CANCELLED");
+
+      const notices = await http().get("/api/v1/notifications").set("Authorization", `Bearer ${attendee.token}`).expect(200);
+      expect(notices.body.items.some((n: { type: string }) => n.type === "EVENT_CANCELLED")).toBe(true);
+
+      // The old token no longer identifies an active account.
+      await http().get("/api/v1/users/me").set("Authorization", `Bearer ${organizer.token}`).expect((res) => expect(res.status).toBeGreaterThanOrEqual(401));
+    });
+
+    it("serves the app version info publicly with safe defaults", async () => {
+      const res = await http().get("/api/v1/config/app-version?platform=android").expect(200);
+      expect(res.body).toEqual(expect.objectContaining({ latestBuild: expect.any(Number), minBuild: expect.any(Number), url: expect.any(String) }));
+    });
+  });
 });

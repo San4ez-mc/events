@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Put, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiConsumes, ApiTags } from "@nestjs/swagger";
 import { ApiException } from "../common/exceptions/api.exception";
@@ -10,6 +10,7 @@ import { TokenService } from "../auth/token.service";
 import { UsersService } from "./users.service";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { SetSocialLinksDto } from "./dto/set-social-links.dto";
+import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { UpdateUserPreferencesDto } from "./dto/update-user-preferences.dto";
 import { RateLimit } from "../common/throttle";
 
@@ -38,6 +39,14 @@ export class UsersController {
   uploadAvatar(@CurrentUser() user: AuthenticatedUser, @UploadedFile() file: Express.Multer.File | undefined) {
     if (!file) throw new ApiException("VALIDATION_ERROR", "No file uploaded", 400, { file: ["Required"] });
     return this.usersService.uploadAvatar(user.id, file);
+  }
+
+  /** Account deletion required by Google Play / GDPR: erases personal data (see UsersService.deleteAccount). */
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RateLimit(3)
+  @Delete("me")
+  async deleteMe(@CurrentUser() user: AuthenticatedUser, @Body() _dto: DeleteAccountDto) {
+    await this.usersService.deleteAccount(user.id);
   }
 
   @Put("me/social-links")

@@ -18,6 +18,7 @@ const RULES: Rule[] = [
   { title: "A district you used was merged", ukTitle: "Район, який ви використали, об'єднано", body: /^"(.*)" was merged into "(.*)"\. Your event "(.*)" now uses the new district\.$/s, ukBody: (m) => `«${q(m)}» об'єднано з «${q(m, 2)}». Ваша подія «${q(m, 3)}» тепер у новому районі.` },
   { title: "Event approved", ukTitle: "Подію схвалено", body: /^"(.*)" passed moderation and is now published\.$/s, ukBody: (m) => `«${q(m)}» пройшла модерацію й опублікована.` },
   { title: "Event rejected", ukTitle: "Подію відхилено", body: /^"(.*)" didn't pass moderation and wasn't published\.$/s, ukBody: (m) => `«${q(m)}» не пройшла модерацію й не опублікована.` },
+  { title: "Event cancelled", ukTitle: "Подію скасовано", body: /^"(.*)" was cancelled because the organizer left Kiro\.$/s, ukBody: (m) => `«${q(m)}» скасовано, бо організатор залишив Кіро.` },
   { title: "Event details changed", ukTitle: "Деталі події змінено", body: /^The organizer updated the date, location, or link for "(.*)"\.$/s, ukBody: (m) => `Організатор оновив дату, місце або посилання для «${q(m)}».` },
   { title: "New friend request", ukTitle: "Новий запит у друзі", body: /^(.*) wants to be friends\.$/s, ukBody: (m) => `${q(m)} хоче дружити.` },
   { title: "Friend request accepted", ukTitle: "Запит у друзі прийнято", body: /^(.*) accepted your friend request\.$/s, ukBody: (m) => `${q(m)} прийняв(-ла) ваш запит у друзі.` },
