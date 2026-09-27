@@ -8,21 +8,41 @@
 export interface ScoredCursor {
   score: number;
   id: string;
+  /**
+   * Epoch ms of the `now` used to compute `score`, when the score is time-
+   * dependent (the discovery feed's freshness/proximity terms) — `null` for
+   * a time-independent score (search relevance). See `now` below.
+   */
+  now: number | null;
 }
 
-export function encodeScoredCursor(score: number, id: string): string {
-  return Buffer.from(`${score}:${id}`, "utf8").toString("base64url");
+/**
+ * `now` should be passed whenever the score was computed against a `now`
+ * that drifts on every call (e.g. discovery's freshness/date-proximity
+ * terms) — the caller must then reuse that same `now` (not a fresh
+ * `new Date()`) for every subsequent page in the same pagination session,
+ * or a page boundary can flip between requests and silently duplicate or
+ * skip an item near it. Omit it for a score that's already stable across
+ * requests (e.g. search's trigram relevance).
+ */
+export function encodeScoredCursor(score: number, id: string, now?: number): string {
+  return Buffer.from(`${score}:${now ?? ""}:${id}`, "utf8").toString("base64url");
 }
 
 export function decodeScoredCursor(cursor: string): ScoredCursor | null {
   try {
     const decoded = Buffer.from(cursor, "base64url").toString("utf8");
-    const separatorIndex = decoded.lastIndexOf(":");
-    if (separatorIndex === -1) return null;
-    const score = Number(decoded.slice(0, separatorIndex));
-    const id = decoded.slice(separatorIndex + 1);
+    const first = decoded.indexOf(":");
+    const last = decoded.lastIndexOf(":");
+    // A cursor with only one ":" is either corrupt or from the old 2-part (score:id) format —
+    // either way, degrading to "no cursor" (start over) is safe; nothing downstream crashes on it.
+    if (first === -1 || last === -1 || first === last) return null;
+    const score = Number(decoded.slice(0, first));
+    const nowPart = decoded.slice(first + 1, last);
+    const id = decoded.slice(last + 1);
     if (!Number.isFinite(score) || !id) return null;
-    return { score, id };
+    const now = nowPart ? Number(nowPart) : null;
+    return { score, id, now: now != null && Number.isFinite(now) ? now : null };
   } catch {
     return null;
   }

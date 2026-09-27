@@ -46,7 +46,12 @@ export class DiscoveryService {
       userId ? this.prisma.userPreferences.findUnique({ where: { userId } }) : null,
     ]);
 
-    const now = new Date();
+    // Reuse the `now` the cursor was minted with (rather than a fresh Date()) for every page after
+    // the first: score's freshness/date-proximity terms drift continuously with wall-clock time
+    // (see scoreEvent below), so scoring page 2 against a different `now` than page 1 can flip a
+    // boundary item across the cursor and silently duplicate or skip it. A brand-new request (no
+    // cursor) still gets a fresh `now`, which then propagates to every later page it mints.
+    const now = cursor?.now != null ? new Date(cursor.now) : new Date();
     const viewer = userId ? await this.prisma.user.findUnique({ where: { id: userId }, select: { birthDate: true } }) : null;
     const isMinor = !!viewer?.birthDate && this.ageOn(viewer.birthDate, now) < 18;
     const blockedOwnerIds = await this.getBlockedUserIds(userId);
@@ -78,7 +83,7 @@ export class DiscoveryService {
         page.map(({ score: _score, ...event }) => event),
         userId,
       ),
-      nextCursor: hasMore && last ? encodeScoredCursor(last.score, last.id) : null,
+      nextCursor: hasMore && last ? encodeScoredCursor(last.score, last.id, now.getTime()) : null,
       hasMore,
     };
   }
