@@ -63,6 +63,7 @@ apps/web/test-results/
 # Local secret notes (never commit)
 mail.txt
 secrets.txt
+pay.txt
 .secrets/
 
 # Firebase config (not a secret by itself, but keep out of the public repo)

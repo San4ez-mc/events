@@ -197,10 +197,9 @@ describe("QA §20/§21/§54/§59/§60 — capacity, concurrency, idempotency, co
   });
 
   describe("§54 Concurrency — simultaneous approve/cancel/reject", () => {
-    // Reproduced deterministically on every run against this codebase (see
-    // docs/qa/QA_events.md §54.1) — approve() has no lock/transaction while
-    // reject() does, so both can return 200 for the same PENDING registration.
-    it.failing("simultaneous approve + reject on the SAME pending registration: exactly one wins, the row ends in a single consistent terminal state", async () => {
+    // FIXED (was a QA finding, docs/qa/QA_events.md §54.1) — approve() now takes the same
+    // pg_advisory_xact_lock + re-check-inside-transaction that reject() already did.
+    it("simultaneous approve + reject on the SAME pending registration: exactly one wins, the row ends in a single consistent terminal state", async () => {
       const { eventId, organizerToken } = await createPublishedEvent(app, categoryId, cityId, {
         title: "Approve Reject Race QA",
         approvalMode: "ORGANIZER_APPROVAL",
@@ -227,15 +226,9 @@ describe("QA §20/§21/§54/§59/§60 — capacity, concurrency, idempotency, co
       // The row itself never ends up corrupted (some third, invalid status) —
       // that part genuinely holds.
       expect(["REGISTERED", "REJECTED"]).toContain(final.status);
-      // BUT: unlike reject() (which takes `pg_advisory_xact_lock` and re-checks
-      // status inside a transaction), approve() in
-      // registrations.service.ts's `approve()` does a plain read-then-write
-      // with NO lock and NO transaction — a classic TOCTOU race. When both
-      // calls' initial reads land before either write, BOTH see PENDING, BOTH
-      // pass the "only a pending registration can be..." guard, and BOTH
-      // return 200 — even though only one write can actually be the final
-      // state. See the dedicated capacity-violation reproduction below for
-      // why this is more than cosmetic.
+      // Exactly one of the two concurrent calls may succeed — the loser's read now happens inside
+      // the same advisory-locked transaction as the winner's write, so it re-reads the already-
+      // updated (no-longer-PENDING) row and 400s instead of racing through.
       expect(statuses.filter((s) => s === 200).length).toBeLessThanOrEqual(1);
     });
 

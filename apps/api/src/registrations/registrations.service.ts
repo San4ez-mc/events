@@ -180,15 +180,25 @@ export class RegistrationsService {
     return updated;
   }
 
-  /** Organizer approves a PENDING registration (§27 — free+approval or paid+approval flow). */
+  /**
+   * Organizer approves a PENDING registration (§27 — free+approval or paid+approval flow).
+   *
+   * Locked/transactional the same way `reject()` is (§54): a plain read-then-write here would let
+   * a concurrent `reject()` on the same registration race it — both read PENDING before either
+   * writes, both pass the guard, both return 200, and `reject()`'s waitlist-promotion can then get
+   * silently clobbered back to REGISTERED by this write, double-booking a freed seat past capacity.
+   */
   async approve(eventId: string, registrationId: string, organizerId: string) {
-    const registration = await this.getOwnedRegistration(eventId, registrationId, organizerId);
-    if (registration.status !== "PENDING") {
-      throw new ApiException("VALIDATION_ERROR", "Only a pending registration can be approved", 400);
-    }
-    const updated = await this.prisma.registration.update({
-      where: { id: registrationId },
-      data: { status: "REGISTERED", approvedAt: new Date() },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${eventId}))`;
+      const registration = await this.getOwnedRegistration(eventId, registrationId, organizerId, tx);
+      if (registration.status !== "PENDING") {
+        throw new ApiException("VALIDATION_ERROR", "Only a pending registration can be approved", 400);
+      }
+      return tx.registration.update({
+        where: { id: registrationId },
+        data: { status: "REGISTERED", approvedAt: new Date() },
+      });
     });
     const event = await this.prisma.event.findUnique({ where: { id: eventId }, select: { title: true } });
     await this.notifications.create({
