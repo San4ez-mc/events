@@ -67,7 +67,7 @@ const TOGGLES: { key: keyof Prefs; labelKey: string }[] = [
 
 /** §21/§23 — own profile: photo, basic data, language, privacy toggles, notification opt-outs. */
 export default function ProfilePage() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, logout } = useAuth();
   const { t } = useTranslations();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -76,6 +76,9 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState<"idle" | "saved" | "failed">("idle");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteFailed, setDeleteFailed] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -160,6 +163,32 @@ export default function ProfilePage() {
       setStatus("failed");
     } finally {
       setSaving(false);
+    }
+  }
+
+  /** Play Store / GDPR: permanently erases the account (see /account-deletion). Two-step confirm, then sign out. */
+  async function deleteAccount() {
+    const token = getAccessToken();
+    if (!token) return;
+    setDeleting(true);
+    setDeleteFailed(false);
+    try {
+      const res = await fetch("/api/v1/users/me", {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ confirm: true }),
+      });
+      if (!res.ok) {
+        setDeleteFailed(true);
+        return;
+      }
+      await logout().catch(() => {});
+      router.replace("/");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -408,6 +437,50 @@ export default function ProfilePage() {
           <span className="text-sm text-danger">{t("profile.saveFailed")}</span>
         )}
       </div>
+
+      <section className="mt-6 rounded-2xl border border-danger/40 p-4">
+        <h2 className="mb-1 text-sm font-semibold text-danger">
+          {t("profile.deleteAccount")}
+        </h2>
+        <p className="mb-3 text-xs text-muted">
+          {t("profile.deleteAccountHint")}{" "}
+          <Link href="/account-deletion" className="underline">
+            {t("profile.deleteAccountMore")}
+          </Link>
+        </p>
+        {!confirmingDelete ? (
+          <Button variant="secondary" onClick={() => setConfirmingDelete(true)}>
+            {t("profile.deleteAccount")}
+          </Button>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-medium">
+              {t("profile.deleteAccountConfirm")}
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => void deleteAccount()}
+                disabled={deleting}
+                className="inline-flex min-h-11 items-center justify-center rounded-md bg-danger px-4 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {deleting ? t("common.loading") : t("profile.deleteAccountYes")}
+              </button>
+              <Button
+                variant="secondary"
+                onClick={() => setConfirmingDelete(false)}
+              >
+                {t("common.cancel")}
+              </Button>
+            </div>
+            {deleteFailed && (
+              <p role="alert" className="text-sm text-danger">
+                {t("profile.saveFailed")}
+              </p>
+            )}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { LOCALE_COOKIE, resolveLocale } from "@/lib/locale";
 import { AuthProvider } from "@/lib/auth-context";
 import { SiteHeader } from "@/components/site-header";
 import { BottomNav } from "@/components/bottom-nav";
+import { SiteFooter } from "@/components/site-footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -49,7 +50,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <LocaleProvider locale={locale}>
             <AuthProvider>
               <SiteHeader />
-              <main className="flex-1 pb-20 sm:pb-0">{children}</main>
+              <main className="flex-1">{children}</main>
+              <SiteFooter />
               <BottomNav />
             </AuthProvider>
           </LocaleProvider>

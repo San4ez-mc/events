@@ -369,4 +369,39 @@ describe("Spec gaps (e2e)", () => {
       expect(res.body).toEqual(expect.objectContaining({ latestBuild: expect.any(Number), minBuild: expect.any(Number), url: expect.any(String) }));
     });
   });
+  describe("password change, feedback and blocking", () => {
+    it("changes the password only with the correct current one", async () => {
+      const email = `${prefix}pw-${Date.now()}@example.com`;
+      const reg = await http().post("/api/v1/auth/register").send({ email, password: "Str0ngPass", name: "Pw Tester" }).expect(201);
+      const token = reg.body.accessToken as string;
+
+      await http().post("/api/v1/users/me/password").set("Authorization", `Bearer ${token}`).send({ currentPassword: "WrongPass1", newPassword: "N3wStrongPass" }).expect(401);
+      await http().post("/api/v1/users/me/password").set("Authorization", `Bearer ${token}`).send({ currentPassword: "Str0ngPass", newPassword: "short" }).expect(400);
+      await http().post("/api/v1/users/me/password").set("Authorization", `Bearer ${token}`).send({ currentPassword: "Str0ngPass", newPassword: "N3wStrongPass" }).expect(204);
+
+      await http().post("/api/v1/auth/login").send({ email, password: "Str0ngPass" }).expect(401);
+      await http().post("/api/v1/auth/login").send({ email, password: "N3wStrongPass" }).expect(200);
+    });
+
+    it("accepts feedback with and without a signed-in user", async () => {
+      await http().post("/api/v1/feedback").send({ kind: "problem", text: "The feed is empty", platform: "android", appVersion: "1.0.0", buildNumber: 3, device: "Test phone" }).expect(204);
+      const u = await newUser("fb");
+      await http().post("/api/v1/feedback").set("Authorization", `Bearer ${u.token}`).send({ kind: "idea", text: "Add dark/light theme switch" }).expect(204);
+      await http().post("/api/v1/feedback").send({ kind: "nonsense", text: "x" }).expect(400);
+    });
+
+    it("hides a blocked user's chat messages from the person who blocked them", async () => {
+      const { organizer, id } = await publishedEvent();
+      const attendee = await newUser("chat-blocked");
+      await register(id, attendee.token).expect(201);
+      await http().post(`/api/v1/events/${id}/chat`).set("Authorization", `Bearer ${attendee.token}`).send({ text: "hello from attendee" }).expect(201);
+
+      const before = await http().get(`/api/v1/events/${id}/chat`).set("Authorization", `Bearer ${organizer.token}`).expect(200);
+      expect(before.body.items.map((m: { text: string }) => m.text)).toContain("hello from attendee");
+
+      await http().post("/api/v1/friends/blocks").set("Authorization", `Bearer ${organizer.token}`).send({ userId: attendee.id }).expect(204);
+      const after = await http().get(`/api/v1/events/${id}/chat`).set("Authorization", `Bearer ${organizer.token}`).expect(200);
+      expect(after.body.items.map((m: { text: string }) => m.text)).not.toContain("hello from attendee");
+    });
+  });
 });

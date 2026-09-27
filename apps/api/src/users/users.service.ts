@@ -15,6 +15,7 @@ import { StorageService } from "../storage/storage.service";
 import { localizeNotification } from "../notifications/notification-i18n";
 import type { UpdateProfileDto } from "./dto/update-profile.dto";
 import type { SetSocialLinksDto } from "./dto/set-social-links.dto";
+import type { ChangePasswordDto } from "./dto/change-password.dto";
 import type { UpdateUserPreferencesDto } from "./dto/update-user-preferences.dto";
 import type { AdminListUsersDto } from "./dto/admin-list-users.dto";
 
@@ -161,6 +162,16 @@ export class UsersService {
         },
       }),
     ]);
+  }
+
+  /** Verifies the current password (Google-only accounts have an unusable random one, so they use "forgot password"). */
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+    if (!user) throw new ResourceNotFoundException("User not found");
+    if (!(await argon2.verify(user.passwordHash, dto.currentPassword))) {
+      throw new ApiException("INVALID_CREDENTIALS", "Current password is incorrect", 401);
+    }
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await argon2.hash(dto.newPassword) } });
   }
 
   async updatePreferences(userId: string, dto: UpdateUserPreferencesDto) {

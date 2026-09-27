@@ -17,6 +17,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [
     { url: SITE, changeFrequency: "hourly", priority: 1 },
     { url: `${SITE}/search`, changeFrequency: "daily", priority: 0.7 },
+    { url: `${SITE}/privacy`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${SITE}/terms`, changeFrequency: "yearly", priority: 0.3 },
+    {
+      url: `${SITE}/account-deletion`,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
   ];
 
   let cursor: string | null = null;

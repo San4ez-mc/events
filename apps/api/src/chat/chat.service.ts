@@ -83,9 +83,17 @@ export class ChatService {
         })
       : null;
 
+    // Messages from people the viewer blocked (or who blocked the viewer) are not shown.
+    const blocks = await this.prisma.userBlock.findMany({
+      where: { OR: [{ blockerId: userId }, { blockedUserId: userId }] },
+      select: { blockerId: true, blockedUserId: true },
+    });
+    const hiddenAuthors = blocks.map((b) => (b.blockerId === userId ? b.blockedUserId : b.blockerId));
+
     const rows = await this.prisma.eventChatMessage.findMany({
       where: {
         eventId,
+        ...(hiddenAuthors.length ? { authorId: { notIn: hiddenAuthors } } : {}),
         ...(before ? { createdAt: { lt: before.createdAt } } : {}),
       },
       orderBy: { createdAt: "desc" },

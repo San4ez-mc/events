@@ -360,7 +360,12 @@
     "socialLinks": "Social links",
     "socialType": "Type",
     "socialUrl": "Link",
-    "addSocialLink": "Add a link"
+    "addSocialLink": "Add a link",
+    "deleteAccount": "Delete account",
+    "deleteAccountHint": "Your personal data will be erased and upcoming events cancelled. This cannot be undone.",
+    "deleteAccountMore": "What exactly is deleted",
+    "deleteAccountConfirm": "Are you sure? Your account and data will be deleted permanently.",
+    "deleteAccountYes": "Yes, delete permanently"
   },
   "admin": {
     "accessDenied": "You don't have access to the admin panel",

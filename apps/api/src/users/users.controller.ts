@@ -11,6 +11,7 @@ import { UsersService } from "./users.service";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { SetSocialLinksDto } from "./dto/set-social-links.dto";
 import { DeleteAccountDto } from "./dto/delete-account.dto";
+import { ChangePasswordDto } from "./dto/change-password.dto";
 import { UpdateUserPreferencesDto } from "./dto/update-user-preferences.dto";
 import { RateLimit } from "../common/throttle";
 
@@ -39,6 +40,13 @@ export class UsersController {
   uploadAvatar(@CurrentUser() user: AuthenticatedUser, @UploadedFile() file: Express.Multer.File | undefined) {
     if (!file) throw new ApiException("VALIDATION_ERROR", "No file uploaded", 400, { file: ["Required"] });
     return this.usersService.uploadAvatar(user.id, file);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RateLimit(5)
+  @Post("me/password")
+  async changePassword(@CurrentUser() user: AuthenticatedUser, @Body() dto: ChangePasswordDto) {
+    await this.usersService.changePassword(user.id, dto);
   }
 
   /** Account deletion required by Google Play / GDPR: erases personal data (see UsersService.deleteAccount). */

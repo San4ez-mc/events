@@ -360,7 +360,12 @@
     "socialLinks": "Соцмережі",
     "socialType": "Тип",
     "socialUrl": "Посилання",
-    "addSocialLink": "Додати посилання"
+    "addSocialLink": "Додати посилання",
+    "deleteAccount": "Видалити акаунт",
+    "deleteAccountHint": "Персональні дані буде стерто, майбутні події скасовано. Це незворотно.",
+    "deleteAccountMore": "Що саме буде видалено",
+    "deleteAccountConfirm": "Ви впевнені? Акаунт і дані буде видалено назавжди.",
+    "deleteAccountYes": "Так, видалити назавжди"
   },
   "admin": {
     "accessDenied": "У вас немає доступу до адмін-панелі",

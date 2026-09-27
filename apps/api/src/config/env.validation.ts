@@ -39,6 +39,10 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().default("Kiro <no-reply@kiro.local>"),
+  /** In-app "report a problem / idea" goes to the FINEKO "Правки" platform when both are set, else to FEEDBACK_TO by email. */
+  EDITS_INGEST_URL: z.string().default("https://edits.fineko.space/api/edits"),
+  EDITS_INGEST_TOKEN: z.string().optional(),
+  FEEDBACK_TO: z.string().default("kiro@fineko.space"),
 
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
 
