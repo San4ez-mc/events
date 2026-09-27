@@ -49,7 +49,8 @@
             "DEFAULT"
           ]
         }
-      ]
+      ],
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -64,7 +65,8 @@
           "photosPermission": "Кіро потребує доступу до фото та відео, щоб додати їх до вашої події."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-notifications"
     ],
     "extra": {
       "router": {},

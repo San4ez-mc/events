@@ -64,3 +64,6 @@ apps/web/test-results/
 mail.txt
 secrets.txt
 .secrets/
+
+# Firebase config (not a secret by itself, but keep out of the public repo)
+apps/mobile/google-services.json
