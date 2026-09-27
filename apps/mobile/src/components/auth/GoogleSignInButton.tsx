@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as AuthSession from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
 import { API_URL } from "../../lib/api-client";
@@ -24,18 +25,44 @@ function GoogleButton({ onSuccess }: { onSuccess: () => void }) {
     webClientId: WEB_ID,
     iosClientId: IOS_ID,
     androidClientId: ANDROID_ID,
+    // We exchange the code ourselves so a failure is shown on screen instead of vanishing inside the library.
+    shouldAutoExchangeCode: false,
   });
 
   useEffect(() => {
-    if (response?.type !== "success") return;
-    const idToken = response.params.id_token;
-    if (!idToken) return;
-    setBusy(true);
-    setError(null);
-    loginWithGoogle(idToken)
-      .then(onSuccess)
-      .catch((err) => setError(err instanceof ApiRequestError ? t(`errors.${err.code}`) : t("common.somethingWentWrong")))
-      .finally(() => setBusy(false));
+    if (!response) return;
+    if (response.type === "error") {
+      setError(`Google: ${response.error?.message ?? String(response.params?.error_description ?? response.params?.error ?? "error")}`);
+      return;
+    }
+    if (response.type !== "success") return; // dismissed / cancelled by the user
+    let cancelled = false;
+    (async () => {
+      setBusy(true);
+      setError(null);
+      try {
+        let idToken: string | undefined = response.params.id_token;
+        if (!idToken && response.params.code && request) {
+          // Native Google clients return an authorization code (PKCE): trade it for tokens, no client secret needed.
+          const tokens = await AuthSession.exchangeCodeAsync(
+            { clientId: request.clientId, code: response.params.code, redirectUri: request.redirectUri, extraParams: { code_verifier: request.codeVerifier ?? "" } },
+            Google.discovery,
+          );
+          idToken = tokens.idToken ?? undefined;
+        }
+        if (!idToken) throw new Error("Google did not return an id_token");
+        await loginWithGoogle(idToken);
+        if (!cancelled) onSuccess();
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof ApiRequestError ? t(`errors.${err.code}`) : `Google: ${err instanceof Error ? err.message : String(err)}`);
+      } finally {
+        if (!cancelled) setBusy(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- react to the auth response only
   }, [response]);
 
