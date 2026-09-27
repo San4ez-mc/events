@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useTranslations } from "../../src/lib/locale-context";
+import { formatShortDateTime } from "../../src/lib/format";
 import { colors, spacing } from "../../src/lib/theme";
 import { ScreenHeader, EmptyState } from "../../src/components/ui/ScreenHeader";
 
@@ -16,7 +17,7 @@ interface NotificationItem {
 }
 
 export default function NotificationsScreen() {
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
   const [items, setItems] = useState<NotificationItem[] | null>(null);
 
   const load = useCallback(async () => {
@@ -56,7 +57,7 @@ export default function NotificationsScreen() {
           >
             <Text style={styles.title}>{item.title}</Text>
             <Text style={styles.body}>{item.body}</Text>
-            <Text style={styles.date}>{new Date(item.createdAt).toLocaleString(locale === "uk" ? "uk-UA" : "en-US")}</Text>
+            <Text style={styles.date}>{formatShortDateTime(item.createdAt)}</Text>
           </Pressable>
         )}
         ListEmptyComponent={items !== null ? <EmptyState icon="notifications-outline" text={t("screens.notificationsEmpty")} /> : null}

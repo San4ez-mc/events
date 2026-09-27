@@ -4,6 +4,7 @@ import { ActivityIndicator, Image, Pressable, ScrollView, Share, StyleSheet, Tex
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useAuth } from "../../src/lib/auth-context";
 import { useTranslations } from "../../src/lib/locale-context";
+import { formatShortDate, formatShortDateTime } from "../../src/lib/format";
 import { Button } from "../../src/components/ui/Button";
 import { OrganizerFollow } from "../../src/components/social/OrganizerFollow";
 import type { EventCard } from "../../src/lib/event-types";
@@ -31,7 +32,7 @@ interface PublicProfile {
 export default function PublicProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user, isLoading: authLoading } = useAuth();
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
   const [profile, setProfile] = useState<PublicProfile | null | undefined>(undefined);
   const [acting, setActing] = useState(false);
 
@@ -68,7 +69,6 @@ export default function PublicProfileScreen() {
   if (profile === null) return <Text style={styles.center}>{t("errors.NOT_FOUND")}</Text>;
 
   const name = profile.name ?? profile.nickname ?? "—";
-  const date = (iso: string) => new Date(iso).toLocaleDateString(locale === "uk" ? "uk-UA" : "en-US");
 
   const eventRow = (e: EventCard) => (
     <Pressable key={e.id} style={styles.eventRow} onPress={() => router.push(`/event/${e.slug}`)}>
@@ -77,7 +77,7 @@ export default function PublicProfileScreen() {
         <Text style={styles.eventTitle} numberOfLines={2}>
           {e.title}
         </Text>
-        {e.startsAt && <Text style={styles.muted}>{new Date(e.startsAt).toLocaleString(locale === "uk" ? "uk-UA" : "en-US")}</Text>}
+        {e.startsAt && <Text style={styles.muted}>{formatShortDateTime(e.startsAt)}</Text>}
       </View>
     </Pressable>
   );
@@ -95,7 +95,7 @@ export default function PublicProfileScreen() {
         <View style={{ flex: 1 }}>
           <Text style={styles.name}>{name}</Text>
           <Text style={styles.muted}>
-            {t("profile.memberSince")} {date(profile.memberSince)}
+            {t("profile.memberSince")} {formatShortDate(profile.memberSince)}
           </Text>
         </View>
       </View>

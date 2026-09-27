@@ -4,6 +4,7 @@ import { Stack, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { API_URL, getAccessToken } from "../src/lib/api-client";
 import { useTranslations } from "../src/lib/locale-context";
+import { formatCurrency, formatShortDateTime } from "../src/lib/format";
 import type { CursorPage, EventCard, RegistrationWithEvent } from "../src/lib/event-types";
 import { colors, radius, spacing } from "../src/lib/theme";
 import { EmptyState } from "../src/components/ui/ScreenHeader";
@@ -39,7 +40,7 @@ async function getPage<T>(path: string): Promise<T[]> {
 
 /** UX §27 — Upcoming / Pending / Saved / Past, plus the events the user organizes. */
 export default function MyEventsScreen() {
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
   const [tab, setTab] = useState<Tab>("upcoming");
   const [registrations, setRegistrations] = useState<RegistrationWithEvent[] | null>(null);
   const [saved, setSaved] = useState<EventCard[] | null>(null);
@@ -80,12 +81,14 @@ export default function MyEventsScreen() {
     }
   }, [tab, registrations, saved, mine]);
 
+  // "Organized" and "Saved" go right after "Upcoming" — people kept missing them at the tail
+  // end of this horizontally-scrolling strip; "Pending"/"Past" are less time-critical.
   const tabs: { key: Tab; label: string }[] = [
     { key: "upcoming", label: t("myEvents.upcoming") },
-    { key: "pending", label: t("myEvents.pending") },
-    { key: "saved", label: t("myEvents.saved") },
-    { key: "past", label: t("myEvents.past") },
     { key: "mine", label: t("myEvents.organized") },
+    { key: "saved", label: t("myEvents.saved") },
+    { key: "pending", label: t("myEvents.pending") },
+    { key: "past", label: t("myEvents.past") },
   ];
 
   return (
@@ -124,13 +127,9 @@ export default function MyEventsScreen() {
               <Text style={styles.title} numberOfLines={2}>
                 {item.event.title}
               </Text>
-              {item.event.startsAt && (
-                <Text style={styles.subtitle}>
-                  {new Date(item.event.startsAt).toLocaleString(locale === "uk" ? "uk-UA" : "en-US", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                </Text>
-              )}
+              {item.event.startsAt && <Text style={styles.subtitle}>{formatShortDateTime(item.event.startsAt)}</Text>}
               <Text style={styles.subtitle} numberOfLines={1}>
-                {[item.event.city?.nameUk, item.event.priceType === "FREE" ? t("common.free") : `${item.event.price ?? "?"} ${item.event.currency}`].filter(Boolean).join(" · ")}
+                {[item.event.city?.nameUk, item.event.priceType === "FREE" ? t("common.free") : `${item.event.price ?? "?"} ${formatCurrency(item.event.currency)}`].filter(Boolean).join(" · ")}
               </Text>
               {item.status && <Text style={styles.status}>{t(STATUS_LABEL_KEYS[item.status] ?? item.status)}</Text>}
               {tab === "mine" && <Text style={styles.status}>{item.event.status}</Text>}

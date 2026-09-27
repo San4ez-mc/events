@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import { API_URL, getAccessToken, refreshAccessToken } from "../../lib/api-client";
 import { ApiRequestError, useAuth } from "../../lib/auth-context";
 import { useTranslations } from "../../lib/locale-context";
+import { formatCurrency, formatShortDateTime } from "../../lib/format";
 import { Button } from "../ui/Button";
 import { ScreenHeader } from "../ui/ScreenHeader";
 import { Chips, SearchPicker, Section, type Option } from "../discover/FiltersSheet";
@@ -661,11 +662,11 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
             <View style={styles.summary}>
               <Text style={styles.summaryHeading}>{form.title}</Text>
               {summaryCategory && <Text style={styles.summaryLine}>{summaryCategory}</Text>}
-              {start && <Text style={styles.summaryLine}>{start.toLocaleString(locale === "uk" ? "uk-UA" : "en-US", { weekday: "short", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</Text>}
+              {start && <Text style={styles.summaryLine}>{formatShortDateTime(start)}</Text>}
               <Text style={styles.summaryLine}>
                 {form.format === "OFFLINE" ? [cityOptions.find((c) => c.id === form.cityId)?.label, form.addressText].filter(Boolean).join(", ") : form.onlineUrl}
               </Text>
-              <Text style={styles.summaryLine}>{form.priceType === "FREE" ? t("common.free") : `${form.price || "?"} UAH`}</Text>
+              <Text style={styles.summaryLine}>{form.priceType === "FREE" ? t("common.free") : `${form.price || "?"} ${formatCurrency("UAH")}`}</Text>
               <Text style={styles.summaryLine}>{media.length} {t("create.stepMedia").toLowerCase()}</Text>
             </View>
             {balance !== null && (
