@@ -63,7 +63,6 @@ function GoogleButton({ onSuccess }: { onSuccess: () => void }) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- react to the auth response only
   }, [response]);
 
   return (
