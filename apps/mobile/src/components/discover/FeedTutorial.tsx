@@ -30,7 +30,7 @@ const FLICK_VELOCITY = 0.3;
 
 const TARGET_ICON: Record<Target, { icon: IconName; color: string }> = {
   pass: { icon: "close", color: "#f43f5e" },
-  save: { icon: "bookmark-outline", color: "#ec4899" },
+  save: { icon: "heart-outline", color: "#ec4899" },
   open: { icon: "arrow-forward", color: "#34d399" },
   undo: { icon: "arrow-undo", color: "#f59e0b" },
   share: { icon: "share-social-outline", color: colors.white },

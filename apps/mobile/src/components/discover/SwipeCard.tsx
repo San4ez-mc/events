@@ -88,7 +88,11 @@ export function SwipeCard({
           <Image source={{ uri: cover.displayUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
         ) : (
           <View style={[StyleSheet.absoluteFill, styles.placeholder]}>
-            <Ionicons name="calendar" size={72} color="rgba(255,255,255,0.6)" />
+            <View style={[styles.blob, styles.blobFrom]} />
+            <View style={[styles.blob, styles.blobTo]} />
+            <View style={styles.placeholderBadge}>
+              <Ionicons name="calendar" size={44} color={colors.white} />
+            </View>
           </View>
         )}
 
@@ -195,7 +199,11 @@ export function SwipeCard({
 
 const styles = StyleSheet.create({
   card: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.surface, overflow: "hidden" },
-  placeholder: { backgroundColor: colors.accentFrom, alignItems: "center", justifyContent: "center" },
+  placeholder: { backgroundColor: colors.background, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  blob: { position: "absolute", width: 320, height: 320, borderRadius: 160, opacity: 0.5 },
+  blobFrom: { top: -100, left: -110, backgroundColor: colors.accentFrom },
+  blobTo: { bottom: -120, right: -100, backgroundColor: colors.accentTo },
+  placeholderBadge: { width: 96, height: 96, borderRadius: 48, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" },
   topShade: { position: "absolute", top: 0, left: 0, right: 0, height: 140, backgroundColor: "rgba(0,0,0,0.35)" },
   bottomShade: { position: "absolute", bottom: 0, left: 0, right: 0, height: "48%", backgroundColor: "rgba(0,0,0,0.6)" },
   info: { position: "absolute", left: spacing.lg, right: spacing.lg, gap: 6 },

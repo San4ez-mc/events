@@ -173,7 +173,7 @@ ${url}`, url, title: event.title }).catch(() => {});
       return;
     }
     const wasSaved = saved.has(event.id);
-    notify(wasSaved ? "bookmark-outline" : "bookmark", "#ec4899", wasSaved ? t("discover.feedback.unsaved") : t("discover.feedback.saved"));
+    notify(wasSaved ? "heart-outline" : "heart", "#ec4899", wasSaved ? t("discover.feedback.unsaved") : t("discover.feedback.saved"));
     setSaved((prev) => {
       const next = new Set(prev);
       if (wasSaved) next.delete(event.id);
@@ -276,10 +276,9 @@ ${url}`, url, title: event.title }).catch(() => {});
           <RoundButton icon="arrow-undo" size={48} color="#f59e0b" onPress={undo} disabled={historyRef.current.length === 0} />
           <RoundButton icon="close" size={64} color="#f43f5e" onPress={() => pass(top)} />
           {/* There is only one "save" action in the app (this button); the event page uses the
-              same bookmark icon for it. It used to be a heart here, which read as a second,
-              separate "like" feature — it isn't one. */}
+              same heart icon for it — same icon everywhere, not a separate "like" feature. */}
           <RoundButton
-            icon={saved.has(top.id) ? "bookmark" : "bookmark-outline"}
+            icon={saved.has(top.id) ? "heart" : "heart-outline"}
             size={64}
             color={saved.has(top.id) ? colors.white : "#ec4899"}
             filled={saved.has(top.id)}

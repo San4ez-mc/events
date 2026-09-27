@@ -27,7 +27,6 @@ export default function EventDetailScreen() {
   const [joinWaitlist, setJoinWaitlist] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [following, setFollowing] = useState(false);
   const [tierId, setTierId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
@@ -70,34 +69,11 @@ export default function EventDetailScreen() {
     })();
   }, [authLoading, user, event]);
 
-  // UX §25 — follow the event; needs the current subscription state once the event is known.
-  const followId = event?.id;
-  useEffect(() => {
-    const token = getAccessToken();
-    if (!followId || !token) return;
-    (async () => {
-      const res = await fetch(`${API_URL}/api/v1/subscriptions/mine`, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) return;
-      const subs = (await res.json()) as { scope: string; eventId: string | null }[];
-      setFollowing(subs.some((s) => s.scope === "EVENT" && s.eventId === followId));
-    })();
-  }, [followId, user]);
-
-  async function toggleFollow() {
-    const token = getAccessToken();
-    if (!token || !event) {
-      router.push("/login");
-      return;
-    }
-    const next = !following;
-    setFollowing(next);
-    const res = await fetch(`${API_URL}/api/v1/events/${event.id}/subscribe`, {
-      method: next ? "POST" : "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    }).catch(() => null);
-    if (!res?.ok) setFollowing(!next);
-  }
-
+  /**
+   * Save doubles as "follow" (UX §25): saving an event also subscribes the viewer to its updates,
+   * so there is one button/concept instead of two ("save" and a separate bell that only differed
+   * by which endpoint it hit) — they read as duplicates of each other in the UI.
+   */
   async function toggleSave() {
     const token = getAccessToken();
     if (!token || !event) {
@@ -106,11 +82,13 @@ export default function EventDetailScreen() {
     }
     const next = !saved;
     setSaved(next);
-    const res = await fetch(`${API_URL}/api/v1/discovery/${event.id}/save`, {
-      method: next ? "POST" : "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    }).catch(() => null);
-    if (!res?.ok) setSaved(!next);
+    const method = next ? "POST" : "DELETE";
+    const headers = { Authorization: `Bearer ${token}` };
+    const [saveRes] = await Promise.all([
+      fetch(`${API_URL}/api/v1/discovery/${event.id}/save`, { method, headers }).catch(() => null),
+      fetch(`${API_URL}/api/v1/events/${event.id}/subscribe`, { method, headers }).catch(() => null),
+    ]);
+    if (!saveRes?.ok) setSaved(!next);
   }
 
   const REPORT_REASONS = ["spam", "fraud", "inappropriate", "wrongInfo", "other"] as const;
@@ -233,15 +211,17 @@ export default function EventDetailScreen() {
         <EventGallery media={event.media} />
       </View>
 
-      <View style={styles.titleRow}>
-        <Text style={[styles.title, { flex: 1 }]}>{event.title}</Text>
+      {/* Title gets the full row's width to itself — it used to share the row with up to 4 icon
+          buttons, which squeezed a longer title down to a sliver and wrapped it mid-word. */}
+      <Text style={styles.title}>{event.title}</Text>
+      <View style={styles.titleActions}>
         {isOwner && (
           <Pressable style={styles.shareButton} onPress={() => router.push(`/edit/${event.id}`)} accessibilityLabel={t("common.edit")}>
             <Ionicons name="pencil-outline" size={20} color={colors.foreground} />
           </Pressable>
         )}
         <Pressable style={styles.shareButton} onPress={() => void toggleSave()} accessibilityLabel={saved ? t("events.actions.saved") : t("events.actions.save")}>
-          <Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={22} color={saved ? colors.accentFrom : colors.foreground} />
+          <Ionicons name={saved ? "heart" : "heart-outline"} size={22} color={saved ? colors.accentTo : colors.foreground} />
         </Pressable>
         <Pressable
           style={styles.shareButton}
@@ -249,9 +229,6 @@ export default function EventDetailScreen() {
           accessibilityLabel={t("discover.share")}
         >
           <Ionicons name="share-social-outline" size={22} color={colors.foreground} />
-        </Pressable>
-        <Pressable style={styles.shareButton} onPress={() => void toggleFollow()} accessibilityLabel={t("events.actions.follow")}>
-          <Ionicons name={following ? "notifications" : "notifications-outline"} size={21} color={following ? colors.accentFrom : colors.foreground} />
         </Pressable>
         <Pressable style={styles.shareButton} onPress={openReportMenu} accessibilityLabel={t("common.more")}>
           <Ionicons name="ellipsis-horizontal" size={20} color={colors.foreground} />
@@ -535,7 +512,7 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, paddingBottom: spacing.xxl * 2, gap: spacing.md },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
   galleryBleed: { marginHorizontal: -spacing.lg, marginTop: -spacing.lg },
-  titleRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.md },
+  titleActions: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: spacing.sm, flexWrap: "wrap" },
   shareButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
   socialBar: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, gap: 6 },
   socialRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },

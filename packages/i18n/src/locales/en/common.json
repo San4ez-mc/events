@@ -720,7 +720,7 @@
     "empty": {
       "upcoming": "No confirmed upcoming events. Time to pick something fun!",
       "pending": "No applications waiting for approval.",
-      "saved": "You haven't saved anything yet. Tap the bookmark on an event card.",
+      "saved": "You haven't saved anything yet. Tap the heart on an event card.",
       "past": "No past events yet.",
       "mine": "You haven't created events yet. The Create tab is waiting for you!"
     },
@@ -766,7 +766,7 @@
     "swipe_right_text": "Like it? Drag the card to the right (or just tap it) to open the event: description, place, participants and the Register button.",
     "tap_pass_title": "Cross — pass too",
     "tap_pass_text": "Does the same as swiping left. Handy when you hold the phone with one hand.",
-    "tap_save_title": "Bookmark — save for later",
+    "tap_save_title": "Heart — save for later",
     "tap_save_text": "The event stays in My events → Saved. It is not a registration. Come back when you have time.",
     "tap_open_title": "Arrow — open",
     "tap_open_text": "Same as swiping right: opens the event page where you can register.",

@@ -13,7 +13,11 @@ export function EventGallery({ media, width }: { media: EventMedia[]; width?: nu
   if (media.length === 0) {
     return (
       <View style={[styles.item, { width: w }, styles.placeholder]}>
-        <Ionicons name="calendar" size={56} color="rgba(255,255,255,0.7)" />
+        <View style={[styles.blob, styles.blobFrom]} />
+        <View style={[styles.blob, styles.blobTo]} />
+        <View style={styles.placeholderBadge}>
+          <Ionicons name="calendar" size={40} color={colors.white} />
+        </View>
       </View>
     );
   }
@@ -57,7 +61,13 @@ export function EventGallery({ media, width }: { media: EventMedia[]; width?: nu
 
 const styles = StyleSheet.create({
   item: { height: 420, backgroundColor: colors.surface },
-  placeholder: { backgroundColor: colors.accentFrom, alignItems: "center", justifyContent: "center" },
+  // Soft two-blob gradient look (same language as AuthBackdrop's login/register background)
+  // instead of a flat fill, so "no photo" reads as a deliberate design choice, not a placeholder bug.
+  placeholder: { backgroundColor: colors.background, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  blob: { position: "absolute", width: 320, height: 320, borderRadius: 160, opacity: 0.5 },
+  blobFrom: { top: -100, left: -110, backgroundColor: colors.accentFrom },
+  blobTo: { bottom: -120, right: -100, backgroundColor: colors.accentTo },
+  placeholderBadge: { width: 88, height: 88, borderRadius: 44, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" },
   play: { position: "absolute", top: "50%", left: "50%", marginTop: -32, marginLeft: -32, width: 64, height: 64, borderRadius: 32, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center" },
   counter: { position: "absolute", top: 12, right: 12, backgroundColor: "rgba(0,0,0,0.55)", borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 4 },
   counterText: { color: colors.white, fontSize: 12, fontWeight: "700" },
