@@ -176,12 +176,7 @@ describe("QA social — sharing, i18n, geography, API contract, pagination (e2e)
       expect(notif!.title).toMatch(/[а-яіїєґ]/i); // actually Ukrainian, not just untranslated English
     });
 
-    it.failing("[SPEC GAP] a cancellation-with-reason notification is fully localised, not mixed-language", async () => {
-      // Root cause: apps/api/src/notifications/notification-i18n.ts `RULES` matches "Event cancelled" bodies only
-      // against the fixed regex for the "organizer left Kiro" wording. EventsService.cancel() (events.service.ts)
-      // builds a *different* body — `"${title}" was cancelled: ${reason}` — when a reason is given, which that
-      // regex never matches. The title still translates ("Подію скасовано") but the body falls back to English,
-      // producing a mixed-language notification for uk-locale users.
+    it("a cancellation-with-reason notification is fully localised, not mixed-language (FIXED — notification-i18n.ts now has a rule for each 'Event cancelled' body shape)", async () => {
       const organizer = await organizerWithCredits("i18n-cancel-org");
       const attendee = await newUser("i18n-cancel-attendee");
       await http().patch("/api/v1/users/me").set("Authorization", `Bearer ${attendee.token}`).send({ locale: "uk" }).expect(200);
