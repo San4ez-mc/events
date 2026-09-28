@@ -1,4 +1,4 @@
-import type { EventFormat, EventPriceType, EventStatus, RecurrenceType } from "@kiro/types";
+import type { CollaboratorPermission, EventFormat, EventPriceType, EventStatus, RecurrenceType } from "@kiro/types";
 
 export interface EventMedia {
   id: string;
@@ -91,6 +91,16 @@ export type EventOccurrence = EventCard;
 export interface CreateSeriesResult {
   series: EventSeries;
   occurrences: EventOccurrence[];
+}
+
+/** §30 — co-organizers with granular per-event permissions. */
+export interface Collaborator {
+  id: string;
+  eventId: string;
+  userId: string;
+  permissions: CollaboratorPermission[];
+  createdAt: string;
+  user: { id: string; name: string | null; nickname: string | null; avatarUrl: string | null; email: string };
 }
 
 export interface CursorPage<T> {

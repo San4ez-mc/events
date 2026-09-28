@@ -435,6 +435,11 @@ export default function EventDetailScreen() {
                 <Text style={styles.reportRowText}>{t("organizerTools.duplicate")}</Text>
               </Pressable>
             )}
+            {isOwner && (
+              <Pressable style={styles.reportRow} onPress={() => { setReportOpen(false); router.push(`/collaborators/${event.id}`); }}>
+                <Text style={styles.reportRowText}>{t("organizerCollaborators.title")}</Text>
+              </Pressable>
+            )}
             {!isOwner &&
               REPORT_REASONS.map((r) => (
                 <Pressable key={r} style={styles.reportRow} onPress={() => void sendReport(t(`events.actions.reasons.${r}`))}>
