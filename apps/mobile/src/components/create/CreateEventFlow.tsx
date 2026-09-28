@@ -718,6 +718,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
               </Text>
             )}
             {balance === 0 && <Button title={t("events.wizard.claimFreeCredits")} variant="secondary" onPress={() => void claimFree()} loading={busy} />}
+            {balance === 0 && <Button title={t("credits.title")} variant="secondary" onPress={() => router.push("/credits")} />}
           </>
         )}
 
