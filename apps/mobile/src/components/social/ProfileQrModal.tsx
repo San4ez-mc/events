@@ -2,7 +2,7 @@ import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { API_URL } from "../../lib/api-client";
 import { useTranslations } from "../../lib/locale-context";
-import { colors, radius, spacing } from "../../lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 /**
  * §24 (UX) — "add me as a friend" QR. The image is rendered by the API (GET /users/:id/qr) and encodes the
@@ -10,6 +10,7 @@ import { colors, radius, spacing } from "../../lib/theme";
  * Rendered server-side so the app needs no QR/SVG native dependency.
  */
 export function ProfileQrModal({ userId, name, visible, onClose }: { userId: string; name: string; visible: boolean; onClose: () => void }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { t } = useTranslations();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -33,7 +34,7 @@ export function ProfileQrModal({ userId, name, visible, onClose }: { userId: str
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center", padding: spacing.xl },
   sheet: { width: "100%", maxWidth: 360, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md, alignItems: "center" },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", alignSelf: "stretch" },

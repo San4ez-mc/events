@@ -3,7 +3,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useTranslations } from "../../src/lib/locale-context";
 import { formatShortDateTime } from "../../src/lib/format";
-import { colors, spacing } from "../../src/lib/theme";
+import { spacing, type Palette, useThemedStyles } from "../../src/lib/theme";
 import { ScreenHeader, EmptyState } from "../../src/components/ui/ScreenHeader";
 
 interface NotificationItem {
@@ -17,6 +17,7 @@ interface NotificationItem {
 }
 
 export default function NotificationsScreen() {
+  const { styles } = useThemedStyles(makeStyles);
   const { t } = useTranslations();
   const [items, setItems] = useState<NotificationItem[] | null>(null);
 
@@ -66,7 +67,7 @@ export default function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: spacing.lg },
   header: { color: colors.foreground, fontSize: 22, fontWeight: "700", marginBottom: spacing.md },
   row: { paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: 2 },

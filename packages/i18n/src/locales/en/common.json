@@ -390,7 +390,11 @@
     "security": "Security",
     "notificationsPrivacy": "Notifications & privacy",
     "myQr": "My QR code",
-    "myQrHint": "Show this to a friend — scanning it with a camera opens your profile so they can add you."
+    "myQrHint": "Show this to a friend — scanning it with a camera opens your profile so they can add you.",
+    "theme": "Theme",
+    "themeSystem": "System",
+    "themeLight": "Light",
+    "themeDark": "Dark"
   },
   "admin": {
     "accessDenied": "You don't have access to the admin panel",

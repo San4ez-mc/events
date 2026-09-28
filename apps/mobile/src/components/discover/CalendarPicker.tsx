@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, radius, spacing } from "../../lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const key = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`;
@@ -25,6 +25,7 @@ export function CalendarPicker({
   onChange: (next: { from: string; to: string }) => void;
   locale: string;
 }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const today = new Date();
   const seed = /^(\d{4})-(\d{2})-/.exec(from);
   const [view, setView] = useState({ y: seed ? Number(seed[1]) : today.getFullYear(), m: seed ? Number(seed[2]) - 1 : today.getMonth() });
@@ -90,7 +91,7 @@ export function CalendarPicker({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   wrap: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   title: { color: colors.foreground, fontSize: 15, fontWeight: "700", textTransform: "capitalize" },

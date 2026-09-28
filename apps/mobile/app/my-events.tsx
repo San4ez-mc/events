@@ -6,7 +6,7 @@ import { API_URL, getAccessToken } from "../src/lib/api-client";
 import { useTranslations } from "../src/lib/locale-context";
 import { formatPriceLabel, formatShortDateTime } from "../src/lib/format";
 import type { CursorPage, EventCard, RegistrationWithEvent } from "../src/lib/event-types";
-import { colors, radius, spacing } from "../src/lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../src/lib/theme";
 import { EmptyState } from "../src/components/ui/ScreenHeader";
 
 type Tab = "upcoming" | "pending" | "saved" | "past" | "mine";
@@ -40,6 +40,7 @@ async function getPage<T>(path: string): Promise<T[]> {
 
 /** UX §27 — Upcoming / Pending / Saved / Past, plus the events the user organizes. */
 export default function MyEventsScreen() {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { t } = useTranslations();
   const [tab, setTab] = useState<Tab>("upcoming");
   const [registrations, setRegistrations] = useState<RegistrationWithEvent[] | null>(null);
@@ -155,7 +156,7 @@ export default function MyEventsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   tabs: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.sm },
   tab: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingHorizontal: 14, paddingVertical: 8 },

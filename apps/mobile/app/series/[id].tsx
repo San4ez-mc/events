@@ -8,13 +8,14 @@ import { Chips } from "../../src/components/discover/FiltersSheet";
 import { ScreenHeader } from "../../src/components/ui/ScreenHeader";
 import { formatShortDate } from "../../src/lib/format";
 import type { CreateSeriesResult, EventDetail, EventOccurrence } from "../../src/lib/event-types";
-import { colors, radius, spacing } from "../../src/lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../src/lib/theme";
 
 const RECURRENCE_TYPES = ["DAILY", "EVERY_N_DAYS", "WEEKLY", "EVERY_N_WEEKS", "SPECIFIC_WEEKDAY", "SPECIFIC_DAY_OF_MONTH", "EVERY_N_MONTHS"] as const;
 type RecurrenceType = (typeof RECURRENCE_TYPES)[number];
 
 /** §29 — turn a draft/published event into a recurring series; each occurrence is its own independent event. Mirrors the web organizer series page. */
 export default function EventSeriesScreen() {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslations();
 
@@ -210,7 +211,7 @@ export default function EventSeriesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, textAlign: "center", textAlignVertical: "center", color: colors.muted },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },

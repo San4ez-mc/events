@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View, type KeyboardTypeOptions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, radius, spacing } from "../../lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 interface TextFieldProps {
   label: string;
@@ -27,6 +27,7 @@ export function TextField({
   multiline,
   error,
 }: TextFieldProps) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const [hidden, setHidden] = useState(true);
   const isPassword = !!secureTextEntry;
   return (
@@ -56,7 +57,7 @@ export function TextField({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   eye: { position: "absolute", right: 0, top: 0, bottom: 0, width: 44, alignItems: "center", justifyContent: "center" },
   container: { gap: spacing.xs },
   label: { color: colors.foreground, fontSize: 13, fontWeight: "500" },

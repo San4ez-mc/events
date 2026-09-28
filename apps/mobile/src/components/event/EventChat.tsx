@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-
 import { Ionicons } from "@expo/vector-icons";
 import { API_URL, getAccessToken } from "../../lib/api-client";
 import { useTranslations } from "../../lib/locale-context";
-import { colors, radius, spacing } from "../../lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 interface Message {
   id: string;
@@ -19,6 +19,7 @@ interface Message {
  * messages arrive by light polling (no websockets in the MVP).
  */
 export function EventChat({ eventId, refreshKey, onInputFocus }: { eventId: string; refreshKey?: string; onInputFocus?: () => void }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { t, locale } = useTranslations();
   const [messages, setMessages] = useState<Message[]>([]);
   const [allowed, setAllowed] = useState(false);
@@ -139,7 +140,7 @@ export function EventChat({ eventId, refreshKey, onInputFocus }: { eventId: stri
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   wrap: { marginBottom: spacing.xl },
   titleRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginBottom: spacing.sm },
   title: { color: colors.foreground, fontSize: 15, fontWeight: "700" },

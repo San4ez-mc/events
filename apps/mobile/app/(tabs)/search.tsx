@@ -5,10 +5,11 @@ import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useTranslations } from "../../src/lib/locale-context";
 import { TextField } from "../../src/components/ui/TextField";
 import type { CursorPage, EventCard } from "../../src/lib/event-types";
-import { colors, radius, spacing } from "../../src/lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../src/lib/theme";
 import { ScreenHeader, EmptyState } from "../../src/components/ui/ScreenHeader";
 
 export default function SearchScreen() {
+  const { styles } = useThemedStyles(makeStyles);
   const { t } = useTranslations();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<EventCard[] | null>(null);
@@ -70,7 +71,7 @@ export default function SearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: spacing.lg, gap: spacing.md },
   header: { color: colors.foreground, fontSize: 22, fontWeight: "700" },
   list: { flex: 1, marginTop: spacing.sm },

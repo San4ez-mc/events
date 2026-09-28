@@ -7,10 +7,11 @@ import { useTranslations } from "../../src/lib/locale-context";
 import { Button } from "../../src/components/ui/Button";
 import { ScreenHeader } from "../../src/components/ui/ScreenHeader";
 import type { InvitationCandidate } from "../../src/lib/event-types";
-import { colors, radius, spacing } from "../../src/lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../src/lib/theme";
 
 /** §71 — invite people who attended this organizer's past events to a new one. Mirrors the web organizer invite page. */
 export default function InvitePreviousParticipantsScreen() {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isLoading: authLoading } = useAuth();
   const { t } = useTranslations();
@@ -117,7 +118,7 @@ export default function InvitePreviousParticipantsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.sm },
   header: { gap: spacing.sm, marginBottom: spacing.sm },

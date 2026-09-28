@@ -8,7 +8,7 @@ import { formatShortDate, formatShortDateTime } from "../../src/lib/format";
 import { Button } from "../../src/components/ui/Button";
 import { OrganizerFollow } from "../../src/components/social/OrganizerFollow";
 import type { EventCard } from "../../src/lib/event-types";
-import { colors, radius, spacing } from "../../src/lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../src/lib/theme";
 
 type Relationship = "SELF" | "NONE" | "PENDING_SENT" | "PENDING_RECEIVED" | "FRIENDS";
 
@@ -30,6 +30,7 @@ interface PublicProfile {
 
 /** UX §22 — public profile of an organizer / user, with the friend action. */
 export default function PublicProfileScreen() {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user, isLoading: authLoading } = useAuth();
   const { t } = useTranslations();
@@ -142,7 +143,7 @@ export default function PublicProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
   center: { color: colors.muted, textAlign: "center", marginTop: spacing.xxl },

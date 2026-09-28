@@ -25,7 +25,7 @@ import {
 import { API_URL } from "../../lib/api-client";
 import { useTranslations } from "../../lib/locale-context";
 import { CalendarPicker } from "./CalendarPicker";
-import { colors, radius, spacing } from "../../lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 export interface Option {
   id: string;
@@ -40,6 +40,7 @@ interface Named {
 }
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {
+  const { styles } = useThemedStyles(makeStyles);
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -49,6 +50,7 @@ export function Section({ title, children }: { title: string; children: ReactNod
 }
 
 export function Chips<T extends string>({ value, options, onChange }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
+  const { styles } = useThemedStyles(makeStyles);
   return (
     <View style={styles.chips}>
       {options.map((o) => {
@@ -86,6 +88,7 @@ export function SearchPicker({
   placeholder: string;
   emptyLabel: string;
 }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const [query, setQuery] = useState("");
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -128,6 +131,7 @@ export function SearchPicker({
 
 /** Two-thumb price slider built on PanResponder (no native slider dependency). */
 function RangeSlider({ low, high, max, step, onChange }: { low: number; high: number; max: number; step: number; onChange: (low: number, high: number) => void }) {
+  const { styles } = useThemedStyles(makeStyles);
   const [width, setWidth] = useState(0);
   const state = useRef({ low, high, width: 0, startLow: low, startHigh: high });
   state.current.low = low;
@@ -167,6 +171,7 @@ function RangeSlider({ low, high, max, step, onChange }: { low: number; high: nu
 
 /** UX §7 — full filter set as a bottom sheet. Mounted only while `visible`, so the draft re-seeds each open. */
 export function FiltersSheet({ visible, filters, onApply, onClose }: { visible: boolean; filters: DiscoveryFilters; onApply: (f: DiscoveryFilters) => void; onClose: () => void }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { t, locale } = useTranslations();
   const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState(filters);
@@ -397,7 +402,7 @@ export function FiltersSheet({ visible, filters, onApply, onClose }: { visible: 
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.55)" },
   sheet: { maxHeight: "92%", backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: spacing.lg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },

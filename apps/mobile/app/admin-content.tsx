@@ -5,7 +5,7 @@ import { API_URL, getAccessToken } from "../src/lib/api-client";
 import { useAuth } from "../src/lib/auth-context";
 import { useTranslations } from "../src/lib/locale-context";
 import { Button } from "../src/components/ui/Button";
-import { colors, radius, spacing } from "../src/lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../src/lib/theme";
 
 interface PendingCategory {
   id: string;
@@ -34,6 +34,7 @@ const ADMINS = ["ADMIN", "SUPER_ADMIN"];
  * else — until someone approves them here, so without this screen they'd never surface.
  */
 export default function AdminContentScreen() {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { user, isLoading } = useAuth();
   const { t } = useTranslations();
   const [categories, setCategories] = useState<PendingCategory[] | null>(null);
@@ -146,7 +147,7 @@ export default function AdminContentScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.sm },
   section: { color: colors.muted, fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.8, marginTop: spacing.md },

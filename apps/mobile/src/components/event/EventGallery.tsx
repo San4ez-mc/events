@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { EventMedia } from "../../lib/event-types";
-import { colors, radius } from "../../lib/theme";
+import { radius, type Palette, useThemedStyles } from "../../lib/theme";
 
 /** UX §10 — swipeable gallery of up to 10 photos/videos. Videos show their thumbnail; tapping opens the system player. */
 export function EventGallery({ media, width }: { media: EventMedia[]; width?: number }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const window = useWindowDimensions();
   const w = width ?? window.width;
   const [index, setIndex] = useState(0);
@@ -59,7 +60,7 @@ export function EventGallery({ media, width }: { media: EventMedia[]; width?: nu
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   item: { height: 420, backgroundColor: colors.surface },
   // Soft two-blob gradient look (same language as AuthBackdrop's login/register background)
   // instead of a flat fill, so "no photo" reads as a deliberate design choice, not a placeholder bug.

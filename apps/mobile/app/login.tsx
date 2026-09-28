@@ -9,9 +9,10 @@ import { Button } from "../src/components/ui/Button";
 import { TextField } from "../src/components/ui/TextField";
 import { AuthBackdrop } from "../src/components/auth/AuthBackdrop";
 import { GoogleSignInButton } from "../src/components/auth/GoogleSignInButton";
-import { colors, spacing } from "../src/lib/theme";
+import { spacing, type Palette, useThemedStyles } from "../src/lib/theme";
 
 export default function LoginScreen() {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { login } = useAuth();
   const { t } = useTranslations();
   const [email, setEmail] = useState("");
@@ -63,7 +64,7 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   remember: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   rememberText: { color: colors.foreground, fontSize: 14 },
   title: { color: colors.foreground, fontSize: 30, fontWeight: "800", textAlign: "center" },

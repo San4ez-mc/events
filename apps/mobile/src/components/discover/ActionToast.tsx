@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, radius, spacing } from "../../lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 type IconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -19,6 +19,7 @@ const VISIBLE_MS = 2200;
 
 /** Short "what just happened" banner shown after a swipe or a button (pass / save / undo …). Optional action, e.g. Undo. */
 export function ActionToast({ toast, top }: { toast: ToastData | null; top: number }) {
+  const { styles } = useThemedStyles(makeStyles);
   const opacity = useRef(new Animated.Value(0)).current;
   const lift = useRef(new Animated.Value(-8)).current;
   const running = useRef<Animated.CompositeAnimation | null>(null);
@@ -59,7 +60,7 @@ export function ActionToast({ toast, top }: { toast: ToastData | null; top: numb
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   wrap: { position: "absolute", left: spacing.lg, right: spacing.lg, alignItems: "center", zIndex: 20 },
   pill: {
     flexDirection: "row",

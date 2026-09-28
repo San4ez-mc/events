@@ -5,7 +5,7 @@ import { API_URL, getAccessToken } from "../src/lib/api-client";
 import { useAuth } from "../src/lib/auth-context";
 import { useTranslations } from "../src/lib/locale-context";
 import { Button } from "../src/components/ui/Button";
-import { colors, radius, spacing } from "../src/lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../src/lib/theme";
 
 interface PublicUser {
   id: string;
@@ -21,6 +21,7 @@ interface FriendRequest {
 
 /** UX §23 — friends, incoming requests (accept/reject) and outgoing requests (cancel). */
 export default function FriendsScreen() {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { user, isLoading } = useAuth();
   const { t } = useTranslations();
   const [friends, setFriends] = useState<PublicUser[] | null>(null);
@@ -104,7 +105,7 @@ export default function FriendsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xxl },
   section: { color: colors.foreground, fontSize: 15, fontWeight: "700", marginTop: spacing.md },

@@ -8,12 +8,13 @@ import { useTranslations } from "../../src/lib/locale-context";
 import { Button } from "../../src/components/ui/Button";
 import { ScreenHeader } from "../../src/components/ui/ScreenHeader";
 import type { Collaborator } from "../../src/lib/event-types";
-import { colors, radius, spacing } from "../../src/lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../src/lib/theme";
 
 const ALL_PERMISSIONS = ["EDIT_EVENT", "MANAGE_REGISTRATIONS", "MANAGE_PAYMENTS", "SEND_NOTIFICATIONS", "MANAGE_CHAT", "INVITE_PREVIOUS_PARTICIPANTS", "VIEW_ANALYTICS"] as const;
 type Permission = (typeof ALL_PERMISSIONS)[number];
 
 function PermissionChip({ label, on, onToggle, disabled }: { label: string; on: boolean; onToggle: () => void; disabled?: boolean }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   return (
     <Pressable onPress={onToggle} disabled={disabled} style={[styles.permChip, on && styles.permChipOn]} accessibilityRole="checkbox" accessibilityState={{ checked: on }}>
       <Ionicons name={on ? "checkbox" : "square-outline"} size={15} color={on ? colors.accentFrom : colors.muted} />
@@ -24,6 +25,7 @@ function PermissionChip({ label, on, onToggle, disabled }: { label: string; on: 
 
 /** §30 — owner-only co-organizer management (add/update/remove, granular permissions). Mirrors the web organizer collaborators page. */
 export default function CollaboratorsScreen() {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isLoading: authLoading } = useAuth();
   const { t } = useTranslations();
@@ -178,7 +180,7 @@ export default function CollaboratorsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
   hint: { color: colors.muted, fontSize: 13 },

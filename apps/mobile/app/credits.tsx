@@ -6,7 +6,7 @@ import { useAuth } from "../src/lib/auth-context";
 import { useTranslations } from "../src/lib/locale-context";
 import { Button } from "../src/components/ui/Button";
 import { formatCurrency, formatShortDateTime } from "../src/lib/format";
-import { colors, radius, spacing } from "../src/lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../src/lib/theme";
 
 const PROVIDERS = ["WAYFORPAY", "MONO", "MANUAL_IBAN"] as const;
 type Provider = (typeof PROVIDERS)[number];
@@ -36,6 +36,7 @@ interface CreateOrderResult {
  * re-fetched whenever the app comes back to the foreground, which is when the payment has usually just finished.
  */
 export default function CreditsScreen() {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { isLoading: authLoading } = useAuth();
   const { t } = useTranslations();
 
@@ -173,7 +174,7 @@ export default function CreditsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
   balance: { color: colors.muted, fontSize: 14 },

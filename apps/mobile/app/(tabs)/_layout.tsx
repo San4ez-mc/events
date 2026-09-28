@@ -3,10 +3,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../src/lib/auth-context";
 import { useTranslations } from "../../src/lib/locale-context";
 import { usePushNotificationRegistration } from "../../src/lib/push-notifications";
-import { colors } from "../../src/lib/theme";
+import { useColors } from "../../src/lib/theme";
 
 /** §64 — Expo Router bottom tabs: Discover/Search/Create/Notifications/Profile (My Events lives under Profile). Everything here requires auth. */
 export default function TabsLayout() {
+  const colors = useColors();
   const { user, isLoading } = useAuth();
   const { t } = useTranslations();
   usePushNotificationRegistration(user?.id);

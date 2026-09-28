@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { API_URL, getAccessToken } from "../../lib/api-client";
 import { useTranslations } from "../../lib/locale-context";
-import { colors, radius, spacing } from "../../lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 interface Sub {
   id: string;
@@ -20,6 +20,7 @@ interface Category {
 
 /** UX §25 — follow an organizer: every event, or only chosen categories. New events then arrive as notifications. */
 export function OrganizerFollow({ organizerId }: { organizerId: string }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { t, locale } = useTranslations();
   const [subs, setSubs] = useState<Sub[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -91,7 +92,7 @@ export function OrganizerFollow({ organizerId }: { organizerId: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   wrap: { gap: spacing.sm },
   title: { color: colors.foreground, fontSize: 15, fontWeight: "700" },
   row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },

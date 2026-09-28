@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, radius, spacing } from "../../lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 type Icon = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -22,6 +22,7 @@ const DECOR: { icon: Icon; style: { top?: number | `${number}%`; bottom?: number
  * Drop a real photo as `assets/auth-bg.jpg` later and wire it in as the bottom layer.
  */
 export function AuthBackdrop({ children }: { children: ReactNode }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   return (
     <View style={styles.root}>
       <View style={[styles.blob, { top: -80, left: -90, backgroundColor: colors.accentFrom }]} />
@@ -39,11 +40,12 @@ export function AuthBackdrop({ children }: { children: ReactNode }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background, overflow: "hidden" },
   flex: { flex: 1 },
   blob: { position: "absolute", width: 300, height: 300, borderRadius: 150, opacity: 0.22 },
   decor: { position: "absolute", opacity: 0.28 },
   scroll: { flexGrow: 1, justifyContent: "center", padding: spacing.xl },
-  card: { backgroundColor: "rgba(22,22,31,0.86)", borderRadius: radius.lg + 10, padding: spacing.xl, gap: spacing.xl, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
+  // Follows the theme: a hard-coded dark card would put the (dark, in light theme) form text on dark.
+  card: { backgroundColor: colors.surface, borderRadius: radius.lg + 10, padding: spacing.xl, gap: spacing.xl, borderWidth: 1, borderColor: colors.border },
 });

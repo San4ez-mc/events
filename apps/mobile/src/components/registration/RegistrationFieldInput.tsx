@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import { TextField } from "../ui/TextField";
-import { colors, radius, spacing } from "../../lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 interface RegistrationField {
   id: string;
@@ -20,6 +20,7 @@ export function RegistrationFieldInput({
   value: unknown;
   onChange: (value: unknown) => void;
 }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const options = field.optionsJson ?? [];
   const label = field.required ? `${field.label} *` : field.label;
 
@@ -99,6 +100,7 @@ export function RegistrationFieldInput({
 }
 
 function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  const { styles } = useThemedStyles(makeStyles);
   return (
     <Pressable onPress={onPress} style={[styles.chip, selected && styles.chipSelected]}>
       <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
@@ -106,7 +108,7 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   field: { gap: spacing.xs },
   label: { color: colors.foreground, fontSize: 13, fontWeight: "500" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },

@@ -11,7 +11,7 @@ import { Button } from "../ui/Button";
 import { ScreenHeader } from "../ui/ScreenHeader";
 import { Chips, SearchPicker, Section, type Option } from "../discover/FiltersSheet";
 import { AddressAutocomplete } from "./AddressAutocomplete";
-import { colors, radius, spacing } from "../../lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 interface Named {
   id: string;
@@ -139,6 +139,7 @@ async function authed<T = unknown>(path: string, init: RequestInit = {}, retried
 
 /** Spec §31/§68: title -> media -> category/when/where -> price/seats -> publish, with the draft autosaved on every step. */
 export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { user, isLoading } = useAuth();
   const { t, locale } = useTranslations();
   const [step, setStep] = useState(0);
@@ -744,6 +745,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const { styles } = useThemedStyles(makeStyles);
   return (
     <View style={{ gap: 6 }}>
       <Text style={styles.label}>{label}</Text>
@@ -752,7 +754,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl * 2, gap: spacing.lg },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.md, padding: spacing.xl },

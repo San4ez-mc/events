@@ -5,7 +5,7 @@ import { API_URL, getAccessToken } from "../../lib/api-client";
 import { useAuth } from "../../lib/auth-context";
 import { useTranslations } from "../../lib/locale-context";
 import { Button } from "../ui/Button";
-import { colors, radius, spacing } from "../../lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 interface Review {
   id: string;
@@ -17,6 +17,7 @@ interface Review {
 
 /** §37/§38 — rating summary, published reviews and (after the event) the leave-a-review form. */
 export function ReviewsSection({ eventId, eventStatus, summary }: { eventId: string; eventStatus: string; summary?: { average: number | null; count: number } }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { user } = useAuth();
   const { t } = useTranslations();
   const [reviews, setReviews] = useState<Review[] | null>(null);
@@ -115,7 +116,7 @@ export function ReviewsSection({ eventId, eventStatus, summary }: { eventId: str
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   wrap: { gap: spacing.sm, marginBottom: spacing.xl },
   title: { color: colors.foreground, fontSize: 15, fontWeight: "700" },
   muted: { color: colors.muted, fontSize: 13 },

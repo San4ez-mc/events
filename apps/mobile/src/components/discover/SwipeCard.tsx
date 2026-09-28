@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { EventCard } from "../../lib/event-types";
 import { useTranslations } from "../../lib/locale-context";
 import { formatPriceLabel, formatShortDateTime } from "../../lib/format";
-import { colors, radius, spacing } from "../../lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 // A swipe counts after ~14% of the screen width, or as soon as it is a quick flick (velocity in px/ms),
@@ -31,6 +31,7 @@ export function SwipeCard({
   isTop: boolean;
   bottomInset: number;
 }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { t, locale } = useTranslations();
   const pan = useRef(new Animated.ValueXY()).current;
 
@@ -197,7 +198,7 @@ export function SwipeCard({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   card: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.surface, overflow: "hidden" },
   placeholder: { backgroundColor: colors.background, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   blob: { position: "absolute", width: 320, height: 320, borderRadius: 160, opacity: 0.5 },

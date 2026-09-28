@@ -5,7 +5,7 @@ import { API_URL, getAccessToken } from "../src/lib/api-client";
 import { useAuth } from "../src/lib/auth-context";
 import { useTranslations } from "../src/lib/locale-context";
 import { Button } from "../src/components/ui/Button";
-import { colors, radius, spacing } from "../src/lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../src/lib/theme";
 
 interface ModerationCase {
   id: string;
@@ -28,6 +28,7 @@ const STAFF = ["MODERATOR", "ADMIN", "SUPER_ADMIN"];
 
 /** Moderator toolbox on mobile: pre-publish moderation queue and review moderation (§53, §37, §72). */
 export default function AdminScreen() {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { user, isLoading } = useAuth();
   const { t } = useTranslations();
   const [tab, setTab] = useState<"moderation" | "reviews">("moderation");
@@ -127,7 +128,7 @@ export default function AdminScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
   tabs: { flexDirection: "row", gap: spacing.sm },

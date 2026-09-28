@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from "react-native";
-import { colors, radius, spacing } from "../../lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 interface ButtonProps {
   title: string;
@@ -11,6 +11,7 @@ interface ButtonProps {
 }
 
 export function Button({ title, onPress, variant = "primary", loading, disabled, style }: ButtonProps) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const isDisabled = disabled || loading;
   return (
     <Pressable
@@ -35,7 +36,7 @@ export function Button({ title, onPress, variant = "primary", loading, disabled,
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   base: {
     minHeight: 44,
     borderRadius: radius.md,

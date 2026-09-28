@@ -8,9 +8,10 @@ import { Button } from "../src/components/ui/Button";
 import { TextField } from "../src/components/ui/TextField";
 import { AuthBackdrop } from "../src/components/auth/AuthBackdrop";
 import { GoogleSignInButton } from "../src/components/auth/GoogleSignInButton";
-import { colors, spacing } from "../src/lib/theme";
+import { spacing, type Palette, useThemedStyles } from "../src/lib/theme";
 
 export default function RegisterScreen() {
+  const { styles } = useThemedStyles(makeStyles);
   const { register } = useAuth();
   const { t } = useTranslations();
   const [name, setName] = useState("");
@@ -68,7 +69,7 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   title: { color: colors.foreground, fontSize: 30, fontWeight: "800", textAlign: "center" },
   form: { gap: spacing.md },
   error: { color: colors.danger, fontSize: 13, textAlign: "center" },

@@ -7,7 +7,7 @@ import * as WebBrowser from "expo-web-browser";
 import { API_URL } from "../../lib/api-client";
 import { ApiRequestError, useAuth } from "../../lib/auth-context";
 import { useTranslations } from "../../lib/locale-context";
-import { colors, radius, spacing } from "../../lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -17,6 +17,7 @@ const IOS_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 const ANDROID_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
 
 function GoogleButton({ onSuccess }: { onSuccess: () => void }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { loginWithGoogle } = useAuth();
   const { t } = useTranslations();
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +96,7 @@ export function GoogleSignInButton({ onSuccess }: { onSuccess: () => void }) {
   return <GoogleButton onSuccess={onSuccess} />;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   wrap: { gap: spacing.md },
   divider: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   line: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border },

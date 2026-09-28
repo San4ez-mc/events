@@ -5,7 +5,7 @@ import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useAuth } from "../../src/lib/auth-context";
 import { useTranslations } from "../../src/lib/locale-context";
 import { Button } from "../../src/components/ui/Button";
-import { colors, radius, spacing } from "../../src/lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../src/lib/theme";
 
 interface Reg {
   id: string;
@@ -38,6 +38,7 @@ const answerText = (v: unknown) => (Array.isArray(v) ? v.join(", ") : typeof v =
 
 /** Organizer tools on mobile: funnel numbers + approve / reject / confirm payment (§26, §35). */
 export default function ManageEventScreen() {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user, isLoading } = useAuth();
   const { t } = useTranslations();
@@ -135,7 +136,7 @@ export default function ManageEventScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },

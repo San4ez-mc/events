@@ -1,12 +1,13 @@
 import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors, radius, spacing } from "../../lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 type IconName = React.ComponentProps<typeof Ionicons>["name"];
 
 /** Tab-screen title that clears the status bar / notch (insets.top) — used by every tab so titles never sit under the clock. */
 export function ScreenHeader({ title, subtitle, icon }: { title: string; subtitle?: string; icon: IconName }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.wrap, { paddingTop: insets.top + spacing.lg }]}>
@@ -23,6 +24,7 @@ export function ScreenHeader({ title, subtitle, icon }: { title: string; subtitl
 
 /** Centered icon + message for empty lists / hints. */
 export function EmptyState({ icon, title, text }: { icon: IconName; title?: string; text: string }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   return (
     <View style={styles.empty}>
       <View style={styles.emptyIcon}>
@@ -34,7 +36,7 @@ export function EmptyState({ icon, title, text }: { icon: IconName; title?: stri
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   wrap: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingBottom: spacing.md },
   badge: {
     width: 46,

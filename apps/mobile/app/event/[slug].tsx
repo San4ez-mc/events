@@ -13,9 +13,10 @@ import { ReviewsSection } from "../../src/components/event/ReviewsSection";
 import { sourceFromParam, track } from "../../src/lib/analytics";
 import { formatCurrency, formatPriceLabel, formatShortDateTime } from "../../src/lib/format";
 import type { EventDetail, Registration } from "../../src/lib/event-types";
-import { colors, radius, spacing } from "../../src/lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../src/lib/theme";
 
 export default function EventDetailScreen() {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { slug, src } = useLocalSearchParams<{ slug: string; src?: string }>();
   const { user, isLoading: authLoading } = useAuth();
   const { t } = useTranslations();
@@ -561,7 +562,7 @@ export default function EventDetailScreen() {
   }
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   tier: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
   tierOn: { borderColor: colors.accentFrom, backgroundColor: colors.surface },
   tierName: { color: colors.foreground, fontSize: 14, fontWeight: "600" },

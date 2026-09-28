@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { API_URL, getAccessToken } from "../src/lib/api-client";
 import { useTranslations } from "../src/lib/locale-context";
 import { Button } from "../src/components/ui/Button";
-import { colors, radius, spacing } from "../src/lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../src/lib/theme";
 
 interface Named {
   id: string;
@@ -16,6 +16,7 @@ interface Named {
 
 /** UX §2 — first-run onboarding: city, interests, budget preference. Skippable; editable later. */
 export default function WelcomeScreen() {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { t, locale } = useTranslations();
   const insets = useSafeAreaInsets();
   const [cities, setCities] = useState<Named[]>([]);
@@ -86,7 +87,7 @@ export default function WelcomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
   title: { color: colors.foreground, fontSize: 26, fontWeight: "800" },

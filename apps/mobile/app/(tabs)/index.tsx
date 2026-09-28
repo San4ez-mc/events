@@ -13,7 +13,7 @@ import { FiltersSheet } from "../../src/components/discover/FiltersSheet";
 import { ActionToast, type ToastData } from "../../src/components/discover/ActionToast";
 import { FeedTutorial } from "../../src/components/discover/FeedTutorial";
 import type { CursorPage, EventCard } from "../../src/lib/event-types";
-import { colors, spacing } from "../../src/lib/theme";
+import { spacing, type Palette, useThemedStyles } from "../../src/lib/theme";
 
 const FILTERS_KEY = "kiro_discover_filters";
 const TUTORIAL_KEY = "kiro_feed_tutorial_done";
@@ -21,6 +21,7 @@ const ACTIONS_HEIGHT = 72;
 const ACTIONS_MARGIN = 20;
 
 export default function DiscoverScreen() {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { t } = useTranslations();
   const insets = useSafeAreaInsets();
   const [cards, setCards] = useState<EventCard[] | null>(null);
@@ -306,6 +307,7 @@ function RoundButton({
   disabled?: boolean;
   filled?: boolean;
 }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   return (
     <Pressable
       onPress={onPress}
@@ -323,7 +325,7 @@ function RoundButton({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.md, padding: spacing.xl },
   empty: { color: colors.muted, textAlign: "center", fontSize: 15, paddingHorizontal: spacing.xl },

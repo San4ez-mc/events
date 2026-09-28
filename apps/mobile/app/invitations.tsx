@@ -8,10 +8,11 @@ import { Button } from "../src/components/ui/Button";
 import { EmptyState } from "../src/components/ui/ScreenHeader";
 import { formatShortDateTime } from "../src/lib/format";
 import type { EventInvitation } from "../src/lib/event-types";
-import { colors, radius, spacing } from "../src/lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../src/lib/theme";
 
 /** §71 — the invitee's side: pending invitations to events organizers think they'd enjoy. Mirrors the web /invitations page. */
 export default function MyInvitationsScreen() {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { isLoading: authLoading } = useAuth();
   const { t } = useTranslations();
 
@@ -82,7 +83,7 @@ export default function MyInvitationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   list: { padding: spacing.lg, gap: spacing.md },
   error: { color: colors.danger, fontSize: 14, padding: spacing.lg },

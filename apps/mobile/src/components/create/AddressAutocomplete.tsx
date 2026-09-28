@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { API_URL, getAccessToken, refreshAccessToken } from "../../lib/api-client";
 import { useTranslations } from "../../lib/locale-context";
-import { colors, radius, spacing } from "../../lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 interface Suggestion {
   placeId: string;
@@ -23,6 +23,7 @@ const token = () => `${Date.now().toString(36)}${Math.random().toString(36).slic
 
 /** §12/§60 — Google Places autocomplete through our API. Free text still works; a picked suggestion also stores place ID + coordinates. */
 export function AddressAutocomplete({ value, onPick, placeholder }: { value: string; onPick: (place: PickedPlace) => void; placeholder: string }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   const { t, locale } = useTranslations();
   const [query, setQuery] = useState(value);
   const [items, setItems] = useState<Suggestion[]>([]);
@@ -118,7 +119,7 @@ export function AddressAutocomplete({ value, onPick, placeholder }: { value: str
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   wrap: { gap: spacing.sm },
   inputRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md },
   input: { flex: 1, color: colors.foreground, paddingVertical: 12, fontSize: 15 },

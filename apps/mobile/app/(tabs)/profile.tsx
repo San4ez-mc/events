@@ -11,7 +11,8 @@ import { ProfileQrModal } from "../../src/components/social/ProfileQrModal";
 import { Button } from "../../src/components/ui/Button";
 import { TextField } from "../../src/components/ui/TextField";
 import { ScreenHeader } from "../../src/components/ui/ScreenHeader";
-import { colors, radius, spacing } from "../../src/lib/theme";
+import { radius, spacing, type Palette, useTheme, useThemedStyles } from "../../src/lib/theme";
+import { Chips } from "../../src/components/discover/FiltersSheet";
 
 const PREF_KEYS = [
   { key: "allowPush", labelKey: "profile.notifyPush" },
@@ -54,6 +55,8 @@ async function authed<T = unknown>(path: string, init: RequestInit = {}, retried
 }
 
 export default function ProfileScreen() {
+  const { colors, styles } = useThemedStyles(makeStyles);
+  const { mode: themeMode, setMode: setThemeMode } = useTheme();
   const { user, logout } = useAuth();
   const { t, locale, setLocale } = useTranslations();
 
@@ -357,6 +360,22 @@ export default function ProfileScreen() {
           <Text style={styles.rowText}>{t("profile.language")}</Text>
           <Text style={styles.rowValue}>{locale === "uk" ? "Українська" : "English"}</Text>
         </Pressable>
+        {/* §46 (UX) — light / dark / follow the system; stored on this device. */}
+        <View style={styles.themeBlock}>
+          <View style={styles.themeHeader}>
+            <Ionicons name="contrast" size={22} color={colors.accentFrom} />
+            <Text style={styles.rowText}>{t("profile.theme")}</Text>
+          </View>
+          <Chips
+            value={themeMode}
+            options={[
+              { value: "system" as const, label: t("profile.themeSystem") },
+              { value: "light" as const, label: t("profile.themeLight") },
+              { value: "dark" as const, label: t("profile.themeDark") },
+            ]}
+            onChange={setThemeMode}
+          />
+        </View>
         <Pressable style={styles.row} onPress={confirmLogout}>
           <Ionicons name="log-out-outline" size={22} color={colors.danger} />
           <Text style={[styles.rowText, { color: colors.danger }]}>{t("auth.logout")}</Text>
@@ -374,7 +393,7 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
   card: { flexDirection: "row", alignItems: "center", gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg },
@@ -408,4 +427,6 @@ const styles = StyleSheet.create({
   rowText: { color: colors.foreground, fontSize: 15, fontWeight: "600", flex: 1 },
   rowHint: { color: colors.muted, fontSize: 12 },
   rowValue: { color: colors.muted, fontSize: 14 },
+  themeBlock: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.lg, gap: spacing.md },
+  themeHeader: { flexDirection: "row", alignItems: "center", gap: spacing.md },
 });

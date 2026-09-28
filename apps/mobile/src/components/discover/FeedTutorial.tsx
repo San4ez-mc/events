@@ -3,7 +3,7 @@ import { Animated, Dimensions, Modal, PanResponder, Pressable, StyleSheet, Text,
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslations } from "../../lib/locale-context";
-import { colors, radius, spacing } from "../../lib/theme";
+import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 type IconName = React.ComponentProps<typeof Ionicons>["name"];
 type Target = "undo" | "pass" | "save" | "open" | "share" | "filters";
@@ -33,12 +33,13 @@ const TARGET_ICON: Record<Target, { icon: IconName; color: string }> = {
   save: { icon: "heart-outline", color: "#ec4899" },
   open: { icon: "arrow-forward", color: "#34d399" },
   undo: { icon: "arrow-undo", color: "#f59e0b" },
-  share: { icon: "share-social-outline", color: colors.white },
-  filters: { icon: "options-outline", color: colors.white },
+  share: { icon: "share-social-outline", color: "#ffffff" },
+  filters: { icon: "options-outline", color: "#ffffff" },
 };
 
 /** Interactive first-run tour: the user really swipes a demo card both ways, then taps each button once. */
 export function FeedTutorial({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { styles } = useThemedStyles(makeStyles);
   const { t } = useTranslations();
   const insets = useSafeAreaInsets();
   const [index, setIndex] = useState(0);
@@ -136,6 +137,7 @@ export function FeedTutorial({ visible, onClose }: { visible: boolean; onClose: 
 
 /** A button copy: dimmed and inert unless it is the one to tap; the active one pulses. */
 function MockButton({ target, size, active, onPress }: { target: Target; size: number; active: boolean; onPress: () => void }) {
+  const { styles } = useThemedStyles(makeStyles);
   const pulse = useRef(new Animated.Value(0)).current;
   const { icon, color } = TARGET_ICON[target];
 
@@ -171,6 +173,7 @@ function MockButton({ target, size, active, onPress }: { target: Target; size: n
 
 /** A practice card the user must drag in the requested direction (short drag or a flick is enough, like the real feed). */
 function DemoCard({ dir, onDone, disabled }: { dir: "left" | "right"; onDone: () => void; disabled: boolean }) {
+  const { styles } = useThemedStyles(makeStyles);
   const { t } = useTranslations();
   const pan = useRef(new Animated.ValueXY()).current;
   const nudge = useRef(new Animated.Value(0)).current;
@@ -234,7 +237,7 @@ function DemoCard({ dir, onDone, disabled }: { dir: "left" | "right"; onDone: ()
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: "rgba(8,8,14,0.94)" },
   topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.lg, zIndex: 5 },
   dots: { flexDirection: "row", gap: 6 },
