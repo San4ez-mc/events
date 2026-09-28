@@ -1,4 +1,7 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Put, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Header, HttpCode, HttpStatus, Param, Patch, Post, Put, Req, StreamableFile, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import QRCode from "qrcode";
+import type { EnvConfig } from "../config/env.validation";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiConsumes, ApiTags } from "@nestjs/swagger";
 import { ApiException } from "../common/exceptions/api.exception";
@@ -22,6 +25,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly tokenService: TokenService,
+    private readonly configService: ConfigService<EnvConfig, true>,
   ) {}
 
   @Get("me")
@@ -85,6 +89,22 @@ export class UsersController {
   @Get(":id/profile")
   getPublicProfile(@Param("id") id: string, @Req() req: Request) {
     return this.usersService.getPublicProfile(this.tryExtractUserId(req), id);
+  }
+
+  /**
+   * §24 (UX) — QR for a public profile link. It encodes the same https URL the app already deep-links
+   * (/users/:id), so scanning it with any phone camera opens the app if installed, the website otherwise.
+   * Public like the profile itself; the profile lookup throws 404 for an unknown user and 400 for a malformed
+   * id, so this can't be used to mint QR codes for arbitrary strings.
+   */
+  @Public()
+  @Get(":id/qr")
+  @Header("Content-Type", "image/png")
+  @Header("Cache-Control", "public, max-age=86400")
+  async profileQr(@Param("id") id: string) {
+    await this.usersService.getPublicProfile(undefined, id);
+    const url = `${this.configService.get("APP_URL", { infer: true })}/users/${id}`;
+    return new StreamableFile(await QRCode.toBuffer(url, { type: "png", width: 512, margin: 2 }));
   }
 
   private tryExtractUserId(req: Request): string | undefined {

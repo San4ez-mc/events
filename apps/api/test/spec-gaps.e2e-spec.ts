@@ -428,6 +428,17 @@ describe("Spec gaps (e2e)", () => {
       expect(after.body.items.map((m: { text: string }) => m.text)).not.toContain("hello from attendee");
     });
   });
+  describe("profile QR (§24 ux)", () => {
+    it("serves a PNG QR for an existing user, publicly, and rejects unknown/malformed ids", async () => {
+      const u = await newUser("qr");
+      const ok = await http().get(`/api/v1/users/${u.id}/qr`).expect(200);
+      expect(ok.headers["content-type"]).toContain("image/png");
+      expect(Buffer.from(ok.body).subarray(1, 4).toString()).toBe("PNG"); // PNG magic bytes: 0x89 'P' 'N' 'G'
+
+      await http().get("/api/v1/users/00000000-0000-4000-8000-000000000000/qr").expect(404);
+      await http().get("/api/v1/users/not-a-uuid/qr").expect(400);
+    });
+  });
   describe("geography (§37)", () => {
     it("always lists Kyiv first, search or not", async () => {
       const all = await http().get("/api/v1/geography/cities").expect(200);

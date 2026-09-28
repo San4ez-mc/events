@@ -7,6 +7,7 @@ import { API_URL, getAccessToken, refreshAccessToken } from "../../src/lib/api-c
 import { ApiRequestError, useAuth } from "../../src/lib/auth-context";
 import { useTranslations } from "../../src/lib/locale-context";
 import { formatPhoneInput } from "../../src/lib/format";
+import { ProfileQrModal } from "../../src/components/social/ProfileQrModal";
 import { Button } from "../../src/components/ui/Button";
 import { TextField } from "../../src/components/ui/TextField";
 import { ScreenHeader } from "../../src/components/ui/ScreenHeader";
@@ -61,6 +62,7 @@ export default function ProfileScreen() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [prefs, setPrefs] = useState<Prefs | null>(null);
+  const [qrOpen, setQrOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -316,6 +318,14 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.muted} />
         </Pressable>
 
+        <Pressable style={styles.row} onPress={() => setQrOpen(true)}>
+          <Ionicons name="qr-code" size={22} color={colors.accentFrom} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowText}>{t("profile.myQr")}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        </Pressable>
+
         <Pressable style={styles.row} onPress={() => router.push("/credits")}>
           <Ionicons name="wallet" size={22} color={colors.accentFrom} />
           <View style={{ flex: 1 }}>
@@ -359,6 +369,7 @@ export default function ProfileScreen() {
           </View>
         </Pressable>
       </ScrollView>
+      <ProfileQrModal userId={user.id} name={form.name || user.name || user.nickname || email} visible={qrOpen} onClose={() => setQrOpen(false)} />
     </KeyboardAvoidingView>
   );
 }

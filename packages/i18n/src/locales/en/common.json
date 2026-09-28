@@ -384,7 +384,9 @@
     "newEmail": "New email",
     "emailChangedCheckInbox": "Email changed. Check the new inbox to confirm it.",
     "security": "Security",
-    "notificationsPrivacy": "Notifications & privacy"
+    "notificationsPrivacy": "Notifications & privacy",
+    "myQr": "My QR code",
+    "myQrHint": "Show this to a friend — scanning it with a camera opens your profile so they can add you."
   },
   "admin": {
     "accessDenied": "You don't have access to the admin panel",
