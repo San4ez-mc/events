@@ -3,7 +3,7 @@ import { Animated, Dimensions, Image, PanResponder, Pressable, StyleSheet, Text,
 import { Ionicons } from "@expo/vector-icons";
 import type { EventCard } from "../../lib/event-types";
 import { useTranslations } from "../../lib/locale-context";
-import { formatCurrency, formatShortDateTime } from "../../lib/format";
+import { formatPriceLabel, formatShortDateTime } from "../../lib/format";
 import { colors, radius, spacing } from "../../lib/theme";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -74,7 +74,7 @@ export function SwipeCard({
 
   const cover = event.media[0];
   const place = [event.city?.nameUk, event.district?.nameUk].filter(Boolean).join(", ");
-  const isFree = event.priceType === "FREE";
+  const isFree = event.priceType !== "PAID";
   const social = event.social;
   const goingLabel = event.capacity ? `${social?.registeredCount ?? 0} / ${event.capacity}` : String(social?.registeredCount ?? 0);
 
@@ -108,7 +108,7 @@ export function SwipeCard({
             )}
             <View style={[styles.chip, isFree ? styles.chipFree : styles.chipPaid]}>
               <Text style={[styles.chipText, !isFree && { color: "#111" }]}>
-                {isFree ? t("common.free") : `${event.price ?? "?"} ${formatCurrency(event.currency)}`}
+                {formatPriceLabel(event, t)}
               </Text>
             </View>
           </View>

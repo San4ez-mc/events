@@ -1,3 +1,10 @@
+/** The price line shown on cards and the event page: "Безкоштовно", "Донат" or "350 грн". */
+export function formatPriceLabel(e: { priceType: string; price: string | null; currency: string }, t: (key: string) => string): string {
+  if (e.priceType === "FREE") return t("common.free");
+  if (e.priceType === "DONATION") return t("common.donation");
+  return `${e.price ?? "?"} ${formatCurrency(e.currency)}`;
+}
+
 /** Currency codes as stored/returned by the API, shown the way people actually read money in Ukraine. */
 export function formatCurrency(code: string | null | undefined): string {
   if (code === "UAH") return "грн";

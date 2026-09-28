@@ -4,7 +4,7 @@ import { Stack, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { API_URL, getAccessToken } from "../src/lib/api-client";
 import { useTranslations } from "../src/lib/locale-context";
-import { formatCurrency, formatShortDateTime } from "../src/lib/format";
+import { formatPriceLabel, formatShortDateTime } from "../src/lib/format";
 import type { CursorPage, EventCard, RegistrationWithEvent } from "../src/lib/event-types";
 import { colors, radius, spacing } from "../src/lib/theme";
 import { EmptyState } from "../src/components/ui/ScreenHeader";
@@ -129,7 +129,7 @@ export default function MyEventsScreen() {
               </Text>
               {item.event.startsAt && <Text style={styles.subtitle}>{formatShortDateTime(item.event.startsAt)}</Text>}
               <Text style={styles.subtitle} numberOfLines={1}>
-                {[item.event.city?.nameUk, item.event.priceType === "FREE" ? t("common.free") : `${item.event.price ?? "?"} ${formatCurrency(item.event.currency)}`].filter(Boolean).join(" · ")}
+                {[item.event.city?.nameUk, formatPriceLabel(item.event, t)].filter(Boolean).join(" · ")}
               </Text>
               {item.status && <Text style={styles.status}>{t(STATUS_LABEL_KEYS[item.status] ?? item.status)}</Text>}
               {tab === "mine" && <Text style={styles.status}>{item.event.status}</Text>}

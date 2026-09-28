@@ -39,9 +39,9 @@ export class UpdateSeriesDto {
   @Min(1)
   minParticipants?: number;
 
-  @ApiPropertyOptional({ enum: ["FREE", "PAID"] })
+  @ApiPropertyOptional({ enum: ["FREE", "PAID", "DONATION"] })
   @IsOptional()
-  @IsIn(["FREE", "PAID"])
+  @IsIn(["FREE", "PAID", "DONATION"])
   priceType?: EventPriceType;
 
   @ApiPropertyOptional()

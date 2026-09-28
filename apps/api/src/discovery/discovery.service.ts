@@ -215,7 +215,9 @@ export class DiscoveryService {
     // §34 social signal: each friend going adds a bonus, capped.
     score += Math.min(DISCOVERY_RANKING_WEIGHTS.friendsGoingMax, (signal?.friends ?? 0) * DISCOVERY_RANKING_WEIGHTS.friendsGoingPerFriend);
     // Budget fit: free events always fit; paid ones fit within the user's stated max budget.
-    if (preferences?.freeOnly ? event.priceType === "FREE" : preferences?.maxBudget != null && (event.priceType === "FREE" || (event.price != null && Number(event.price) <= Number(preferences.maxBudget)))) {
+    // A DONATION event costs nothing to attend, so it fits a budget / "free only" preference like a free one.
+    const entryIsFree = event.priceType === "FREE" || event.priceType === "DONATION";
+    if (preferences?.freeOnly ? entryIsFree : preferences?.maxBudget != null && (entryIsFree || (event.price != null && Number(event.price) <= Number(preferences.maxBudget)))) {
       score += DISCOVERY_RANKING_WEIGHTS.budgetFit;
     }
 

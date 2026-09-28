@@ -39,7 +39,7 @@ export function EventCard({
       : event.city.nameEn
     : null;
   const districtName = event.district?.nameUk ?? null;
-  const isFree = event.priceType === "FREE";
+  const isFree = event.priceType !== "PAID";
   const place = [cityName, districtName].filter(Boolean).join(", ");
   const social = event.social;
   const goingLabel = event.capacity
@@ -85,7 +85,9 @@ export function EventCard({
           }`}
         >
           {isFree
-            ? t("common.free")
+            ? event.priceType === "DONATION"
+              ? t("common.donation")
+              : t("common.free")
             : `${event.price ?? "?"} ${event.currency}`}
         </span>
       </div>

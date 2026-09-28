@@ -88,7 +88,7 @@ export function StepOptions({ data, onChange }: StepProps) {
         />
       </div>
 
-      {data.priceType === "PAID" && (
+      {data.priceType !== "FREE" && (
         <TextField
           label={t("events.wizard.paymentUrl")}
           type="url"

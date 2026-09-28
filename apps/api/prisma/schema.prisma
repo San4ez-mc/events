@@ -488,6 +488,7 @@ enum ApprovalMode {
 enum EventPriceType {
   FREE
   PAID
+  DONATION
 }
 
 enum Currency {

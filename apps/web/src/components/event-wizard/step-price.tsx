@@ -13,7 +13,7 @@ export function StepPrice({ data, onChange }: StepProps) {
           {t("events.wizard.priceType")}
         </span>
         <div className="flex gap-2">
-          {(["FREE", "PAID"] as const).map((priceType) => (
+          {(["FREE", "PAID", "DONATION"] as const).map((priceType) => (
             <button
               key={priceType}
               type="button"
@@ -26,11 +26,17 @@ export function StepPrice({ data, onChange }: StepProps) {
             >
               {priceType === "FREE"
                 ? t("events.wizard.priceFree")
-                : t("events.wizard.pricePaid")}
+                : priceType === "DONATION"
+                  ? t("events.wizard.priceDonation")
+                  : t("events.wizard.pricePaid")}
             </button>
           ))}
         </div>
       </div>
+
+      {data.priceType === "DONATION" && (
+        <p className="text-sm text-muted">{t("events.wizard.donationHint")}</p>
+      )}
 
       {data.priceType === "PAID" && (
         <div className="flex flex-col gap-1.5">

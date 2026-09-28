@@ -87,7 +87,7 @@ function toUpdatePayload(data: WizardData): Record<string, unknown> {
     ageRestriction: data.adultsOnly ? 18 : 0,
     rules: data.rules || undefined,
     paymentUrl:
-      data.priceType === "PAID" && data.paymentUrl
+      data.priceType !== "FREE" && data.paymentUrl
         ? data.paymentUrl
         : undefined,
   };

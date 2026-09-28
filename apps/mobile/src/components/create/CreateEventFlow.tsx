@@ -6,7 +6,7 @@ import { router } from "expo-router";
 import { API_URL, getAccessToken, refreshAccessToken } from "../../lib/api-client";
 import { ApiRequestError, useAuth } from "../../lib/auth-context";
 import { useTranslations } from "../../lib/locale-context";
-import { formatCurrency, formatShortDateTime } from "../../lib/format";
+import { formatPriceLabel, formatShortDateTime } from "../../lib/format";
 import { Button } from "../ui/Button";
 import { ScreenHeader } from "../ui/ScreenHeader";
 import { Chips, SearchPicker, Section, type Option } from "../discover/FiltersSheet";
@@ -69,7 +69,7 @@ interface Form {
   latitude: number | null;
   longitude: number | null;
   onlineUrl: string;
-  priceType: "FREE" | "PAID";
+  priceType: "FREE" | "PAID" | "DONATION";
   price: string;
   capacity: string;
   minParticipants: string;
@@ -317,7 +317,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
         visibility: form.visibility,
         ageRestriction: form.adultsOnly ? 18 : 0,
         rules: form.rules.trim() || undefined,
-        paymentUrl: form.priceType === "PAID" && form.paymentUrl.trim() ? form.paymentUrl.trim() : undefined,
+        paymentUrl: form.priceType !== "FREE" && form.paymentUrl.trim() ? form.paymentUrl.trim() : undefined,
       };
     }
     return {};
@@ -637,15 +637,19 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
                 options={[
                   { value: "FREE" as const, label: t("events.wizard.priceFree") },
                   { value: "PAID" as const, label: t("events.wizard.pricePaid") },
+                  { value: "DONATION" as const, label: t("events.wizard.priceDonation") },
                 ]}
                 onChange={(v) => set({ priceType: v })}
               />
             </Section>
-            {form.priceType === "PAID" && (
+            {form.priceType === "DONATION" && <Text style={styles.hint}>{t("events.wizard.donationHint")}</Text>}
+            {form.priceType !== "FREE" && (
               <>
-                <Field label={t("events.wizard.priceAmount")}>
-                  <TextInput value={form.price} onChangeText={(v) => set({ price: v.replace(/[^0-9.]/g, "") })} style={styles.input} keyboardType="decimal-pad" placeholder="350" placeholderTextColor={colors.muted} />
-                </Field>
+                {form.priceType === "PAID" && (
+                  <Field label={t("events.wizard.priceAmount")}>
+                    <TextInput value={form.price} onChangeText={(v) => set({ price: v.replace(/[^0-9.]/g, "") })} style={styles.input} keyboardType="decimal-pad" placeholder="350" placeholderTextColor={colors.muted} />
+                  </Field>
+                )}
                 <Field label={t("events.wizard.paymentUrl")}>
                   <TextInput value={form.paymentUrl} onChangeText={(v) => set({ paymentUrl: v })} style={styles.input} autoCapitalize="none" keyboardType="url" placeholder="https://" placeholderTextColor={colors.muted} />
                 </Field>
@@ -709,7 +713,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
               <Text style={styles.summaryLine}>
                 {form.format === "OFFLINE" ? [cityOptions.find((c) => c.id === form.cityId)?.label, form.addressText].filter(Boolean).join(", ") : form.onlineUrl}
               </Text>
-              <Text style={styles.summaryLine}>{form.priceType === "FREE" ? t("common.free") : `${form.price || "?"} ${formatCurrency("UAH")}`}</Text>
+              <Text style={styles.summaryLine}>{formatPriceLabel({ priceType: form.priceType, price: form.price || null, currency: "UAH" }, t)}</Text>
               <Text style={styles.summaryLine}>{media.length} {t("create.stepMedia").toLowerCase()}</Text>
             </View>
             {balance !== null && (

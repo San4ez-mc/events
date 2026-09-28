@@ -42,7 +42,8 @@
     "free": "Free",
     "delete": "Delete",
     "edit": "Edit",
-    "more": "More"
+    "more": "More",
+    "donation": "Donation"
   },
   "auth": {
     "orContinueWith": "or",
@@ -211,7 +212,9 @@
       "addDistrictSubmitted": "Added. It will appear in the list for others after review.",
       "addCategory": "Can't find the right category? Add a new one",
       "addCategoryPlaceholder": "Category name",
-      "addCategorySubmitted": "Added. It will appear in the list for others after review."
+      "addCategorySubmitted": "Added. It will appear in the list for others after review.",
+      "priceDonation": "Donation (any amount)",
+      "donationHint": "Entry is free. Attendees can optionally support you through the link below — any amount they choose."
     },
     "actions": {
       "save": "Save",
@@ -319,7 +322,8 @@
     "errorSubmitting": "Couldn't register",
     "eventCancelled": "This event was cancelled by the organizer",
     "ticketType": "Ticket type",
-    "showAsParticipant": "Show me among the participants on the event page"
+    "showAsParticipant": "Show me among the participants on the event page",
+    "donate": "Support the organizer"
   },
   "notifications": {
     "markAllRead": "Mark all as read"

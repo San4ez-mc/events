@@ -166,9 +166,9 @@ export class UpdateEventDto {
   @MaxLength(10000)
   rules?: string;
 
-  @ApiPropertyOptional({ enum: ["FREE", "PAID"] })
+  @ApiPropertyOptional({ enum: ["FREE", "PAID", "DONATION"] })
   @IsOptional()
-  @IsIn(["FREE", "PAID"])
+  @IsIn(["FREE", "PAID", "DONATION"])
   priceType?: EventPriceType;
 
   @ApiPropertyOptional()

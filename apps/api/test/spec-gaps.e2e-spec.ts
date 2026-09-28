@@ -207,6 +207,24 @@ describe("Spec gaps (e2e)", () => {
       expect(from200).not.toContain(free.id);
     });
 
+    it("a DONATION event registers like a free one and is never hidden by free-only / price-cap filters (§20 ux)", async () => {
+      const paid = await publishedEvent({ priceType: "PAID", price: 300, paymentUrl: "https://example.com/pay" });
+      const donation = await publishedEvent({ priceType: "DONATION", paymentUrl: "https://example.com/donate" });
+
+      const freeOnly = await feedIds("freeOnly=true");
+      expect(freeOnly).toContain(donation.id);
+      expect(freeOnly).not.toContain(paid.id);
+
+      const upTo100 = await feedIds("maxBudget=100");
+      expect(upTo100).toContain(donation.id); // entry costs nothing, so a price cap can't hide it
+      const from200 = await feedIds("minBudget=200&maxBudget=400");
+      expect(from200).not.toContain(donation.id); // ...and "at least 200" selects only genuinely paid events
+
+      const attendee = await newUser("donation-attendee");
+      const reg = await register(donation.id, attendee.token).expect(201);
+      expect(reg.body.status).toBe("REGISTERED"); // no payment step — the donation itself is voluntary and off-platform
+    });
+
     it("adults-only, group size and time-of-day windows narrow the feed", async () => {
       const adults = await publishedEvent({ ageRestriction: 18, capacity: 8 });
       const open = await publishedEvent({ capacity: 40 });

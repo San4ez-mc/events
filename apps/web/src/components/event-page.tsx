@@ -88,7 +88,9 @@ export function EventPage({
           <strong className="text-foreground">
             {event.priceType === "FREE"
               ? t("common.free")
-              : `${event.price ?? "?"} ${event.currency}`}
+              : event.priceType === "DONATION"
+                ? t("common.donation")
+                : `${event.price ?? "?"} ${event.currency}`}
           </strong>
           {categoryName && <span>· {categoryName}</span>}
         </span>
@@ -310,6 +312,18 @@ export function EventPage({
       />
 
       <RegistrationWidget event={event} />
+
+      {/* Donation events: entry is free and needs no registration step to give, so the link is always available. */}
+      {event.priceType === "DONATION" && event.paymentUrl && (
+        <a
+          href={event.paymentUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 block rounded-md border border-border px-4 py-2 text-center text-sm font-medium hover:bg-surface"
+        >
+          {t("registration.donate")}
+        </a>
+      )}
 
       {event.priceType === "PAID" && (
         <p className="mt-4 rounded-xl bg-surface p-3 text-xs leading-relaxed text-muted">

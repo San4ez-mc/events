@@ -108,6 +108,8 @@ export type ApprovalMode = (typeof ApprovalMode)[keyof typeof ApprovalMode];
 export const EventPriceType = {
   FREE: "FREE",
   PAID: "PAID",
+  /** Free entry, with an optional voluntary amount collected via the organizer's own payment link. */
+  DONATION: "DONATION",
 } as const;
 export type EventPriceType = (typeof EventPriceType)[keyof typeof EventPriceType];
 

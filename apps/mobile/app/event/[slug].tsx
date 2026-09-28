@@ -11,7 +11,7 @@ import { EventGallery } from "../../src/components/event/EventGallery";
 import { EventChat } from "../../src/components/event/EventChat";
 import { ReviewsSection } from "../../src/components/event/ReviewsSection";
 import { sourceFromParam, track } from "../../src/lib/analytics";
-import { formatCurrency, formatShortDateTime } from "../../src/lib/format";
+import { formatCurrency, formatPriceLabel, formatShortDateTime } from "../../src/lib/format";
 import type { EventDetail, Registration } from "../../src/lib/event-types";
 import { colors, radius, spacing } from "../../src/lib/theme";
 
@@ -261,7 +261,7 @@ export default function EventDetailScreen() {
         {event.startsAt && <Text style={styles.meta}>{formatShortDateTime(event.startsAt)}</Text>}
         {event.format === "OFFLINE" && event.city && <Text style={styles.meta}>{event.city.nameUk}</Text>}
         {event.format === "ONLINE" && <Text style={styles.meta}>{t("events.wizard.formatOnline")}</Text>}
-        <Text style={styles.meta}>{event.priceType === "FREE" ? t("common.free") : `${event.price ?? "?"} ${formatCurrency(event.currency)}`}</Text>
+        <Text style={styles.meta}>{formatPriceLabel(event, t)}</Text>
       </View>
 
       {social && (
@@ -415,6 +415,10 @@ export default function EventDetailScreen() {
       <View style={styles.registrationBox}>
         {error && <Text style={styles.error}>{error}</Text>}
         {renderRegistration()}
+        {/* Donation events: entry is free, and giving doesn't depend on registering, so the link is always there. */}
+        {event.priceType === "DONATION" && event.paymentUrl ? (
+          <Button title={t("registration.donate")} variant="secondary" onPress={() => void Linking.openURL(event.paymentUrl!)} />
+        ) : null}
       </View>
 
       {event.priceType === "PAID" && <Text style={styles.disclaimer}>{t("events.page.paidDisclaimer")}</Text>}
@@ -542,6 +546,7 @@ export default function EventDetailScreen() {
       return (
         <View style={styles.form}>
           <Text style={styles.muted}>{t("registration.registered")}</Text>
+          {event.paymentUrl ? <Button title={t("registration.payNow")} variant="secondary" onPress={() => void Linking.openURL(event.paymentUrl!)} /> : null}
           <Button title={t("registration.markPaid")} onPress={() => void markPaid()} loading={submitting} />
         </View>
       );

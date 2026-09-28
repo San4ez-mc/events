@@ -31,7 +31,7 @@ export function buildPublicEventWhere(query: PublicEventFilterParams, now: Date)
     and.push(
       query.minBudget != null && query.minBudget > 0
         ? { priceType: "PAID", price: range }
-        : { OR: [{ priceType: "FREE" }, { price: range }] },
+        : { OR: [{ priceType: { in: ["FREE", "DONATION"] } }, { price: range }] },
     );
   }
 
@@ -51,7 +51,7 @@ export function buildPublicEventWhere(query: PublicEventFilterParams, now: Date)
     districtId: query.districtIds?.length ? { in: query.districtIds } : undefined,
     categoryId: query.categoryIds?.length ? { in: query.categoryIds } : undefined,
     format: query.format,
-    priceType: query.freeOnly ? "FREE" : undefined,
+    priceType: query.freeOnly ? { in: ["FREE", "DONATION"] } : undefined,
     ageRestriction: query.adultsOnly ? { gte: 18 } : undefined,
     startsAt: {
       gte: query.dateFrom ? new Date(query.dateFrom) : now,

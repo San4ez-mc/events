@@ -41,7 +41,7 @@ export function EventResultRow({
             .join(" · ")}
         </span>
         <span className="text-xs">
-          {event.priceType === "FREE" ? t("common.free") : `${event.price ?? "?"} ${event.currency}`}
+          {event.priceType === "FREE" ? t("common.free") : event.priceType === "DONATION" ? t("common.donation") : `${event.price ?? "?"} ${event.currency}`}
         </span>
       </div>
     </Link>

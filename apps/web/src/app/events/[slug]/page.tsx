@@ -81,7 +81,7 @@ function EventStructuredData({
     description: event.description ?? undefined,
     offers: {
       "@type": "Offer",
-      price: event.priceType === "FREE" ? "0" : (event.price ?? undefined),
+      price: event.priceType !== "PAID" ? "0" : (event.price ?? undefined),
       priceCurrency: event.currency,
     },
   };
