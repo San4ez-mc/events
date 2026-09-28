@@ -785,5 +785,16 @@
     "done_title": "That's it!",
     "done_text": "Browse the feed, save what you like and register for events. You can replay this tour in Profile → Show tips.",
     "start": "Let's go"
+  },
+  "adminContent": {
+    "title": "Approvals & reports",
+    "categories": "Categories awaiting approval",
+    "districts": "Districts awaiting approval",
+    "reports": "Open reports",
+    "nothing": "Nothing here",
+    "approve": "Approve",
+    "reject": "Reject",
+    "resolved": "Resolved",
+    "dismiss": "Dismiss"
   }
 }
