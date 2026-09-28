@@ -117,6 +117,21 @@ export default function EventDetailScreen() {
     Alert.alert(res?.ok ? t("events.actions.reportSent") : t("common.somethingWentWrong"));
   }
 
+  // §19/§70 — copies title/description/category/location/etc. into a fresh DRAFT; nothing about
+  // the original (registrations, status, series membership) carries over.
+  async function duplicateEvent() {
+    const token = getAccessToken();
+    if (!token || !event) return;
+    setReportOpen(false);
+    const res = await fetch(`${API_URL}/api/v1/events/${event.id}/duplicate`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) {
+      Alert.alert(t("common.somethingWentWrong"));
+      return;
+    }
+    const created = (await res.json()) as { id: string };
+    router.push(`/edit/${created.id}`);
+  }
+
   async function submit() {
     const token = getAccessToken();
     if (!token || !event) return;
@@ -410,16 +425,22 @@ export default function EventDetailScreen() {
         <Pressable style={styles.reportBackdrop} onPress={() => setReportOpen(false)}>
           <Pressable style={styles.reportSheet} onPress={(e) => e.stopPropagation()}>
             <View style={styles.reportHeader}>
-              <Text style={styles.reportTitle}>{t("events.actions.report")}</Text>
+              <Text style={styles.reportTitle}>{isOwner ? t("common.more") : t("events.actions.report")}</Text>
               <Pressable onPress={() => setReportOpen(false)} hitSlop={10} accessibilityLabel={t("common.cancel")}>
                 <Ionicons name="close" size={22} color={colors.foreground} />
               </Pressable>
             </View>
-            {REPORT_REASONS.map((r) => (
-              <Pressable key={r} style={styles.reportRow} onPress={() => void sendReport(t(`events.actions.reasons.${r}`))}>
-                <Text style={styles.reportRowText}>{t(`events.actions.reasons.${r}`)}</Text>
+            {isOwner && (
+              <Pressable style={styles.reportRow} onPress={() => void duplicateEvent()}>
+                <Text style={styles.reportRowText}>{t("organizerTools.duplicate")}</Text>
               </Pressable>
-            ))}
+            )}
+            {!isOwner &&
+              REPORT_REASONS.map((r) => (
+                <Pressable key={r} style={styles.reportRow} onPress={() => void sendReport(t(`events.actions.reasons.${r}`))}>
+                  <Text style={styles.reportRowText}>{t(`events.actions.reasons.${r}`)}</Text>
+                </Pressable>
+              ))}
             <Pressable style={styles.reportCancel} onPress={() => setReportOpen(false)}>
               <Text style={styles.reportCancelText}>{t("common.cancel")}</Text>
             </Pressable>
