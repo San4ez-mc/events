@@ -266,6 +266,14 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.muted} />
         </Pressable>
 
+        <Pressable style={styles.row} onPress={() => router.push("/invitations")}>
+          <Ionicons name="mail-open" size={22} color={colors.accentFrom} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowText}>{t("invitations.title")}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        </Pressable>
+
         <Pressable style={styles.row} onPress={() => router.push("/my-events")}>
           <Ionicons name="ticket" size={22} color={colors.accentFrom} />
           <View style={{ flex: 1 }}>

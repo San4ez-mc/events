@@ -1,4 +1,4 @@
-import type { CollaboratorPermission, EventFormat, EventPriceType, EventStatus, RecurrenceType } from "@kiro/types";
+import type { CollaboratorPermission, EventFormat, EventInvitationStatus, EventPriceType, EventStatus, RecurrenceType } from "@kiro/types";
 
 export interface EventMedia {
   id: string;
@@ -126,4 +126,23 @@ export interface Registration {
 
 export interface RegistrationWithEvent extends Registration {
   event: EventCard;
+}
+
+/** §71 — invite people who attended this organizer's past events to a new one. */
+export interface InvitationCandidate {
+  id: string;
+  name: string | null;
+  nickname: string | null;
+  avatarUrl: string | null;
+  email: string;
+}
+
+export interface EventInvitation {
+  id: string;
+  eventId: string;
+  inviterUserId: string;
+  inviteeUserId: string;
+  status: EventInvitationStatus;
+  createdAt: string;
+  event: { id: string; slug: string; title: string; startsAt: string | null };
 }
