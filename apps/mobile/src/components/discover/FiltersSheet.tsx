@@ -24,6 +24,7 @@ import {
 } from "@kiro/types";
 import { API_URL } from "../../lib/api-client";
 import { useTranslations } from "../../lib/locale-context";
+import { CalendarPicker } from "./CalendarPicker";
 import { colors, radius, spacing } from "../../lib/theme";
 
 export interface Option {
@@ -60,6 +61,13 @@ export function Chips<T extends string>({ value, options, onChange }: { value: T
       })}
     </View>
   );
+}
+
+/** An hour-of-day input: digits only, 0–23; an emptied field falls back to the previous value instead of NaN/0. */
+function clampHour(raw: string, fallback: number): number {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return fallback;
+  return Math.min(23, Number(digits));
 }
 
 /** Search box + a short scrollable list. Single- or multi-select (§7 city / district / categories). */
@@ -220,6 +228,8 @@ export function FiltersSheet({ visible, filters, onApply, onClose }: { visible: 
     { value: "today", label: t("filters.dateToday") },
     { value: "tomorrow", label: t("filters.dateTomorrow") },
     { value: "weekend", label: t("filters.dateWeekend") },
+    { value: "date", label: t("filters.datePick") },
+    { value: "range", label: t("filters.dateRange") },
   ];
   const timeOptions: { value: TimePreset; label: string }[] = [
     { value: "any", label: t("filters.timeAny") },
@@ -227,6 +237,7 @@ export function FiltersSheet({ visible, filters, onApply, onClose }: { visible: 
     { value: "day", label: t("filters.timeDay") },
     { value: "evening", label: t("filters.timeEvening") },
     { value: "night", label: t("filters.timeNight") },
+    { value: "custom", label: t("filters.timeCustom") },
   ];
   const formatOptions: { value: FormatFilter; label: string }[] = [
     { value: "any", label: t("filters.formatAny") },
@@ -279,11 +290,40 @@ export function FiltersSheet({ visible, filters, onApply, onClose }: { visible: 
             </Section>
 
             <Section title={t("filters.date")}>
-              <Chips value={draft.datePreset} options={dateOptions} onChange={(v) => set({ datePreset: v })} />
+              <Chips value={draft.datePreset} options={dateOptions} onChange={(v) => set({ datePreset: v, ...(v === "date" ? { dateTo: "" } : {}) })} />
+              {(draft.datePreset === "date" || draft.datePreset === "range") && (
+                <CalendarPicker mode={draft.datePreset} from={draft.dateFrom} to={draft.dateTo} locale={locale} onChange={({ from, to }) => set({ dateFrom: from, dateTo: to })} />
+              )}
             </Section>
 
             <Section title={t("filters.time")}>
               <Chips value={draft.timePreset} options={timeOptions} onChange={(v) => set({ timePreset: v })} />
+              {draft.timePreset === "custom" && (
+                <View style={styles.hourRow}>
+                  <View style={styles.hourField}>
+                    <Text style={styles.hourLabel}>{t("filters.hourFrom")}</Text>
+                    <TextInput
+                      value={String(draft.hourFrom)}
+                      onChangeText={(v) => set({ hourFrom: clampHour(v, draft.hourFrom) })}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      style={styles.hourInput}
+                      accessibilityLabel={t("filters.hourFrom")}
+                    />
+                  </View>
+                  <View style={styles.hourField}>
+                    <Text style={styles.hourLabel}>{t("filters.hourTo")}</Text>
+                    <TextInput
+                      value={String(draft.hourTo)}
+                      onChangeText={(v) => set({ hourTo: clampHour(v, draft.hourTo) })}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      style={styles.hourInput}
+                      accessibilityLabel={t("filters.hourTo")}
+                    />
+                  </View>
+                </View>
+              )}
             </Section>
 
             <Section title={t("filters.price")}>
@@ -390,6 +430,10 @@ const styles = StyleSheet.create({
   reset: { paddingHorizontal: spacing.lg, justifyContent: "center" },
   resetText: { color: colors.muted, fontSize: 15, fontWeight: "700" },
   resetTextConfirmed: { color: colors.accentFrom },
+  hourRow: { flexDirection: "row", gap: spacing.md },
+  hourField: { flex: 1, gap: 4 },
+  hourLabel: { color: colors.muted, fontSize: 12, fontWeight: "600" },
+  hourInput: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, color: colors.foreground, paddingHorizontal: spacing.md, paddingVertical: 10, fontSize: 15, textAlign: "center" },
   apply: { flex: 1, backgroundColor: colors.accentFrom, borderRadius: radius.full, paddingVertical: 14, alignItems: "center" },
   applyText: { color: colors.white, fontSize: 15, fontWeight: "800" },
 });
