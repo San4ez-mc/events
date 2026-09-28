@@ -1,4 +1,4 @@
-import type { EventFormat, EventPriceType, EventStatus } from "@kiro/types";
+import type { EventFormat, EventPriceType, EventStatus, RecurrenceType } from "@kiro/types";
 
 export interface EventMedia {
   id: string;
@@ -72,6 +72,25 @@ export interface EventDetail extends EventCard {
   faqItems?: { id: string; question: string; answer: string }[];
   friendsGoing: { count: number; previews: { id: string; name: string | null; avatarUrl: string | null }[] };
   ownerId: string;
+  seriesId?: string | null;
+  endsAt?: string | null;
+}
+
+/** §29 — recurring events: one occurrence is a normal, independent Event row. */
+export interface EventSeries {
+  id: string;
+  ownerId: string;
+  recurrenceType: RecurrenceType;
+  recurrenceRuleJson: unknown;
+  templateEventId: string;
+  createdAt: string;
+}
+
+export type EventOccurrence = EventCard;
+
+export interface CreateSeriesResult {
+  series: EventSeries;
+  occurrences: EventOccurrence[];
 }
 
 export interface CursorPage<T> {

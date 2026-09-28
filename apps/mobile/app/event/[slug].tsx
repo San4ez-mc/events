@@ -222,6 +222,11 @@ export default function EventDetailScreen() {
             <Ionicons name="pencil-outline" size={20} color={colors.foreground} />
           </Pressable>
         )}
+        {isOwner && !event.seriesId && event.startsAt && (
+          <Pressable style={styles.shareButton} onPress={() => router.push(`/series/${event.id}`)} accessibilityLabel={t("organizerSeries.title")}>
+            <Ionicons name="repeat" size={20} color={colors.foreground} />
+          </Pressable>
+        )}
         <Pressable style={styles.shareButton} onPress={() => void toggleSave()} accessibilityLabel={saved ? t("events.actions.saved") : t("events.actions.save")}>
           <Ionicons name={saved ? "heart" : "heart-outline"} size={22} color={saved ? colors.accentTo : colors.foreground} />
         </Pressable>
