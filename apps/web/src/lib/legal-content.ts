@@ -20,6 +20,17 @@ export interface LegalDoc {
 export const CONTACT_EMAIL = "kiro@fineko.space";
 export const LEGAL_UPDATED = "2026-09-27";
 
+/**
+ * TODO — placeholders: WayForPay/Monobank require a real legal name, tax id and registered
+ * address on the "Contacts" page before they'll approve/keep a merchant account. Replace with the
+ * actual FOP/TOV registration details before that page goes live for real payments.
+ */
+export const COMPANY_NAME_UK = "ФОП [ПІБ] / ТОВ «[Назва]» — вкажіть реальні дані";
+export const COMPANY_NAME_EN = "Sole proprietor [Name] / [Company] LLC — replace with real details";
+export const COMPANY_TAX_ID = "[РНОКПП або ЄДРПОУ]";
+export const COMPANY_ADDRESS = "[Адреса реєстрації]";
+export const COMPANY_PHONE = "[Телефон]";
+
 const privacyUk: LegalDoc = {
   title: "Політика конфіденційності",
   updated: "Останнє оновлення: 27 вересня 2026",
@@ -404,10 +415,207 @@ const deletionEn: LegalDoc = {
   ],
 };
 
+const offerUk: LegalDoc = {
+  title: "Публічна оферта",
+  updated: "Останнє оновлення: 27 вересня 2026",
+  intro:
+    "Цей документ є публічною офертою (договором) відповідно до ст. 633, 641 Цивільного кодексу України. Оплата пакета кредитів на сайті kiro.fineko.space або в мобільному додатку Кіро є повним і безумовним прийняттям (акцептом) цієї оферти.",
+  sections: [
+    {
+      heading: "1. Предмет договору",
+      paragraphs: [
+        "Продавець (реквізити — на сторінці «Контакти») надає покупцю (організатору подій) пакет «кредитів» — цифрове право на публікацію відповідної кількості подій у сервісі Кіро. Кредити не є грошовим засобом, не підлягають обміну на готівку і діють лише в межах сервісу.",
+      ],
+    },
+    {
+      heading: "2. Ціна та порядок оплати",
+      items: [
+        "Актуальні пакети та ціни показуються на сторінці «Кредити» перед оплатою; на момент публікації цієї оферти діють: «1 публікація» — 199 грн, «5 публікацій» — 799 грн, «10 публікацій» — 1499 грн.",
+        "Оплата приймається через платіжні системи WayForPay та/або Monobank Acquiring. Дані банківської картки вводяться на стороні платіжної системи; продавець їх не бачить і не зберігає.",
+      ],
+    },
+    {
+      heading: "3. Порядок надання (\"доставки\")",
+      paragraphs: [
+        "Кредити зараховуються на акаунт покупця автоматично, одразу після підтвердження оплати платіжною системою — зазвичай упродовж кількох хвилин. Якщо кредити не зараховані протягом 24 годин після успішної оплати, звертайтесь на " +
+          CONTACT_EMAIL +
+          " із зазначенням email акаунта та часу оплати.",
+      ],
+    },
+    {
+      heading: "4. Право на відмову від договору",
+      paragraphs: [
+        "Кредити є цифровим контентом, що не постачається на матеріальному носії. Відповідно до Закону України «Про захист прав споживачів», право на відмову від договору про постачання цифрового контенту втрачається з моменту, коли його постачання розпочалося за прямою згодою споживача (тобто з моменту зарахування кредитів). Умови повернення коштів за невикористані кредити — на сторінці «Повернення коштів».",
+      ],
+    },
+    {
+      heading: "5. Відповідальність",
+      paragraphs: [
+        "Продавець надає лише технічну платформу для публікації подій і прийому оплати за кредити. Продавець не є організатором подій, розміщених у сервісі третіми особами, і не відповідає за їх проведення, якість, безпеку чи скасування.",
+      ],
+    },
+    {
+      heading: "6. Реквізити продавця",
+      paragraphs: ["Повні реквізити — на сторінці «Контакти»."],
+    },
+  ],
+};
+
+const offerEn: LegalDoc = {
+  title: "Public Offer",
+  updated: "Last updated: 27 September 2026",
+  intro:
+    "This is a public offer (contract) under Articles 633 and 641 of the Civil Code of Ukraine. Paying for a credit package on kiro.fineko.space or in the Kiro mobile app is full and unconditional acceptance of this offer.",
+  sections: [
+    {
+      heading: "1. Subject of the agreement",
+      paragraphs: [
+        "The Seller (details on the \"Contacts\" page) provides the Buyer (an event organizer) a package of \"credits\" — a digital right to publish a corresponding number of events on Kiro. Credits are not a monetary instrument, are not exchangeable for cash, and are valid only within the service.",
+      ],
+    },
+    {
+      heading: "2. Price and payment",
+      items: [
+        "Current packages and prices are shown on the \"Credits\" page before payment; at the time this offer was published: \"1 publication\" — 199 UAH, \"5 publications\" — 799 UAH, \"10 publications\" — 1499 UAH.",
+        "Payment is accepted via WayForPay and/or Monobank Acquiring. Card details are entered on the payment provider's side; the Seller never sees or stores them.",
+      ],
+    },
+    {
+      heading: "3. Delivery",
+      paragraphs: [
+        `Credits are added to the Buyer's account automatically, immediately after the payment provider confirms payment — usually within a few minutes. If credits are not added within 24 hours of a successful payment, contact ${CONTACT_EMAIL} with your account email and the payment time.`,
+      ],
+    },
+    {
+      heading: "4. Right of withdrawal",
+      paragraphs: [
+        "Credits are digital content not supplied on a tangible medium. Under Ukraine's consumer protection law, the right to withdraw from a digital-content contract is lost once supply begins with the consumer's prior express consent (i.e. once credits are credited). Refund terms for unused credits are on the \"Refund Policy\" page.",
+      ],
+    },
+    {
+      heading: "5. Liability",
+      paragraphs: [
+        "The Seller provides only the technical platform for publishing events and accepting payment for credits. The Seller is not the organizer of events listed by third parties and is not responsible for how they are run, their quality, safety, or cancellation.",
+      ],
+    },
+    {
+      heading: "6. Seller details",
+      paragraphs: ["Full details are on the \"Contacts\" page."],
+    },
+  ],
+};
+
+const refundUk: LegalDoc = {
+  title: "Повернення коштів",
+  updated: "Останнє оновлення: 27 вересня 2026",
+  intro: "Умови повернення коштів за пакети кредитів, придбані на kiro.fineko.space або в мобільному додатку Кіро.",
+  sections: [
+    {
+      heading: "1. Коли кошти повертаються повністю",
+      items: [
+        "Технічна помилка на нашій стороні: оплата пройшла, але кредити не зараховані, або кредити зараховано двічі за одну оплату.",
+        "Помилкове/дубльоване списання платіжною системою за один і той самий пакет.",
+      ],
+    },
+    {
+      heading: "2. Коли можна повернути невикористані кредити",
+      paragraphs: [
+        "Якщо жоден кредит із придбаного пакета ще не був використаний для публікації події, ви можете запросити повернення протягом 14 днів з дати оплати.",
+      ],
+    },
+    {
+      heading: "3. Коли кошти не повертаються",
+      items: [
+        "Кредит уже використано для публікації події — незалежно від того, відбулася подія чи ні (за проведення власних подій відповідає організатор, див. «Умови користування», п. 4).",
+        "Минуло понад 14 днів з моменту оплати.",
+      ],
+    },
+    {
+      heading: "4. Як подати запит на повернення",
+      paragraphs: [
+        `Напишіть на ${CONTACT_EMAIL} з email, яким зареєстровано акаунт, приблизною датою й сумою оплати, і короткою причиною. Розглядаємо звернення протягом 10 робочих днів; кошти повертаються тим самим платіжним провайдером (WayForPay або Monobank) на картку, з якої була оплата.`,
+      ],
+    },
+  ],
+};
+
+const refundEn: LegalDoc = {
+  title: "Refund Policy",
+  updated: "Last updated: 27 September 2026",
+  intro: "Refund terms for credit packages purchased on kiro.fineko.space or in the Kiro mobile app.",
+  sections: [
+    {
+      heading: "1. Full refund",
+      items: [
+        "A technical error on our side: payment went through but credits were not added, or credits were added twice for one payment.",
+        "A duplicate/erroneous charge by the payment provider for the same package.",
+      ],
+    },
+    {
+      heading: "2. Unused credits",
+      paragraphs: [
+        "If none of the credits in a purchased package have been used to publish an event yet, you can request a refund within 14 days of the payment date.",
+      ],
+    },
+    {
+      heading: "3. No refund",
+      items: [
+        "A credit has already been used to publish an event — regardless of whether the event actually took place (the organizer is responsible for running their own events, see \"Terms of Use\", section 4).",
+        "More than 14 days have passed since payment.",
+      ],
+    },
+    {
+      heading: "4. How to request a refund",
+      paragraphs: [
+        `Email ${CONTACT_EMAIL} with your account's email, the approximate payment date and amount, and a short reason. We review requests within 10 business days; funds are returned by the same payment provider (WayForPay or Monobank) to the card used to pay.`,
+      ],
+    },
+  ],
+};
+
+const contactsUk: LegalDoc = {
+  title: "Контакти та реквізити",
+  updated: "Останнє оновлення: 27 вересня 2026",
+  intro: "Реквізити продавця послуг сервісу Кіро (стосується публічної оферти та повернення коштів).",
+  sections: [
+    {
+      heading: "Продавець",
+      items: [
+        `Найменування: ${COMPANY_NAME_UK}`,
+        `Податковий номер (РНОКПП/ЄДРПОУ): ${COMPANY_TAX_ID}`,
+        `Адреса реєстрації: ${COMPANY_ADDRESS}`,
+      ],
+    },
+    {
+      heading: "Служба підтримки",
+      items: [`Email: ${CONTACT_EMAIL}`, `Телефон: ${COMPANY_PHONE}`, "Графік роботи: пн–пт, 10:00–18:00 (Київ)"],
+    },
+  ],
+};
+
+const contactsEn: LegalDoc = {
+  title: "Contacts & Legal Details",
+  updated: "Last updated: 27 September 2026",
+  intro: "Seller details for Kiro's services (referenced by the Public Offer and Refund Policy pages).",
+  sections: [
+    {
+      heading: "Seller",
+      items: [`Legal name: ${COMPANY_NAME_EN}`, `Tax ID: ${COMPANY_TAX_ID}`, `Registered address: ${COMPANY_ADDRESS}`],
+    },
+    {
+      heading: "Support",
+      items: [`Email: ${CONTACT_EMAIL}`, `Phone: ${COMPANY_PHONE}`, "Hours: Mon–Fri, 10:00–18:00 (Kyiv time)"],
+    },
+  ],
+};
+
 const DOCS = {
   privacy: { uk: privacyUk, en: privacyEn },
   terms: { uk: termsUk, en: termsEn },
   "account-deletion": { uk: deletionUk, en: deletionEn },
+  offer: { uk: offerUk, en: offerEn },
+  refund: { uk: refundUk, en: refundEn },
+  contacts: { uk: contactsUk, en: contactsEn },
 } as const;
 
 export type LegalSlug = keyof typeof DOCS;

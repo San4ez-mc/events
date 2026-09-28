@@ -21,6 +21,15 @@ export async function SiteFooter() {
           <Link href="/account-deletion" className="hover:underline">
             {uk ? "Видалення акаунта" : "Account deletion"}
           </Link>
+          <Link href="/offer" className="hover:underline">
+            {uk ? "Оферта" : "Public Offer"}
+          </Link>
+          <Link href="/refund" className="hover:underline">
+            {uk ? "Повернення коштів" : "Refunds"}
+          </Link>
+          <Link href="/contacts" className="hover:underline">
+            {uk ? "Контакти" : "Contacts"}
+          </Link>
           <a href={`mailto:${CONTACT_EMAIL}`} className="hover:underline">
             {CONTACT_EMAIL}
           </a>

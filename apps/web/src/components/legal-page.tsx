@@ -40,6 +40,15 @@ export async function LegalPage({ slug }: { slug: LegalSlug }) {
         <Link href="/account-deletion" className="hover:underline">
           {locale === "uk" ? "Видалення акаунта" : "Account deletion"}
         </Link>
+        <Link href="/offer" className="hover:underline">
+          {locale === "uk" ? "Публічна оферта" : "Public Offer"}
+        </Link>
+        <Link href="/refund" className="hover:underline">
+          {locale === "uk" ? "Повернення коштів" : "Refund Policy"}
+        </Link>
+        <Link href="/contacts" className="hover:underline">
+          {locale === "uk" ? "Контакти" : "Contacts"}
+        </Link>
       </nav>
     </article>
   );
