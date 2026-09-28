@@ -208,7 +208,10 @@
       "addDistrict": "Не знайшли свій район? Додати новий",
       "addDistrictPlaceholder": "Назва району",
       "addDistrictAdd": "Додати",
-      "addDistrictSubmitted": "Додано. Район з'явиться у списку для інших після перевірки."
+      "addDistrictSubmitted": "Додано. Район з'явиться у списку для інших після перевірки.",
+      "addCategory": "Не знайшли підходящу категорію? Додати нову",
+      "addCategoryPlaceholder": "Назва категорії",
+      "addCategorySubmitted": "Додано. Категорія з'явиться у списку для інших після перевірки."
     },
     "actions": {
       "save": "Зберегти",

@@ -2,14 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "@/lib/locale-context";
-import { api } from "@/lib/api-client";
+import { api, getAccessToken } from "@/lib/api-client";
 import type { Category } from "@/lib/geo-types";
 import { TextField } from "@/components/ui/text-field";
+import { Button } from "@/components/ui/button";
 import type { StepProps } from "./types";
 
 export function StepBasics({ data, onChange }: StepProps) {
   const { t, locale } = useTranslations();
   const [categories, setCategories] = useState<Category[] | null>(null);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [categoryAdded, setCategoryAdded] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -17,6 +21,32 @@ export function StepBasics({ data, onChange }: StepProps) {
       if (res.data) setCategories(res.data as Category[]);
     })();
   }, []);
+
+  // §16/§38 — a category missing from the list gets suggested to the API and stays PENDING
+  // (invisible to other users) until an admin approves it, but is attached to this event now.
+  async function addCategory() {
+    const nameUk = newCategoryName.trim();
+    const token = getAccessToken();
+    if (!nameUk || !token) return;
+    setAddingCategory(true);
+    try {
+      const res = await fetch("/api/v1/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ nameUk }),
+      });
+      if (!res.ok) return;
+      // The create response is a raw row with no `children` relation loaded — normalize it to the
+      // same shape listTree() returns before appending, or the render below crashes on `.children.map`.
+      const created = { ...((await res.json()) as Omit<Category, "children">), children: [] };
+      setCategories((prev) => [...(prev ?? []), created]);
+      onChange({ categoryId: created.id });
+      setNewCategoryName("");
+      setCategoryAdded(true);
+    } finally {
+      setAddingCategory(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -72,6 +102,32 @@ export function StepBasics({ data, onChange }: StepProps) {
             </optgroup>
           ))}
         </select>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={newCategoryName}
+            onChange={(e) => {
+              setNewCategoryName(e.target.value);
+              setCategoryAdded(false);
+            }}
+            placeholder={t("events.wizard.addCategoryPlaceholder")}
+            className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            loading={addingCategory}
+            disabled={!newCategoryName.trim()}
+            onClick={() => void addCategory()}
+          >
+            {t("events.wizard.addDistrictAdd")}
+          </Button>
+        </div>
+        <p className="text-xs text-muted">
+          {categoryAdded
+            ? t("events.wizard.addCategorySubmitted")
+            : t("events.wizard.addCategory")}
+        </p>
       </div>
     </div>
   );

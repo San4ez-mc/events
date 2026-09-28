@@ -208,7 +208,10 @@
       "addDistrict": "Can't find your district? Add a new one",
       "addDistrictPlaceholder": "District name",
       "addDistrictAdd": "Add",
-      "addDistrictSubmitted": "Added. It will appear in the list for others after review."
+      "addDistrictSubmitted": "Added. It will appear in the list for others after review.",
+      "addCategory": "Can't find the right category? Add a new one",
+      "addCategoryPlaceholder": "Category name",
+      "addCategorySubmitted": "Added. It will appear in the list for others after review."
     },
     "actions": {
       "save": "Save",

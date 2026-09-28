@@ -152,6 +152,9 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   const [newDistrictName, setNewDistrictName] = useState("");
   const [addingDistrict, setAddingDistrict] = useState(false);
   const [districtAdded, setDistrictAdded] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [categoryAdded, setCategoryAdded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
@@ -241,6 +244,26 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
       setError(t("common.somethingWentWrong"));
     } finally {
       setAddingDistrict(false);
+    }
+  }
+
+  // §16/§38 — a category missing from the list gets suggested to the API the same way a missing
+  // district does: stays PENDING (invisible to other users) until an admin approves it, but is
+  // attached to this event immediately.
+  async function addCategory() {
+    const nameUk = newCategoryName.trim();
+    if (!nameUk) return;
+    setAddingCategory(true);
+    try {
+      const created = await authed<Named>("/categories", { method: "POST", body: JSON.stringify({ nameUk }) });
+      setCategories((c) => [...c, created]);
+      set({ categoryId: created.id });
+      setNewCategoryName("");
+      setCategoryAdded(true);
+    } catch {
+      setError(t("common.somethingWentWrong"));
+    } finally {
+      setAddingCategory(false);
     }
   }
 
@@ -482,6 +505,26 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
             </Field>
             <Section title={t("events.wizard.category")}>
               <SearchPicker options={categoryOptions} selected={form.categoryId ? [form.categoryId] : []} multi={false} onChange={(ids) => set({ categoryId: ids[0] ?? null })} placeholder={t("filters.search")} emptyLabel={t("filters.noResults")} />
+              <View style={styles.addDistrictRow}>
+                <TextInput
+                  value={newCategoryName}
+                  onChangeText={(v) => {
+                    setNewCategoryName(v);
+                    setCategoryAdded(false);
+                  }}
+                  placeholder={t("events.wizard.addCategoryPlaceholder")}
+                  placeholderTextColor={colors.muted}
+                  style={[styles.input, styles.addDistrictInput]}
+                />
+                <Pressable
+                  onPress={() => void addCategory()}
+                  disabled={!newCategoryName.trim() || addingCategory}
+                  style={[styles.addDistrictButton, (!newCategoryName.trim() || addingCategory) && { opacity: 0.5 }]}
+                >
+                  {addingCategory ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={styles.addDistrictButtonText}>{t("events.wizard.addDistrictAdd")}</Text>}
+                </Pressable>
+              </View>
+              <Text style={styles.hint}>{categoryAdded ? t("events.wizard.addCategorySubmitted") : t("events.wizard.addCategory")}</Text>
             </Section>
             <Field label={t("events.wizard.description")}>
               <TextInput value={form.description} onChangeText={(v) => set({ description: v })} placeholder={t("events.wizard.descriptionPlaceholder")} placeholderTextColor={colors.muted} style={[styles.input, styles.multiline]} multiline />
