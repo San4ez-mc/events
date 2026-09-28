@@ -208,12 +208,9 @@ describe("QA §14/§15/§16/§22/§23/§24 — registration lifecycle (e2e)", ()
       expect(afterStats.body.registrations).toBe(0); // capacity count correctly decremented
     });
 
-    // Documents a real gap: RegistrationsService.cancel() never notifies the
-    // organizer that an attendee cancelled (no REGISTRATION_CANCELLED
-    // notification type exists at all in packages/types/src/enums.ts, and
-    // registrations.service.ts's cancel() only notifies a promoted
-    // waitlistee, never the organizer). See docs/qa/QA_events.md §16 FAIL.
-    it.failing("organizer is notified when a participant cancels their registration (§16 — currently NOT implemented)", async () => {
+    // FIXED (was a QA finding, docs/qa/QA_events.md §16) — added the REGISTRATION_CANCELLED
+    // notification type and RegistrationsService.notifyOrganizerOfCancellation().
+    it("organizer is notified when a participant cancels their registration (§16)", async () => {
       // Deliberately NOT named anything containing "cancel" — an earlier
       // version of this test used a title like "Cancel Notify QA Event" and
       // matched notification text with a loose /cancel/i regex, which was a

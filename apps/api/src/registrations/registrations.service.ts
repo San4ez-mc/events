@@ -157,11 +157,11 @@ export class RegistrationsService {
 
   /** Attendee cancels their own registration; a freed active slot promotes the oldest waitlisted registrant. */
   async cancel(registrationId: string, userId: string) {
-    const { updated, promoted } = await this.prisma.$transaction(async (tx) => {
+    const { updated, promoted, justCancelled } = await this.prisma.$transaction(async (tx) => {
       const registration = await tx.registration.findUnique({ where: { id: registrationId } });
       if (!registration) throw new ResourceNotFoundException("Registration not found");
       if (registration.userId !== userId) throw new ForbiddenActionException();
-      if (registration.status === "CANCELLED") return { updated: registration, promoted: null };
+      if (registration.status === "CANCELLED") return { updated: registration, promoted: null, justCancelled: false };
 
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${registration.eventId}))`;
 
@@ -172,10 +172,16 @@ export class RegistrationsService {
       });
 
       const promoted = wasActive ? await this.promoteFromWaitlist(tx, registration.eventId) : null;
-      return { updated, promoted };
+      return { updated, promoted, justCancelled: true };
     });
 
-    if (updated.status === "CANCELLED") this.analytics.record({ eventId: updated.eventId, userId, action: "CANCELLED" });
+    // §16 — the organizer used to only find out from the participant list, never proactively;
+    // `justCancelled` (not just `updated.status === "CANCELLED"`) keeps a repeat cancel() call on an
+    // already-cancelled registration from re-notifying them and double-recording analytics.
+    if (justCancelled) {
+      this.analytics.record({ eventId: updated.eventId, userId, action: "CANCELLED" });
+      await this.notifyOrganizerOfCancellation(updated.eventId, userId);
+    }
     if (promoted) await this.notifyWaitlistPromoted(promoted);
     return updated;
   }
@@ -288,6 +294,23 @@ export class RegistrationsService {
       payloadJson: { eventId, registrationId },
     });
     return updated;
+  }
+
+  /** §16 — tells the organizer a participant withdrew, so they find out immediately instead of only by noticing the count drop. */
+  private async notifyOrganizerOfCancellation(eventId: string, attendeeId: string): Promise<void> {
+    const [event, attendee] = await Promise.all([
+      this.prisma.event.findUnique({ where: { id: eventId }, select: { title: true, ownerId: true } }),
+      this.prisma.user.findUnique({ where: { id: attendeeId }, select: { name: true, nickname: true } }),
+    ]);
+    if (!event || event.ownerId === attendeeId) return; // an organizer cancelling their own registration doesn't need to notify themselves
+    const attendeeName = attendee?.name ?? attendee?.nickname ?? "A participant";
+    await this.notifications.create({
+      userId: event.ownerId,
+      type: "REGISTRATION_CANCELLED",
+      title: "A participant cancelled",
+      body: `${attendeeName} cancelled their registration for "${event.title}".`,
+      payloadJson: { eventId },
+    });
   }
 
   private async notifyWaitlistPromoted(promoted: { id: string; userId: string; eventId: string }): Promise<void> {

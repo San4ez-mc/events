@@ -35,6 +35,7 @@ const RULES: Rule[] = [
   { title: "Payment sent", ukTitle: "Оплату надіслано", body: /^A participant marked their payment as sent for "(.*)"\.$/s, ukBody: (m) => `Учасник позначив оплату як надіслану для «${q(m)}».` },
   { title: "Payment confirmed", ukTitle: "Оплату підтверджено", body: /^Your payment for "(.*)" was confirmed\. See you there!$/s, ukBody: (m) => `Вашу оплату за «${q(m)}» підтверджено. До зустрічі!` },
   { title: "A spot opened up!", ukTitle: "З'явилося місце!", body: /^A spot opened up for "(.*)" — you're in\.$/s, ukBody: (m) => `З'явилося місце на «${q(m)}» — ви в списку.` },
+  { title: "A participant cancelled", ukTitle: "Учасник скасував реєстрацію", body: /^(.*) cancelled their registration for "(.*)"\.$/s, ukBody: (m) => `${q(m)} скасував(-ла) реєстрацію на «${q(m, 2)}».` },
 ];
 
 export function localizeNotification(locale: string | null | undefined, title: string, body: string): { title: string; body: string } {
