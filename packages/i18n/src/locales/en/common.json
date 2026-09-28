@@ -401,7 +401,8 @@
       "payments": "Payments",
       "credits": "Credits",
       "audit": "Audit log",
-      "reviews": "Reviews"
+      "reviews": "Reviews",
+      "broadcast": "Broadcast"
     },
     "dashboard": {
       "title": "Admin",
@@ -490,6 +491,17 @@
       "hide": "Hide",
       "remove": "Remove",
       "restore": "Restore"
+    },
+    "broadcast": {
+      "title": "Broadcast",
+      "hint": "Every active user gets this in-app and as a push (unless they turned push off). A sent broadcast can't be recalled.",
+      "titleUk": "Title (Ukrainian)",
+      "bodyUk": "Text (Ukrainian)",
+      "titleEn": "Title (English, optional)",
+      "bodyEn": "Text (English, optional)",
+      "send": "Send to everyone",
+      "sent": "Sent to users",
+      "confirm": "Send this message to ALL active users? It can't be recalled."
     }
   },
   "reviews": {

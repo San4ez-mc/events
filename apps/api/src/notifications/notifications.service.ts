@@ -50,6 +50,46 @@ export class NotificationsService {
   }
 
   /**
+   * §40 (UX) — a manual announcement to every ACTIVE user (suspended/blocked/deleted accounts are skipped).
+   * Goes through create(), so each recipient still gets the in-app row and a push unless they opted out of
+   * push. Walks users in id-ordered pages so it never loads the whole table, and sends a handful at a time
+   * so a big audience can't exhaust the DB pool. Returns how many people it reached.
+   */
+  async broadcast(text: { title: string; body: string; titleEn?: string; bodyEn?: string }): Promise<number> {
+    const PAGE = 200;
+    const PARALLEL = 10;
+    let cursor: string | undefined;
+    let sent = 0;
+    for (;;) {
+      const users = await this.prisma.user.findMany({
+        where: { status: "ACTIVE" },
+        select: { id: true, locale: true },
+        orderBy: { id: "asc" },
+        take: PAGE,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
+      if (users.length === 0) break;
+      for (let i = 0; i < users.length; i += PARALLEL) {
+        await Promise.all(
+          users.slice(i, i + PARALLEL).map((u) => {
+            const english = u.locale === "en" && text.titleEn && text.bodyEn;
+            return this.create({
+              userId: u.id,
+              type: "ADMIN_BROADCAST",
+              title: english ? text.titleEn! : text.title,
+              body: english ? text.bodyEn! : text.body,
+            });
+          }),
+        );
+      }
+      sent += users.length;
+      cursor = users[users.length - 1]!.id;
+      if (users.length < PAGE) break;
+    }
+    return sent;
+  }
+
+  /**
    * §32/§34 — tells everyone following the organizer (all their events, or this
    * event's category) that a new public event is out. Honours the recipient's
    * `allowSubscriptionNotifications`; never notifies the organizer themself.

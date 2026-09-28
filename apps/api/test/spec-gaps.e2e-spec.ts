@@ -428,6 +428,32 @@ describe("Spec gaps (e2e)", () => {
       expect(after.body.items.map((m: { text: string }) => m.text)).not.toContain("hello from attendee");
     });
   });
+  describe("admin broadcast (§40 ux)", () => {
+    it("is admin-only, reaches active users in their own language, skips blocked ones, and is audit-logged", async () => {
+      const admin = await newUser("bc-admin");
+      const uk = await newUser("bc-uk");
+      const en = await newUser("bc-en");
+      const blocked = await newUser("bc-blocked");
+      await prisma.user.update({ where: { id: admin.id }, data: { role: "ADMIN" } });
+      await prisma.user.update({ where: { id: en.id }, data: { locale: "en" } });
+      await prisma.user.update({ where: { id: blocked.id }, data: { status: "BLOCKED" } });
+
+      const payload = { title: "Технічні роботи", body: "Сьогодні о 23:00 сервіс буде недоступний.", titleEn: "Maintenance", bodyEn: "The service will be down at 23:00 today." };
+      await http().post("/api/v1/admin/notifications/broadcast").set("Authorization", `Bearer ${uk.token}`).send(payload).expect(403);
+      await http().post("/api/v1/admin/notifications/broadcast").set("Authorization", `Bearer ${admin.token}`).send({ title: "x" }).expect(400);
+
+      const res = await http().post("/api/v1/admin/notifications/broadcast").set("Authorization", `Bearer ${admin.token}`).send(payload).expect(200);
+      expect(res.body.recipients).toBeGreaterThanOrEqual(3);
+
+      const find = (userId: string) => prisma.notification.findFirst({ where: { userId, type: "ADMIN_BROADCAST" } });
+      expect((await find(uk.id))?.title).toBe("Технічні роботи");
+      expect((await find(en.id))?.title).toBe("Maintenance");
+      expect(await find(blocked.id)).toBeNull();
+
+      const audit = await prisma.auditLog.findFirst({ where: { actorUserId: admin.id, action: "NOTIFICATION_BROADCAST" } });
+      expect(audit).not.toBeNull();
+    }, 300_000);
+  });
   describe("profile QR (§24 ux)", () => {
     it("serves a PNG QR for an existing user, publicly, and rejects unknown/malformed ids", async () => {
       const u = await newUser("qr");
