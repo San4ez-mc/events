@@ -315,7 +315,8 @@
     "submitApplication": "Submit application",
     "errorSubmitting": "Couldn't register",
     "eventCancelled": "This event was cancelled by the organizer",
-    "ticketType": "Ticket type"
+    "ticketType": "Ticket type",
+    "showAsParticipant": "Show me among the participants on the event page"
   },
   "notifications": {
     "markAllRead": "Mark all as read"

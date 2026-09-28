@@ -315,7 +315,8 @@
     "submitApplication": "Надіслати заявку",
     "errorSubmitting": "Не вдалося зареєструватися",
     "eventCancelled": "Подію скасовано організатором",
-    "ticketType": "Тип квитка"
+    "ticketType": "Тип квитка",
+    "showAsParticipant": "Показувати мене серед учасників на сторінці події"
   },
   "notifications": {
     "markAllRead": "Позначити всі прочитаними"

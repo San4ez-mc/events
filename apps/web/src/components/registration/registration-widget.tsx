@@ -26,6 +26,7 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
   const [showForm, setShowForm] = useState(false);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [joinWaitlist, setJoinWaitlist] = useState(false);
+  const [showAsParticipant, setShowAsParticipant] = useState(false);
   const tiers = event.priceOptions ?? [];
   const [tierId, setTierId] = useState<string | null>(null);
   const selectedTier =
@@ -77,6 +78,7 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
             value: answers[f.id],
           })),
           joinWaitlist,
+          showAsParticipant,
           priceOptionId:
             tiers.length > 0 ? (selectedTier ?? undefined) : undefined,
         }),
@@ -238,6 +240,18 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
       registration.status === "CANCELLED" ||
       registration.status === "REJECTED"
     ) {
+      // UX §83 — opt-in, off by default; the public attendee preview never shows someone who didn't ask to be shown.
+      const participantToggle = (
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground/90">
+          <input
+            type="checkbox"
+            checked={showAsParticipant}
+            onChange={(e) => setShowAsParticipant(e.target.checked)}
+            className="h-4 w-4 accent-current"
+          />
+          {t("registration.showAsParticipant")}
+        </label>
+      );
       if (showForm && event.registrationFields.length > 0) {
         return (
           <div className="flex flex-col gap-3">
@@ -252,6 +266,7 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
                 }
               />
             ))}
+            {participantToggle}
             <Button
               onClick={() => void submit()}
               loading={submitting}
@@ -267,6 +282,7 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
       return (
         <div className="flex flex-col gap-3">
           {tierPicker()}
+          {participantToggle}
           <Button
             onClick={() =>
               event.registrationFields.length > 0

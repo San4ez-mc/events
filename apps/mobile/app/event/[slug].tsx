@@ -25,6 +25,7 @@ export default function EventDetailScreen() {
   const [showForm, setShowForm] = useState(false);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [joinWaitlist, setJoinWaitlist] = useState(false);
+  const [showAsParticipant, setShowAsParticipant] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [tierId, setTierId] = useState<string | null>(null);
@@ -128,6 +129,7 @@ export default function EventDetailScreen() {
         body: JSON.stringify({
           answers: event.registrationFields.map((f) => ({ fieldId: f.id, value: answers[f.id] })),
           joinWaitlist,
+          showAsParticipant,
           priceOptionId: (event.priceOptions?.length ?? 0) > 0 ? (tierId ?? event.priceOptions?.find((o) => !o.soldOut)?.id) : undefined,
         }),
       });
@@ -453,6 +455,18 @@ export default function EventDetailScreen() {
             ))}
           </View>
         ) : null;
+      // UX §83 — opt-in, off by default; the public attendee preview never shows someone who didn't ask to be shown.
+      const participantToggle = (
+        <Pressable
+          onPress={() => setShowAsParticipant((v) => !v)}
+          style={styles.participantToggle}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: showAsParticipant }}
+        >
+          <Ionicons name={showAsParticipant ? "checkbox" : "square-outline"} size={20} color={showAsParticipant ? colors.accentFrom : colors.muted} />
+          <Text style={styles.participantToggleLabel}>{t("registration.showAsParticipant")}</Text>
+        </Pressable>
+      );
       if (showForm && event.registrationFields.length > 0) {
         return (
           <View style={styles.form}>
@@ -465,6 +479,7 @@ export default function EventDetailScreen() {
                 onChange={(value) => setAnswers((a) => ({ ...a, [field.id]: value }))}
               />
             ))}
+            {participantToggle}
             <Button title={joinWaitlist ? t("registration.joinWaitlist") : t("registration.submitApplication")} onPress={() => void submit()} loading={submitting} />
           </View>
         );
@@ -472,6 +487,7 @@ export default function EventDetailScreen() {
       return (
         <View style={styles.form}>
           {tierPicker}
+          {participantToggle}
           <Button
             title={joinWaitlist ? t("registration.joinWaitlist") : applyLabel}
             onPress={() => (event.registrationFields.length > 0 ? setShowForm(true) : void submit())}
@@ -540,6 +556,8 @@ const styles = StyleSheet.create({
   sectionTitle: { color: colors.foreground, fontSize: 14, fontWeight: "600" },
   registrationBox: { marginTop: spacing.md, gap: spacing.sm },
   form: { gap: spacing.sm },
+  participantToggle: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  participantToggleLabel: { color: colors.foreground, fontSize: 13, flexShrink: 1 },
   error: { color: colors.danger, fontSize: 13, textAlign: "center" },
   muted: { color: colors.muted, fontSize: 14, textAlign: "center" },
   reportBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
