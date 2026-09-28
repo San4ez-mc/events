@@ -679,7 +679,8 @@
     "saved": "Фільтри збережено",
     "availability": "Місця",
     "availabilityAll": "Усі",
-    "availabilityFree": "Є вільні місця"
+    "availabilityFree": "Є вільні місця",
+    "resetDone": "Скинуто ✓"
   },
   "create": {
     "subtitle": "Створіть подію за кілька кроків",

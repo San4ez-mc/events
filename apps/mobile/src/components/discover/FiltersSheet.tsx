@@ -165,7 +165,19 @@ export function FiltersSheet({ visible, filters, onApply, onClose }: { visible: 
   const [cities, setCities] = useState<Named[]>([]);
   const [districts, setDistricts] = useState<Named[]>([]);
   const [categories, setCategories] = useState<Named[]>([]);
+  const [justReset, setJustReset] = useState(false);
+  const bodyRef = useRef<ScrollView>(null);
   const set = (patch: Partial<DiscoveryFilters>) => setDraft((d) => ({ ...d, ...patch }));
+
+  // §7 — reset happening was invisible if you'd scrolled past the chips it changed. Scrolling back
+  // to the top makes the change visible regardless of scroll position, and the button's own label
+  // confirms it fired even in that first instant before the chips above have re-rendered into view.
+  function resetFilters() {
+    setDraft(EMPTY_FILTERS);
+    bodyRef.current?.scrollTo({ y: 0, animated: true });
+    setJustReset(true);
+    setTimeout(() => setJustReset(false), 1500);
+  }
   const name = (n: Named) => (locale === "uk" ? n.nameUk : (n.nameEn ?? n.nameUk));
 
   useEffect(() => {
@@ -244,7 +256,7 @@ export function FiltersSheet({ visible, filters, onApply, onClose }: { visible: 
             </Pressable>
           </View>
 
-          <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+          <ScrollView ref={bodyRef} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <Section title={t("filters.city")}>
               <SearchPicker
                 options={cityOptions}
@@ -326,8 +338,8 @@ export function FiltersSheet({ visible, filters, onApply, onClose }: { visible: 
           </ScrollView>
 
           <View style={styles.footer}>
-            <Pressable onPress={() => setDraft(EMPTY_FILTERS)} style={styles.reset}>
-              <Text style={styles.resetText}>{t("filters.reset")}</Text>
+            <Pressable onPress={resetFilters} style={styles.reset}>
+              <Text style={[styles.resetText, justReset && styles.resetTextConfirmed]}>{justReset ? t("filters.resetDone") : t("filters.reset")}</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -377,6 +389,7 @@ const styles = StyleSheet.create({
   footer: { flexDirection: "row", gap: spacing.md, padding: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   reset: { paddingHorizontal: spacing.lg, justifyContent: "center" },
   resetText: { color: colors.muted, fontSize: 15, fontWeight: "700" },
+  resetTextConfirmed: { color: colors.accentFrom },
   apply: { flex: 1, backgroundColor: colors.accentFrom, borderRadius: radius.full, paddingVertical: 14, alignItems: "center" },
   applyText: { color: colors.white, fontSize: 15, fontWeight: "800" },
 });

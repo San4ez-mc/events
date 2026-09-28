@@ -679,7 +679,8 @@
     "saved": "Filters saved",
     "availability": "Spots",
     "availabilityAll": "All",
-    "availabilityFree": "Spots available"
+    "availabilityFree": "Spots available",
+    "resetDone": "Reset ✓"
   },
   "create": {
     "subtitle": "Create an event in a few steps",
