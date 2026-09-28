@@ -383,7 +383,8 @@
     "changeEmail": "Змінити email",
     "newEmail": "Новий email",
     "emailChangedCheckInbox": "Email змінено. Перевірте нову скриньку, щоб підтвердити її.",
-    "security": "Безпека"
+    "security": "Безпека",
+    "notificationsPrivacy": "Сповіщення та приватність"
   },
   "admin": {
     "accessDenied": "У вас немає доступу до адмін-панелі",

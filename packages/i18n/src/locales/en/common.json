@@ -383,7 +383,8 @@
     "changeEmail": "Change email",
     "newEmail": "New email",
     "emailChangedCheckInbox": "Email changed. Check the new inbox to confirm it.",
-    "security": "Security"
+    "security": "Security",
+    "notificationsPrivacy": "Notifications & privacy"
   },
   "admin": {
     "accessDenied": "You don't have access to the admin panel",

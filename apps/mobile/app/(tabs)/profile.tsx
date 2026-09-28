@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -12,7 +12,21 @@ import { TextField } from "../../src/components/ui/TextField";
 import { ScreenHeader } from "../../src/components/ui/ScreenHeader";
 import { colors, radius, spacing } from "../../src/lib/theme";
 
+const PREF_KEYS = [
+  { key: "allowPush", labelKey: "profile.notifyPush" },
+  { key: "allowEmail", labelKey: "profile.notifyEmail" },
+  { key: "allowFriendActivityNotifications", labelKey: "profile.notifyFriends" },
+  { key: "allowSubscriptionNotifications", labelKey: "profile.notifySubscriptions" },
+  { key: "allowEventReminderNotifications", labelKey: "profile.notifyReminders" },
+  { key: "hideSocialLinks", labelKey: "profile.hideSocialLinks" },
+  { key: "hideUpcomingEvents", labelKey: "profile.hideUpcomingEvents" },
+  { key: "hideAttendanceHistory", labelKey: "profile.hideAttendanceHistory" },
+] as const;
+type PrefKey = (typeof PREF_KEYS)[number]["key"];
+type Prefs = Record<PrefKey, boolean>;
+
 interface FullProfile {
+  preferences?: Prefs | null;
   name: string | null;
   nickname: string | null;
   bio: string | null;
@@ -46,6 +60,7 @@ export default function ProfileScreen() {
   const [email, setEmail] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [prefs, setPrefs] = useState<Prefs | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -70,9 +85,20 @@ export default function ProfileScreen() {
       setForm({ name: me.name ?? "", nickname: me.nickname ?? "", bio: me.bio ?? "", phone: me.phone ?? "" });
       setEmail(me.email);
       setAvatarUrl(me.avatarUrl);
+      setPrefs(me.preferences ?? null);
       setLoaded(true);
     })().catch(() => setLoaded(true));
   }, []);
+
+  // Saves on every toggle (no separate Save button): optimistic, rolled back if the request fails.
+  async function togglePref(key: PrefKey, value: boolean) {
+    setPrefs((p) => (p ? { ...p, [key]: value } : p));
+    try {
+      await authed("/users/me/preferences", { method: "PATCH", body: JSON.stringify({ [key]: value }) });
+    } catch {
+      setPrefs((p) => (p ? { ...p, [key]: !value } : p));
+    }
+  }
 
   async function handleLogout() {
     await logout();
@@ -240,6 +266,20 @@ export default function ProfileScreen() {
           />
         </View>
 
+        {prefs && (
+          <>
+            <Text style={styles.section}>{t("profile.notificationsPrivacy")}</Text>
+            <View style={styles.prefs}>
+              {PREF_KEYS.map(({ key, labelKey }) => (
+                <View key={key} style={styles.prefRow}>
+                  <Text style={styles.prefLabel}>{t(labelKey)}</Text>
+                  <Switch value={prefs[key]} onValueChange={(v) => void togglePref(key, v)} trackColor={{ true: colors.accentFrom }} />
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+
         {user && ["MODERATOR", "ADMIN", "SUPER_ADMIN"].includes(user.role) && (
           <Pressable style={styles.row} onPress={() => router.push("/admin")}>
             <Ionicons name="shield-checkmark" size={22} color={colors.accentFrom} />
@@ -331,6 +371,9 @@ const styles = StyleSheet.create({
   section: { color: colors.muted, fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.8, marginTop: spacing.md },
   form: { gap: spacing.md },
   hint: { color: colors.muted, fontSize: 12, marginTop: -spacing.sm },
+  prefs: { backgroundColor: colors.surface, borderRadius: radius.md, paddingHorizontal: spacing.lg },
+  prefRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.md, paddingVertical: spacing.sm },
+  prefLabel: { color: colors.foreground, fontSize: 14, flex: 1 },
   message: { fontSize: 14 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.lg },
   rowText: { color: colors.foreground, fontSize: 15, fontWeight: "600", flex: 1 },
