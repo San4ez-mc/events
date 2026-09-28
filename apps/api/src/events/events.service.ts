@@ -83,6 +83,16 @@ export class EventsService {
       }
     }
 
+    // §51 — an inverted time range is never valid, regardless of which of the two fields this
+    // particular PATCH actually touches (the other one falls back to whatever's already stored).
+    const effectiveStartsAt = dto.startsAt ? new Date(dto.startsAt) : event.startsAt;
+    const effectiveEndsAt = dto.endsAt ? new Date(dto.endsAt) : event.endsAt;
+    if (effectiveStartsAt && effectiveEndsAt && effectiveEndsAt <= effectiveStartsAt) {
+      throw new ApiException("VALIDATION_ERROR", "endsAt must be after startsAt", 400, {
+        endsAt: ["Must be after startsAt"],
+      });
+    }
+
     if (dto.categoryId) {
       const category = await this.prisma.category.findUnique({ where: { id: dto.categoryId } });
       if (!category || category.status !== "ACTIVE") {
@@ -680,6 +690,13 @@ export class EventsService {
     if (missing.length > 0) {
       throw new ApiException("VALIDATION_ERROR", "Event is missing required fields to publish", 400, {
         _: missing,
+      });
+    }
+
+    // §51 — an event that's already started can't be published as an upcoming event.
+    if (event.startsAt && event.startsAt.getTime() <= Date.now()) {
+      throw new ApiException("VALIDATION_ERROR", "startsAt must be in the future to publish", 400, {
+        startsAt: ["Must be in the future"],
       });
     }
   }

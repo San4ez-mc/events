@@ -568,7 +568,7 @@ describe("QA security & validation audit (e2e)", () => {
       await http().patch(`/api/v1/events/${event.id}`).set("Authorization", `Bearer ${user.token}`).send({ startsAt: "not-a-date" }).expect(400);
     });
 
-    it.failing("VAL-09: an event whose startsAt is in the past cannot be published (see QA_security.md VAL-09 — actual: publishes successfully)", async () => {
+    it("VAL-09: an event whose startsAt is in the past cannot be published (FIXED — was a QA finding, see EventsService.assertPublishable)", async () => {
       const user = await newUser("val9");
       await http().post("/api/v1/credits/claim-free").set("Authorization", `Bearer ${user.token}`);
       const event = await draftEvent(user.token, {
@@ -579,20 +579,16 @@ describe("QA security & validation audit (e2e)", () => {
         startsAt: new Date(Date.now() - 30 * 86_400_000).toISOString(), // 30 days in the past
       });
       const publish = await http().post(`/api/v1/events/${event.id}/publish`).set("Authorization", `Bearer ${user.token}`);
-      // Correct expectation per §51 ("past dates" is an explicit validation case): publishing an event
-      // that already started should be rejected. Confirmed live: the app currently answers 201 PUBLISHED.
       expect(publish.status).toBe(400);
     });
 
-    it.failing("VAL-10: endsAt before startsAt is rejected as an invalid time range (see QA_security.md VAL-10 — actual: accepted)", async () => {
+    it("VAL-10: endsAt before startsAt is rejected as an invalid time range (FIXED — was a QA finding, see EventsService.applyUpdate)", async () => {
       const user = await newUser("val10");
       const event = await draftEvent(user.token);
       const res = await http()
         .patch(`/api/v1/events/${event.id}`)
         .set("Authorization", `Bearer ${user.token}`)
         .send({ startsAt: "2027-01-10T10:00:00.000Z", endsAt: "2027-01-01T10:00:00.000Z" });
-      // Correct expectation per §51 ("invalid time ranges"): endsAt < startsAt should be rejected.
-      // Confirmed live: the app currently answers 200 and stores the inverted range as-is.
       expect(res.status).toBe(400);
     });
   });
