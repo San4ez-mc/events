@@ -244,6 +244,7 @@
       "MANUAL_IBAN": "Bank transfer"
     },
     "instructionsTitle": "Bank transfer instructions",
+    "signInToBuy": "Sign in to buy",
     "history": "Purchase history",
     "historyEmpty": "No purchases yet",
     "status": {

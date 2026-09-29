@@ -64,6 +64,7 @@ apps/web/test-results/
 mail.txt
 secrets.txt
 pay.txt
+FOP.txt
 .secrets/
 
 # Firebase config (not a secret by itself, but keep out of the public repo)

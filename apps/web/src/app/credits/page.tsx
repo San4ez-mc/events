@@ -25,29 +25,28 @@ export default function CreditsPage() {
 
   const load = useCallback(async () => {
     const token = getAccessToken();
-    if (!token) return;
-    const [balanceRes, packagesRes, ordersRes] = await Promise.all([
-      fetch("/api/v1/credits/balance", { headers: { Authorization: `Bearer ${token}` } }),
+    const requests: [Promise<Response>, Promise<Response> | null, Promise<Response> | null] = [
       fetch("/api/v1/credits/packages"),
-      fetch("/api/v1/payments/orders/mine", { headers: { Authorization: `Bearer ${token}` } }),
-    ]);
-    if (balanceRes.ok) setBalance((await balanceRes.json()).balance);
+      token ? fetch("/api/v1/credits/balance", { headers: { Authorization: `Bearer ${token}` } }) : null,
+      token ? fetch("/api/v1/payments/orders/mine", { headers: { Authorization: `Bearer ${token}` } }) : null,
+    ];
+    const [packagesRes, balanceRes, ordersRes] = await Promise.all(requests);
     if (packagesRes.ok) setPackages(await packagesRes.json());
-    if (ordersRes.ok) setOrders(await ordersRes.json());
+    if (balanceRes?.ok) setBalance((await balanceRes.json()).balance);
+    if (ordersRes?.ok) setOrders(await ordersRes.json());
   }, []);
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) {
-      router.replace("/login?next=/credits");
-      return;
-    }
     queueMicrotask(() => void load());
-  }, [authLoading, user, router, load]);
+  }, [authLoading, load]);
 
   async function buy(packageId: string, provider: (typeof PROVIDERS)[number]) {
     const token = getAccessToken();
-    if (!token) return;
+    if (!token) {
+      router.push("/login?next=/credits");
+      return;
+    }
     const key = `${packageId}:${provider}`;
     setBuyingKey(key);
     setError(false);
@@ -76,7 +75,7 @@ export default function CreditsPage() {
     }
   }
 
-  if (authLoading || (!user && !error)) return null;
+  if (authLoading) return null;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -113,44 +112,54 @@ export default function CreditsPage() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {PROVIDERS.map((provider) => (
-                  <Button
-                    key={provider}
-                    variant="secondary"
-                    className="!min-h-0 px-3 py-1.5 text-xs"
-                    loading={buyingKey === `${pkg.id}:${provider}`}
-                    onClick={() => void buy(pkg.id, provider)}
-                  >
-                    {t(`credits.payWith.${provider}`)}
-                  </Button>
-                ))}
+                {user
+                  ? PROVIDERS.map((provider) => (
+                      <Button
+                        key={provider}
+                        variant="secondary"
+                        className="!min-h-0 px-3 py-1.5 text-xs"
+                        loading={buyingKey === `${pkg.id}:${provider}`}
+                        onClick={() => void buy(pkg.id, provider)}
+                      >
+                        {t(`credits.payWith.${provider}`)}
+                      </Button>
+                    ))
+                  : (
+                      <Button variant="secondary" className="!min-h-0 px-3 py-1.5 text-xs" onClick={() => router.push("/login?next=/credits")}>
+                        {t("credits.signInToBuy")}
+                      </Button>
+                    )}
               </div>
             </div>
           ))}
         </div>
       )}
 
-      <h2 className="mb-3 text-sm font-semibold">{t("credits.history")}</h2>
-      {orders !== null && orders.length === 0 && <p className="text-sm text-muted">{t("credits.historyEmpty")}</p>}
-      {orders !== null && orders.length > 0 && (
-        <ul className="flex flex-col gap-2">
-          {orders.map((order) => (
-            <li key={order.id} className="flex items-center justify-between rounded-lg border border-border p-3 text-sm">
-              <div>
-                <p>{order.package.name}</p>
-                <p className="text-xs text-muted">
-                  {new Date(order.createdAt).toLocaleString(locale === "uk" ? "uk-UA" : "en-US")}
-                </p>
-              </div>
-              <div className="text-right">
-                <p>
-                  {order.amount} {order.currency}
-                </p>
-                <p className="text-xs text-muted">{t(`credits.status.${order.status}`)}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
+      {user && (
+        <>
+          <h2 className="mb-3 text-sm font-semibold">{t("credits.history")}</h2>
+          {orders !== null && orders.length === 0 && <p className="text-sm text-muted">{t("credits.historyEmpty")}</p>}
+          {orders !== null && orders.length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {orders.map((order) => (
+                <li key={order.id} className="flex items-center justify-between rounded-lg border border-border p-3 text-sm">
+                  <div>
+                    <p>{order.package.name}</p>
+                    <p className="text-xs text-muted">
+                      {new Date(order.createdAt).toLocaleString(locale === "uk" ? "uk-UA" : "en-US")}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p>
+                      {order.amount} {order.currency}
+                    </p>
+                    <p className="text-xs text-muted">{t(`credits.status.${order.status}`)}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
     </div>
   );

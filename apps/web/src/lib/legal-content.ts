@@ -20,16 +20,12 @@ export interface LegalDoc {
 export const CONTACT_EMAIL = "kiro@fineko.space";
 export const LEGAL_UPDATED = "2026-09-27";
 
-/**
- * TODO — placeholders: WayForPay/Monobank require a real legal name, tax id and registered
- * address on the "Contacts" page before they'll approve/keep a merchant account. Replace with the
- * actual FOP/TOV registration details before that page goes live for real payments.
- */
-export const COMPANY_NAME_UK = "ФОП [ПІБ] / ТОВ «[Назва]» — вкажіть реальні дані";
-export const COMPANY_NAME_EN = "Sole proprietor [Name] / [Company] LLC — replace with real details";
-export const COMPANY_TAX_ID = "[РНОКПП або ЄДРПОУ]";
-export const COMPANY_ADDRESS = "[Адреса реєстрації]";
-export const COMPANY_PHONE = "[Телефон]";
+export const COMPANY_NAME_UK = "ФОП Мацук Олександр Романович";
+export const COMPANY_NAME_EN = "Sole Proprietor (FOP) Oleksandr Matsuk";
+export const COMPANY_TAX_ID = "3404907619";
+export const COMPANY_ADDRESS = "м. Тернопіль, вул. Львівська, 1";
+export const COMPANY_ADDRESS_EN = "1 Lvivska St, Ternopil, Ukraine";
+export const COMPANY_PHONE = "+38066358365";
 
 const privacyUk: LegalDoc = {
   title: "Політика конфіденційності",
@@ -575,7 +571,7 @@ const refundEn: LegalDoc = {
 
 const contactsUk: LegalDoc = {
   title: "Контакти та реквізити",
-  updated: "Останнє оновлення: 27 вересня 2026",
+  updated: "Останнє оновлення: 29 вересня 2026",
   intro: "Реквізити продавця послуг сервісу Кіро (стосується публічної оферти та повернення коштів).",
   sections: [
     {
@@ -583,7 +579,8 @@ const contactsUk: LegalDoc = {
       items: [
         `Найменування: ${COMPANY_NAME_UK}`,
         `Податковий номер (РНОКПП/ЄДРПОУ): ${COMPANY_TAX_ID}`,
-        `Адреса реєстрації: ${COMPANY_ADDRESS}`,
+        `Юридична адреса: ${COMPANY_ADDRESS}`,
+        `Фактична адреса: ${COMPANY_ADDRESS}`,
       ],
     },
     {
@@ -595,12 +592,17 @@ const contactsUk: LegalDoc = {
 
 const contactsEn: LegalDoc = {
   title: "Contacts & Legal Details",
-  updated: "Last updated: 27 September 2026",
+  updated: "Last updated: 29 September 2026",
   intro: "Seller details for Kiro's services (referenced by the Public Offer and Refund Policy pages).",
   sections: [
     {
       heading: "Seller",
-      items: [`Legal name: ${COMPANY_NAME_EN}`, `Tax ID: ${COMPANY_TAX_ID}`, `Registered address: ${COMPANY_ADDRESS}`],
+      items: [
+        `Legal name: ${COMPANY_NAME_EN}`,
+        `Tax ID: ${COMPANY_TAX_ID}`,
+        `Legal address: ${COMPANY_ADDRESS_EN}`,
+        `Actual address: ${COMPANY_ADDRESS_EN}`,
+      ],
     },
     {
       heading: "Support",

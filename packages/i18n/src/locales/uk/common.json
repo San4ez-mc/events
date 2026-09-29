@@ -244,6 +244,7 @@
       "MANUAL_IBAN": "Банківський переказ"
     },
     "instructionsTitle": "Реквізити для переказу",
+    "signInToBuy": "Увійдіть, щоб купити",
     "history": "Історія покупок",
     "historyEmpty": "Ще немає покупок",
     "status": {

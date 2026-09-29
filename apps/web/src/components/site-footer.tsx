@@ -12,6 +12,9 @@ export async function SiteFooter() {
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
         <span>© Кіро</span>
         <nav className="flex flex-wrap gap-4">
+          <Link href="/credits" className="hover:underline">
+            {uk ? "Ціни" : "Pricing"}
+          </Link>
           <Link href="/privacy" className="hover:underline">
             {uk ? "Конфіденційність" : "Privacy"}
           </Link>
