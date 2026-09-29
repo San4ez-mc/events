@@ -47,6 +47,13 @@ describe("Event series (e2e)", () => {
     return { token: res.body.accessToken, userId: res.body.user.id };
   }
 
+  /** Recurring events are a PRO-tier perk — most fixtures need the owner on PRO to exercise the feature itself. */
+  async function registerProOwner(namePrefix = "Organizer"): Promise<{ token: string; userId: string }> {
+    const owner = await registerUser(namePrefix);
+    await prisma.user.update({ where: { id: owner.userId }, data: { subscriptionTier: "PRO" } });
+    return owner;
+  }
+
   async function createDraftEvent(
     token: string,
     overrides: { title?: string; fields?: boolean } = {},
@@ -79,7 +86,7 @@ describe("Event series (e2e)", () => {
   }
 
   it("WEEKLY generates weekly occurrences, each its own draft with the same duration", async () => {
-    const { token } = await registerUser();
+    const { token } = await registerProOwner();
     const templateId = await createDraftEvent(token);
 
     const res = await request(app.getHttpServer())
@@ -104,7 +111,7 @@ describe("Event series (e2e)", () => {
   });
 
   it("EVERY_N_DAYS respects the interval, and `until` stops generation", async () => {
-    const { token } = await registerUser();
+    const { token } = await registerProOwner();
     const templateId = await createDraftEvent(token);
 
     const res = await request(app.getHttpServer())
@@ -118,7 +125,7 @@ describe("Event series (e2e)", () => {
   });
 
   it("copies registration fields onto every occurrence", async () => {
-    const { token } = await registerUser();
+    const { token } = await registerProOwner();
     const templateId = await createDraftEvent(token, { fields: true });
 
     const res = await request(app.getHttpServer())
@@ -134,7 +141,7 @@ describe("Event series (e2e)", () => {
   });
 
   it("rejects turning an event that's already in a series into another one", async () => {
-    const { token } = await registerUser();
+    const { token } = await registerProOwner();
     const templateId = await createDraftEvent(token);
 
     await request(app.getHttpServer())
@@ -164,7 +171,7 @@ describe("Event series (e2e)", () => {
   });
 
   it("lists occurrences for a series, ordered by date", async () => {
-    const { token } = await registerUser();
+    const { token } = await registerProOwner();
     const templateId = await createDraftEvent(token);
 
     const created = await request(app.getHttpServer())
@@ -184,5 +191,17 @@ describe("Event series (e2e)", () => {
 
   it("requires authentication", async () => {
     await request(app.getHttpServer()).post("/api/v1/events/x/series").send({ recurrenceType: "WEEKLY" }).expect(401);
+  });
+
+  it("a non-PRO owner can't turn their event into a series", async () => {
+    const { token } = await registerUser("FreeOrganizer");
+    const templateId = await createDraftEvent(token);
+
+    const res = await request(app.getHttpServer())
+      .post(`/api/v1/events/${templateId}/series`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ recurrenceType: "WEEKLY", count: 2 })
+      .expect(403);
+    expect(res.body.error.code).toBe("SUBSCRIPTION_REQUIRED");
   });
 });

@@ -1,6 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import { PrismaService } from "../../src/prisma/prisma.service";
-import { bootstrapApp, cleanupQaData, createPublishedEvent, http, newUser } from "./qa-helpers";
+import { bootstrapApp, cleanupQaData, createPublishedEvent, grantPro, http, newUser } from "./qa-helpers";
 
 jest.setTimeout(120_000); // this shared local Postgres/embedded env runs several QA auditors concurrently; the default 30s per-test timeout is too tight under that contention (see docs/qa/QA_events.md).
 
@@ -139,6 +139,7 @@ describe("QA §17/§18/§19 — organizer tools, collaborators, invitations (e2e
   describe("§18 Co-organizers — granular permissions, removal", () => {
     it("a collaborator with only MANAGE_REGISTRATIONS can approve a registration but cannot edit the event", async () => {
       const ownedEvent = await createPublishedEvent(app, categoryId, cityId, { title: "Owner Managed Event" });
+      await grantPro(prisma, ownedEvent.organizerId);
 
       const coOrganizer = await newUser(app, "co-organizer");
       await http(app)
@@ -177,6 +178,7 @@ describe("QA §17/§18/§19 — organizer tools, collaborators, invitations (e2e
     it("a collaborator has no access to the owner's OTHER events", async () => {
       const eventA = await createPublishedEvent(app, categoryId, cityId, { title: "Collab Event A" });
       const eventB = await createPublishedEvent(app, categoryId, cityId, { title: "Collab Event B (unrelated)" });
+      await grantPro(prisma, eventA.organizerId);
 
       const collaborator = await newUser(app, "scoped-collaborator");
       await http(app)
@@ -205,6 +207,7 @@ describe("QA §17/§18/§19 — organizer tools, collaborators, invitations (e2e
 
     it("removing a collaborator revokes their access immediately", async () => {
       const event = await createPublishedEvent(app, categoryId, cityId, { title: "Collab Removal QA" });
+      await grantPro(prisma, event.organizerId);
       const collaborator = await newUser(app, "removed-collaborator");
       const added = await http(app)
         .post(`/api/v1/events/${event.eventId}/collaborators`)
@@ -232,6 +235,7 @@ describe("QA §17/§18/§19 — organizer tools, collaborators, invitations (e2e
 
     it("only the owner (not a collaborator) can add or remove other collaborators", async () => {
       const event = await createPublishedEvent(app, categoryId, cityId, { title: "Owner Only Collab Mgmt QA" });
+      await grantPro(prisma, event.organizerId);
       const collaboratorA = await newUser(app, "collab-a");
       const collaboratorB = await newUser(app, "collab-b");
       await http(app)

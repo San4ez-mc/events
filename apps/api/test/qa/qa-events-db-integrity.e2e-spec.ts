@@ -1,6 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import { PrismaService } from "../../src/prisma/prisma.service";
-import { bootstrapApp, cleanupQaData, createPublishedEvent, http, newUser } from "./qa-helpers";
+import { bootstrapApp, cleanupQaData, createPublishedEvent, grantPro, http, newUser } from "./qa-helpers";
 
 jest.setTimeout(120_000); // this shared local Postgres/embedded env runs several QA auditors concurrently; the default 30s per-test timeout is too tight under that contention (see docs/qa/QA_events.md).
 
@@ -107,7 +107,8 @@ describe("QA §53 — database integrity (e2e)", () => {
   });
 
   it("deleting an Event cascades to its media, registrations (+ their answers), collaborators, invitations, FAQ items, and price options — no orphans left behind", async () => {
-    const { eventId, organizerToken } = await createPublishedEvent(app, categoryId, cityId, { title: "Cascade Probe QA Event" });
+    const { eventId, organizerToken, organizerId } = await createPublishedEvent(app, categoryId, cityId, { title: "Cascade Probe QA Event" });
+    await grantPro(prisma, organizerId);
     const attendee = await newUser(app, "cascade-attendee");
     const collaborator = await newUser(app, "cascade-collab");
     const invitee = await newUser(app, "cascade-invitee");

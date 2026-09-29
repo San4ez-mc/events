@@ -4,6 +4,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ApiException } from "../common/exceptions/api.exception";
 import { ForbiddenActionException, ResourceNotFoundException } from "../common/exceptions/common-exceptions";
 import { EventAccessService } from "../organizer/event-access.service";
+import { PlatformSubscriptionsService } from "../platform-subscriptions/platform-subscriptions.service";
 import { slugifyUnique } from "../common/utils/slugify";
 import { generateOccurrenceDates } from "./recurrence";
 import type { CreateSeriesDto } from "./dto/create-series.dto";
@@ -45,10 +46,12 @@ export class EventSeriesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventAccess: EventAccessService,
+    private readonly subscriptions: PlatformSubscriptionsService,
   ) {}
 
   async createSeries(templateEventId: string, userId: string, dto: CreateSeriesDto) {
     const template = await this.eventAccess.assertPermission(templateEventId, userId, "EDIT_EVENT");
+    await this.subscriptions.assertPro(template.ownerId);
     if (template.seriesId) {
       throw new ApiException("VALIDATION_ERROR", "This event is already part of a series", 400);
     }

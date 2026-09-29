@@ -24,6 +24,8 @@ export interface PublicProfile {
   avatarUrl: string | null;
   bio: string | null;
   memberSince: string;
+  /** Perk of the PRO organizer subscription tier. */
+  isVerifiedOrganizer: boolean;
   socialLinks: { type: string; url: string }[];
   friendCount: number;
   eventsCreatedCount: number;

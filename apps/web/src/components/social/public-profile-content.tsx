@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { BadgeCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
@@ -83,7 +84,14 @@ export function PublicProfileContent() {
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-bold">{displayName}</h1>
+          <h1 className="flex items-center gap-1.5 truncate text-xl font-bold">
+            {displayName}
+            {profile.isVerifiedOrganizer && (
+              <span title={t("profile.verifiedOrganizer")}>
+                <BadgeCheck className="h-5 w-5 shrink-0 text-accent" role="img" aria-label={t("profile.verifiedOrganizer")} />
+              </span>
+            )}
+          </h1>
           <p className="text-xs text-muted">
             {t("profile.memberSince")} {new Date(profile.memberSince).toLocaleDateString(locale === "uk" ? "uk-UA" : "en-US")}
           </p>

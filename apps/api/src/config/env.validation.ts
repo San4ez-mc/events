@@ -64,6 +64,14 @@ const envSchema = z.object({
 
   MANUAL_IBAN: z.string().default("UA000000000000000000000000000"),
   MANUAL_IBAN_RECIPIENT: z.string().default("Kiro TOV"),
+
+  // Organizer subscriptions (Google Play Billing) — verifying a purchase/renewal calls the Android
+  // Publisher API as this service account. Unset in dev/tests: verification then throws a clear
+  // config error rather than attempting a call that can only fail (same pattern as Mono's token).
+  GOOGLE_PLAY_PACKAGE_NAME: z.string().default("space.fineko.kiro"),
+  // The service account's JSON key file, as a single-line JSON string (not a file path — matches how
+  // this app already keeps every other secret in .env rather than a separate file on disk).
+  GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: z.string().optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

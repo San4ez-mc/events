@@ -43,4 +43,16 @@ export const DISCOVERY_RANKING_WEIGHTS = {
   friendsGoingPerFriend: 12,
   friendsGoingMax: 36,
   budgetFit: 8,
+  /** Flat score bonus for a PRO subscriber's event — feed priority is one of the plan's perks. */
+  proSubscriberBoost: 40,
 };
+
+/**
+ * Organizer subscription plans (Google Play Billing). Prices are UAH/month, matching the Play
+ * Console subscription products' base price — change both together if the price ever moves.
+ * `monthlyCredits` is granted once per billing period (see PlatformSubscriptionsService).
+ */
+export const SUBSCRIPTION_TIERS = {
+  STARTER: { monthlyCredits: 5, price: 199, productId: "organizer_starter_monthly" },
+  PRO: { monthlyCredits: 15, price: 449, productId: "organizer_pro_monthly" },
+} as const;

@@ -41,6 +41,11 @@ export async function newUser(
   return { token: res.body.accessToken, id: res.body.user.id, email };
 }
 
+/** Co-organizers and recurring events are PRO-tier perks — grants it directly, bypassing Google Play, for fixtures that need to exercise those features. */
+export async function grantPro(prisma: PrismaService, userId: string): Promise<void> {
+  await prisma.user.update({ where: { id: userId }, data: { subscriptionTier: "PRO" } });
+}
+
 /** Creates a DRAFT event owned by `token`, claiming a free listing credit first (needed to publish later). */
 export async function createDraftEvent(
   app: INestApplication,

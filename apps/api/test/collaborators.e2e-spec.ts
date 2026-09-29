@@ -47,6 +47,13 @@ describe("Collaborators (e2e)", () => {
     return { token: res.body.accessToken, userId: res.body.user.id };
   }
 
+  /** Co-organizers are a PRO-tier perk — most fixtures need the owner on PRO to exercise the feature itself. */
+  async function registerProOwner(namePrefix = "Owner"): Promise<{ token: string; userId: string }> {
+    const owner = await registerUser(namePrefix);
+    await prisma.user.update({ where: { id: owner.userId }, data: { subscriptionTier: "PRO" } });
+    return owner;
+  }
+
   async function createDraftEvent(token: string): Promise<string> {
     await request(app.getHttpServer()).post("/api/v1/credits/claim-free").set("Authorization", `Bearer ${token}`);
     const created = await request(app.getHttpServer())
@@ -58,7 +65,7 @@ describe("Collaborators (e2e)", () => {
   }
 
   it("a stranger cannot edit, but a collaborator with EDIT_EVENT can", async () => {
-    const owner = await registerUser("Owner");
+    const owner = await registerProOwner();
     const eventId = await createDraftEvent(owner.token);
     const manager = await registerUser("Manager");
 
@@ -82,7 +89,7 @@ describe("Collaborators (e2e)", () => {
   });
 
   it("a collaborator without MANAGE_REGISTRATIONS can't approve registrations, but one with it can", async () => {
-    const owner = await registerUser("Owner");
+    const owner = await registerProOwner();
     const eventId = await createDraftEvent(owner.token);
     await request(app.getHttpServer())
       .patch(`/api/v1/events/${eventId}`)
@@ -132,7 +139,7 @@ describe("Collaborators (e2e)", () => {
   });
 
   it("only the owner can add/update/remove collaborators, not a collaborator themselves", async () => {
-    const owner = await registerUser("Owner");
+    const owner = await registerProOwner();
     const eventId = await createDraftEvent(owner.token);
     const manager = await registerUser("Manager");
     const stranger = await registerUser("Stranger");
@@ -167,7 +174,7 @@ describe("Collaborators (e2e)", () => {
   });
 
   it("adding the same user twice replaces their permission set instead of erroring", async () => {
-    const owner = await registerUser("Owner");
+    const owner = await registerProOwner();
     const eventId = await createDraftEvent(owner.token);
     const manager = await registerUser("Manager");
 
@@ -188,5 +195,18 @@ describe("Collaborators (e2e)", () => {
       .expect(200);
     expect(list.body).toHaveLength(1);
     expect(list.body[0].permissions).toEqual(["VIEW_ANALYTICS"]);
+  });
+
+  it("a non-PRO owner can't add a collaborator", async () => {
+    const owner = await registerUser("FreeOwner");
+    const eventId = await createDraftEvent(owner.token);
+    const manager = await registerUser("Manager");
+
+    const res = await request(app.getHttpServer())
+      .post(`/api/v1/events/${eventId}/collaborators`)
+      .set("Authorization", `Bearer ${owner.token}`)
+      .send({ userId: manager.userId, permissions: ["EDIT_EVENT"] })
+      .expect(403);
+    expect(res.body.error.code).toBe("SUBSCRIPTION_REQUIRED");
   });
 });

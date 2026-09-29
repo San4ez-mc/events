@@ -4,6 +4,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ApiException } from "../common/exceptions/api.exception";
 import { ResourceNotFoundException } from "../common/exceptions/common-exceptions";
 import { EventAccessService } from "../organizer/event-access.service";
+import { PlatformSubscriptionsService } from "../platform-subscriptions/platform-subscriptions.service";
 import type { AddCollaboratorDto } from "./dto/add-collaborator.dto";
 import type { UpdateCollaboratorDto } from "./dto/update-collaborator.dto";
 
@@ -17,6 +18,7 @@ export class CollaboratorsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventAccess: EventAccessService,
+    private readonly subscriptions: PlatformSubscriptionsService,
   ) {}
 
   async list(eventId: string, userId: string) {
@@ -30,6 +32,7 @@ export class CollaboratorsService {
 
   async add(eventId: string, ownerId: string, dto: AddCollaboratorDto) {
     const event = await this.eventAccess.assertOwner(eventId, ownerId);
+    await this.subscriptions.assertPro(ownerId);
     if (dto.userId === event.ownerId) {
       throw new ApiException("VALIDATION_ERROR", "The owner doesn't need to be added as a collaborator", 400);
     }

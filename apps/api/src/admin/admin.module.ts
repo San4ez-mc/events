@@ -7,6 +7,7 @@ import { CreditsModule } from "../credits/credits.module";
 import { PaymentsModule } from "../payments/payments.module";
 import { ReportsModule } from "../reports/reports.module";
 import { NotificationsModule } from "../notifications/notifications.module";
+import { PlatformSubscriptionsModule } from "../platform-subscriptions/platform-subscriptions.module";
 import { AdminUsersController } from "./users/admin-users.controller";
 import { AdminEventsController } from "./events/admin-events.controller";
 import { AdminEventsService } from "./events/admin-events.service";
@@ -22,10 +23,21 @@ import { AdminAnalyticsController } from "./analytics/admin-analytics.controller
 import { AdminReviewsController } from "./reviews/admin-reviews.controller";
 import { AdminAnalyticsService } from "./analytics/admin-analytics.service";
 import { AdminNotificationsController } from "./notifications/admin-notifications.controller";
+import { AdminSubscriptionsController } from "./subscriptions/admin-subscriptions.controller";
 
 /** §72/§73/§115 Phase 10 — every `/admin/*` route. Access is gated per-controller via `@Roles`, not here. */
 @Module({
-  imports: [EventsModule, UsersModule, CategoriesModule, GeographyModule, CreditsModule, PaymentsModule, ReportsModule, NotificationsModule],
+  imports: [
+    EventsModule,
+    UsersModule,
+    CategoriesModule,
+    GeographyModule,
+    CreditsModule,
+    PaymentsModule,
+    ReportsModule,
+    NotificationsModule,
+    PlatformSubscriptionsModule,
+  ],
   controllers: [
     AdminUsersController,
     AdminEventsController,
@@ -39,6 +51,7 @@ import { AdminNotificationsController } from "./notifications/admin-notification
     AdminAnalyticsController,
     AdminReviewsController,
     AdminNotificationsController,
+    AdminSubscriptionsController,
   ],
   providers: [AdminEventsService, AdminModerationService, AdminAnalyticsService],
 })

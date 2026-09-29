@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Image, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useAuth } from "../../src/lib/auth-context";
 import { useTranslations } from "../../src/lib/locale-context";
@@ -19,6 +20,7 @@ interface PublicProfile {
   avatarUrl: string | null;
   bio: string | null;
   memberSince: string;
+  isVerifiedOrganizer: boolean;
   friendCount: number;
   eventsCreatedCount: number;
   upcomingEvents: EventCard[];
@@ -94,7 +96,12 @@ export default function PublicProfileScreen() {
           </View>
         )}
         <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{name}</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.name}>{name}</Text>
+            {profile.isVerifiedOrganizer && (
+              <Ionicons name="checkmark-circle" size={18} color={colors.accentFrom} accessibilityLabel={t("profile.verifiedOrganizer")} />
+            )}
+          </View>
           <Text style={styles.muted}>
             {t("profile.memberSince")} {formatShortDate(profile.memberSince)}
           </Text>
@@ -151,6 +158,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   avatar: { width: 76, height: 76, borderRadius: 38 },
   avatarFallback: { backgroundColor: colors.accentFrom, alignItems: "center", justifyContent: "center" },
   avatarText: { color: colors.white, fontSize: 30, fontWeight: "800" },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
   name: { color: colors.foreground, fontSize: 22, fontWeight: "800" },
   muted: { color: colors.muted, fontSize: 13 },
   strong: { color: colors.foreground, fontWeight: "700" },

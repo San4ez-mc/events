@@ -1,6 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import { PrismaService } from "../../src/prisma/prisma.service";
-import { bootstrapApp, cleanupQaData, http, newUser } from "./qa-helpers";
+import { bootstrapApp, cleanupQaData, grantPro, http, newUser } from "./qa-helpers";
 
 jest.setTimeout(120_000); // this shared local Postgres/embedded env runs several QA auditors concurrently; the default 30s per-test timeout is too tight under that contention (see docs/qa/QA_events.md).
 
@@ -27,6 +27,7 @@ describe("QA §26 — recurring events (e2e)", () => {
   /** Draft event with the fields createSeries/publish both need, NOT yet published. */
   async function draftTemplate(startsAt: Date): Promise<{ token: string; eventId: string }> {
     const owner = await newUser(app, "recur");
+    await grantPro(prisma, owner.id); // recurring events are a PRO-tier perk
     await http(app).post("/api/v1/credits/claim-free").set("Authorization", `Bearer ${owner.token}`);
     const created = await http(app)
       .post("/api/v1/events")

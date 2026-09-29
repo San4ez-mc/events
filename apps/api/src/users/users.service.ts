@@ -28,6 +28,7 @@ const PUBLIC_PROFILE_SELECT = {
   avatarUrl: true,
   bio: true,
   createdAt: true,
+  subscriptionTier: true,
   socialLinks: { select: { type: true, url: true } },
 } as const;
 
@@ -263,6 +264,7 @@ export class UsersService {
       avatarUrl: user.avatarUrl,
       bio: user.bio,
       memberSince: user.createdAt,
+      isVerifiedOrganizer: user.subscriptionTier === "PRO",
       socialLinks: hideSocialLinks ? [] : user.socialLinks,
       friendCount,
       eventsCreatedCount,

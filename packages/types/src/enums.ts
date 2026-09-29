@@ -118,6 +118,27 @@ export const Currency = {
 } as const;
 export type Currency = (typeof Currency)[keyof typeof Currency];
 
+/** Organizer subscription plans — see SUBSCRIPTION_TIERS in @kiro/config for what each grants. */
+export const SubscriptionTier = {
+  STARTER: "STARTER",
+  PRO: "PRO",
+} as const;
+export type SubscriptionTier = (typeof SubscriptionTier)[keyof typeof SubscriptionTier];
+
+export const SubscriptionStatus = {
+  ACTIVE: "ACTIVE",
+  GRACE_PERIOD: "GRACE_PERIOD",
+  EXPIRED: "EXPIRED",
+  CANCELLED: "CANCELLED",
+} as const;
+export type SubscriptionStatus = (typeof SubscriptionStatus)[keyof typeof SubscriptionStatus];
+
+export const SubscriptionProvider = {
+  GOOGLE_PLAY: "GOOGLE_PLAY",
+  ADMIN_GRANT: "ADMIN_GRANT",
+} as const;
+export type SubscriptionProvider = (typeof SubscriptionProvider)[keyof typeof SubscriptionProvider];
+
 export const EventMediaType = {
   IMAGE: "IMAGE",
   VIDEO: "VIDEO",

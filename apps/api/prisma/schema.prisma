@@ -86,6 +86,12 @@ model User {
   /// Set the first time this user creates an event (§10: organizer is not a role).
   organizerActivatedAt DateTime?
 
+  /// Denormalized cache of the ACTIVE/GRACE_PERIOD row in platformSubscriptions, kept in sync by
+  /// PlatformSubscriptionsService — reading it avoids a join on every feed-ranking/badge/gate check.
+  /// `null` = no paid plan (the old free/one-off-credit-purchase behaviour, unchanged).
+  subscriptionTier      SubscriptionTier?
+  subscriptionExpiresAt DateTime?
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   lastLoginAt DateTime?
@@ -116,6 +122,8 @@ model User {
   subscriptions            Subscription[]           @relation("SubscriptionUser")
   subscribersAsOrganizer   Subscription[]           @relation("SubscriptionOrganizer")
   eventCollaborations      EventCollaborator[]
+  platformSubscriptions    PlatformSubscription[]
+  subscriptionGrantsGiven  PlatformSubscription[]   @relation("SubscriptionGrantedByAdmin")
   eventInvitationsSent     EventInvitation[]        @relation("EventInvitationInviter")
   eventInvitationsReceived EventInvitation[]        @relation("EventInvitationInvitee")
   reviewsAuthored          EventReview[]
@@ -680,6 +688,69 @@ model ListingCreditLedger {
   @@index([userId])
   @@index([sourceType, sourceId])
   @@map("listing_credit_ledger")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 11 (added post-launch) — organizer subscription plans (STARTER/PRO):
+// a monthly credit grant plus paid perks (feed priority, verified badge, and
+// gating co-organizers/recurring events to PRO). Google Play Billing is the
+// only provider for now (ADMIN_GRANT lets support/testing set a plan by hand,
+// with no expiry unless one is given) — kept as its own `provider` field so a
+// second store (e.g. Apple) or a web-side provider can be added later without
+// a schema change.
+// ---------------------------------------------------------------------------
+
+enum SubscriptionTier {
+  STARTER
+  PRO
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  GRACE_PERIOD
+  EXPIRED
+  CANCELLED
+}
+
+enum SubscriptionProvider {
+  GOOGLE_PLAY
+  ADMIN_GRANT
+}
+
+/// One row per purchase/grant; a user's *current* plan is ACTIVE/GRACE_PERIOD row with the latest
+/// startedAt (there can be an EXPIRED/CANCELLED history after it). User.subscriptionTier/
+/// subscriptionExpiresAt mirror whichever row is current, for fast reads elsewhere.
+model PlatformSubscription {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id])
+
+  tier     SubscriptionTier
+  status   SubscriptionStatus   @default(ACTIVE)
+  provider SubscriptionProvider
+
+  /// Google Play's purchase token — globally unique per purchase, and how PlatformSubscriptionsService
+  /// re-verifies/renews via the Android Publisher API. Null for ADMIN_GRANT rows.
+  purchaseToken String? @unique
+  productId     String?
+
+  startedAt    DateTime
+  /// Null on an ADMIN_GRANT row means "no expiry" (until an admin changes/removes it).
+  expiresAt    DateTime?
+  autoRenewing Boolean   @default(false)
+
+  /// The calendar month (yyyy-mm) this row's monthly credits were last granted for — the idempotency
+  /// guard against double-granting if a renewal check runs twice for the same period.
+  lastCreditGrantPeriod String?
+
+  grantedByAdminId String? @db.Uuid
+  grantedByAdmin   User?   @relation("SubscriptionGrantedByAdmin", fields: [grantedByAdminId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@map("platform_subscriptions")
 }
 
 model CreditPackage {

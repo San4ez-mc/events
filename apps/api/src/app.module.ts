@@ -41,6 +41,7 @@ import { EventSeriesModule } from "./event-series/event-series.module";
 import { InvitationsModule } from "./invitations/invitations.module";
 import { ReviewsModule } from "./reviews/reviews.module";
 import { PaymentsModule } from "./payments/payments.module";
+import { PlatformSubscriptionsModule } from "./platform-subscriptions/platform-subscriptions.module";
 import { AuditModule } from "./audit/audit.module";
 import { ReportsModule } from "./reports/reports.module";
 import { AdminModule } from "./admin/admin.module";
@@ -99,6 +100,7 @@ import { AdminModule } from "./admin/admin.module";
     InvitationsModule,
     ReviewsModule,
     PaymentsModule,
+    PlatformSubscriptionsModule,
     AuditModule,
     ReportsModule,
     AdminModule,

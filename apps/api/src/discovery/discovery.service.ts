@@ -67,10 +67,13 @@ export class DiscoveryService {
     });
 
     const inWindow = candidates.filter((event) => this.startsInHourWindow(event.startsAt, query.hourFrom, query.hourTo, event.timezone));
-    const signals = await this.loadRankingSignals(inWindow.map((e) => e.id), userId);
+    const [signals, proOwnerIds] = await Promise.all([
+      this.loadRankingSignals(inWindow.map((e) => e.id), userId),
+      this.loadProOwnerIds(inWindow.map((e) => e.ownerId)),
+    ]);
     const scored = inWindow
       .filter((event) => !query.availableOnly || event.capacity == null || (signals.get(event.id)?.registered ?? 0) < event.capacity)
-      .map((event) => ({ ...event, score: this.scoreEvent(event, preferences, now, signals.get(event.id)) }))
+      .map((event) => ({ ...event, score: this.scoreEvent(event, preferences, now, signals.get(event.id), proOwnerIds.has(event.ownerId)) }))
       .sort((a, b) => (b.score !== a.score ? b.score - a.score : a.id.localeCompare(b.id)));
 
     const sliced = sliceAfterScoredCursor(scored, cursor);
@@ -205,8 +208,11 @@ export class DiscoveryService {
     } | null,
     now: Date,
     signal?: { registered: number; friends: number },
+    isProOwner = false,
   ): number {
     let score = 0;
+    // Feed priority is a paid-tier perk — flat bonus, not stacked with any other signal.
+    if (isProOwner) score += DISCOVERY_RANKING_WEIGHTS.proSubscriberBoost;
 
     // §58 popularity (log-scaled so a handful of sign-ups matters, hundreds don't dominate) and remaining spots.
     const registered = signal?.registered ?? 0;
@@ -281,6 +287,16 @@ export class DiscoveryService {
       }
     }
     return result;
+  }
+
+  /** Which of these event owners currently hold a PRO subscription (feed-priority perk). */
+  private async loadProOwnerIds(ownerIds: string[]): Promise<Set<string>> {
+    if (ownerIds.length === 0) return new Set();
+    const owners = await this.prisma.user.findMany({
+      where: { id: { in: [...new Set(ownerIds)] }, subscriptionTier: "PRO" },
+      select: { id: true },
+    });
+    return new Set(owners.map((o) => o.id));
   }
 
   private async getRecentlyPassedEventIds(userId: string | undefined): Promise<string[]> {
