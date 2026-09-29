@@ -54,7 +54,7 @@ export default function AdminPaymentsPage() {
               <div className="min-w-0">
                 <p className="truncate font-medium">{order.user.name ?? order.user.nickname ?? order.user.email}</p>
                 <p className="text-xs text-muted">
-                  {order.package.name} · {order.provider} ·{" "}
+                  {order.package?.name ?? `${t("admin.payments.subscriptionLabel")} ${order.subscriptionTier}`} · {order.provider} ·{" "}
                   {new Date(order.createdAt).toLocaleString(locale === "uk" ? "uk-UA" : "en-US")}
                 </p>
               </div>

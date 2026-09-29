@@ -24,7 +24,10 @@ interface Order {
   currency: string;
   status: string;
   createdAt: string;
-  package: { name: string };
+  // Null for a subscription-tier order (web-only for now, see PlatformPaymentOrder) — this screen only ever
+  // creates package orders, but order history is shared across clients, so a web subscription can show up here.
+  package: { name: string } | null;
+  subscriptionTier: string | null;
 }
 interface CreateOrderResult {
   checkout: { redirectUrl?: string; instructions?: string };
@@ -159,7 +162,7 @@ export default function CreditsScreen() {
       {orders?.map((order) => (
         <View key={order.id} style={styles.orderRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.orderName}>{order.package.name}</Text>
+            <Text style={styles.orderName}>{order.package?.name ?? order.subscriptionTier}</Text>
             <Text style={styles.muted}>{formatShortDateTime(order.createdAt)}</Text>
           </View>
           <View style={{ alignItems: "flex-end" }}>

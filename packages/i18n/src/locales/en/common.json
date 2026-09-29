@@ -8,6 +8,7 @@
     "saved": "Saved",
     "myRegistrations": "My registrations",
     "create": "Create",
+    "pricing": "Pricing",
     "notifications": "Notifications",
     "profile": "Profile",
     "myEvents": "My events",
@@ -256,6 +257,35 @@
     },
     "error": "Couldn't start this payment"
   },
+  "pricing": {
+    "heroTitle": "Pricing for organizers",
+    "heroSubtitle": "Publish events, find participants, and grow your community on Kiro. Pick a subscription with perks, or pay only for the publications you plan.",
+    "subscriptionTitle": "Subscription",
+    "subscriptionSubtitle": "Monthly credits plus tools for organizers who publish regularly.",
+    "perMonth": "/mo",
+    "mostPopular": "Most popular",
+    "tierName": { "STARTER": "Starter", "PRO": "Pro" },
+    "tierTagline": { "STARTER": "Try it risk-free", "PRO": "For serious organizers" },
+    "feature": {
+      "monthlyCredits": "credits every month",
+      "coOrganizers": "Co-organizers",
+      "recurring": "Recurring events",
+      "priority": "Feed priority",
+      "badge": "\"Verified organizer\" badge"
+    },
+    "subscribeWith": {
+      "WAYFORPAY": "WayForPay",
+      "MONO": "Mono"
+    },
+    "currentPlanBadge": "Your plan",
+    "currentPlanExpires": "Active until",
+    "renewEarly": "Extend by another month",
+    "switchTo": "Switch to this plan",
+    "notAutoRenewing": "Not auto-charged — renew manually whenever it suits you.",
+    "signInToSubscribe": "Sign in to subscribe",
+    "creditsSectionTitle": "Or one-off credits, no subscription",
+    "creditsSectionSubtitle": "Pay only for the publications you plan — no monthly charges."
+  },
   "discover": {
     "loading": "Loading the feed…",
     "empty": "No more events. Try different filters.",
@@ -479,7 +509,8 @@
     },
     "payments": {
       "title": "Payments",
-      "confirmManual": "Confirm"
+      "confirmManual": "Confirm",
+      "subscriptionLabel": "Subscription"
     },
     "credits": {
       "title": "Adjust credits",

@@ -1,9 +1,9 @@
-/** Just enough of a `PlatformPaymentOrder` (+ its package) for an adapter to build a checkout. */
+/** Just enough of a `PlatformPaymentOrder` for an adapter to build a checkout — a credit package or a subscription-tier month, neither adapter cares which. */
 export interface PayableOrder {
   id: string;
   amount: string; // Prisma Decimal, stringified
   currency: string;
-  package: { name: string; credits: number };
+  product: { name: string };
 }
 
 export interface CheckoutInstructions {

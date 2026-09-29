@@ -1,21 +1,29 @@
 import { Injectable } from "@nestjs/common";
-import type { PaymentProvider } from "@kiro/types";
+import { SUBSCRIPTION_TIERS } from "@kiro/config";
+import type { PaymentProvider, SubscriptionTier } from "@kiro/types";
 import { PrismaService } from "../prisma/prisma.service";
 import { ApiException } from "../common/exceptions/api.exception";
 import { ResourceNotFoundException } from "../common/exceptions/common-exceptions";
 import { CreditsService } from "../credits/credits.service";
+import { PlatformSubscriptionsService } from "../platform-subscriptions/platform-subscriptions.service";
 import { WayForPayAdapter } from "./providers/wayforpay.adapter";
 import { MonoAdapter } from "./providers/mono.adapter";
 import { ManualIbanAdapter } from "./providers/manual-iban.adapter";
-import type { PaymentProviderAdapter } from "./providers/payment-provider.interface";
+import type { CheckoutInstructions, PaymentProviderAdapter } from "./providers/payment-provider.interface";
 import type { CreateOrderDto } from "./dto/create-order.dto";
 
-/** §51 — buying listing-credit packages with real money. Never mixed with event-ticket payments (Event.paymentUrl). */
+const SUBSCRIPTION_PRODUCT_NAME: Record<SubscriptionTier, string> = {
+  STARTER: "Підписка «Старт» — 1 місяць",
+  PRO: "Підписка «Про» — 1 місяць",
+};
+
+/** §51 — buying listing-credit packages, or one month of a subscription tier, with real money. Never mixed with event-ticket payments (Event.paymentUrl). */
 @Injectable()
 export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly creditsService: CreditsService,
+    private readonly subscriptionsService: PlatformSubscriptionsService,
     private readonly wayForPay: WayForPayAdapter,
     private readonly mono: MonoAdapter,
     private readonly manualIban: ManualIbanAdapter,
@@ -33,25 +41,41 @@ export class PaymentsService {
   }
 
   async createOrder(userId: string, dto: CreateOrderDto) {
+    if (!dto.packageId === !dto.subscriptionTier) {
+      throw new ApiException("VALIDATION_ERROR", "Provide exactly one of packageId or subscriptionTier", 400);
+    }
+    if (dto.subscriptionTier && dto.provider === "MANUAL_IBAN") {
+      throw new ApiException("VALIDATION_ERROR", "Subscriptions can only be paid via WayForPay or Mono", 400);
+    }
+
+    if (dto.subscriptionTier) {
+      const tier = dto.subscriptionTier;
+      const order = await this.prisma.platformPaymentOrder.create({
+        data: { userId, subscriptionTier: tier, provider: dto.provider, amount: SUBSCRIPTION_TIERS[tier].price, currency: "UAH" },
+      });
+      return this.startCheckout(order, dto.provider, SUBSCRIPTION_PRODUCT_NAME[tier]);
+    }
+
     const pkg = await this.prisma.creditPackage.findUnique({ where: { id: dto.packageId } });
     if (!pkg || !pkg.active) throw new ResourceNotFoundException("Package not found");
 
     const order = await this.prisma.platformPaymentOrder.create({
-      data: {
-        userId,
-        packageId: pkg.id,
-        provider: dto.provider,
-        amount: pkg.price,
-        currency: pkg.currency,
-      },
+      data: { userId, packageId: pkg.id, provider: dto.provider, amount: pkg.price, currency: pkg.currency },
     });
+    return this.startCheckout(order, dto.provider, pkg.name);
+  }
 
-    const adapter = this.adapterFor(dto.provider);
+  private async startCheckout(
+    order: { id: string; amount: { toString(): string }; currency: string },
+    provider: PaymentProvider,
+    productName: string,
+  ): Promise<{ order: typeof order; checkout: CheckoutInstructions }> {
+    const adapter = this.adapterFor(provider);
     const checkout = await adapter.createCheckout({
       id: order.id,
-      amount: pkg.price.toString(),
-      currency: pkg.currency,
-      package: { name: pkg.name, credits: pkg.credits },
+      amount: order.amount.toString(),
+      currency: order.currency,
+      product: { name: productName },
     });
 
     if (checkout.providerReference) {
@@ -103,14 +127,24 @@ export class PaymentsService {
     if (!order || order.status !== "PENDING") return;
 
     if (outcome.status === "PAID") {
-      const pkg = await this.prisma.creditPackage.findUniqueOrThrow({ where: { id: order.packageId } });
-      await this.prisma.$transaction(async (tx) => {
-        await tx.platformPaymentOrder.update({
+      if (order.subscriptionTier) {
+        // Activates first (upsert-idempotent against a retried webhook), then flips the order to PAID —
+        // if the process dies in between, the retry safely re-activates (no-op) and finishes the flip.
+        await this.subscriptionsService.activateFromWebPayment(order.userId, order.subscriptionTier, provider as "WAYFORPAY" | "MONO", order.id);
+        await this.prisma.platformPaymentOrder.update({
           where: { id: order.id },
           data: { status: "PAID", paidAt: new Date(), providerReference: outcome.providerReference },
         });
-        await this.creditsService.grantForPurchase(tx, order.userId, pkg.credits, order.id);
-      });
+      } else {
+        const pkg = await this.prisma.creditPackage.findUniqueOrThrow({ where: { id: order.packageId! } });
+        await this.prisma.$transaction(async (tx) => {
+          await tx.platformPaymentOrder.update({
+            where: { id: order.id },
+            data: { status: "PAID", paidAt: new Date(), providerReference: outcome.providerReference },
+          });
+          await this.creditsService.grantForPurchase(tx, order.userId, pkg.credits, order.id);
+        });
+      }
     } else {
       await this.prisma.platformPaymentOrder.update({ where: { id: order.id }, data: { status: "FAILED" } });
     }
@@ -125,7 +159,7 @@ export class PaymentsService {
     }
     if (order.status !== "PENDING") return order;
 
-    const pkg = await this.prisma.creditPackage.findUniqueOrThrow({ where: { id: order.packageId } });
+    const pkg = await this.prisma.creditPackage.findUniqueOrThrow({ where: { id: order.packageId! } });
     return this.prisma.$transaction(async (tx) => {
       const updated = await tx.platformPaymentOrder.update({
         where: { id: order.id },

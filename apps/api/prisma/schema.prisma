@@ -715,6 +715,10 @@ enum SubscriptionStatus {
 enum SubscriptionProvider {
   GOOGLE_PLAY
   ADMIN_GRANT
+  /// A one-off web purchase of one month via the same PlatformPaymentOrder flow as credit packages
+  /// (PlatformSubscriptionsService.activateFromWebPayment). Not auto-renewing — see autoRenewing.
+  WAYFORPAY
+  MONO
 }
 
 /// One row per purchase/grant; a user's *current* plan is ACTIVE/GRACE_PERIOD row with the latest
@@ -729,8 +733,10 @@ model PlatformSubscription {
   status   SubscriptionStatus   @default(ACTIVE)
   provider SubscriptionProvider
 
-  /// Google Play's purchase token — globally unique per purchase, and how PlatformSubscriptionsService
-  /// re-verifies/renews via the Android Publisher API. Null for ADMIN_GRANT rows.
+  /// Google Play's purchase token, and how PlatformSubscriptionsService re-verifies/renews via the
+  /// Android Publisher API. For WAYFORPAY/MONO rows this instead holds the PlatformPaymentOrder id
+  /// that activated this period (just needs to be a stable unique value, not re-verifiable like
+  /// Google's token). Null for ADMIN_GRANT rows.
   purchaseToken String? @unique
   productId     String?
 
@@ -1317,13 +1323,19 @@ enum PlatformPaymentStatus {
 /// the same transaction as this status flip (PaymentsService.markPaid) —
 /// idempotent via a `listing_credit_ledger` row keyed on sourceId=order.id,
 /// same pattern as the event-publication debit and the free-credit grant.
+/// Exactly one of packageId/subscriptionTier is set (DB CHECK constraint) —
+/// a credit-package order or a one-month subscription order, never both.
 model PlatformPaymentOrder {
   id     String @id @default(uuid()) @db.Uuid
   userId String @db.Uuid
   user   User   @relation(fields: [userId], references: [id])
 
-  packageId String        @db.Uuid
-  package   CreditPackage @relation(fields: [packageId], references: [id])
+  packageId String?        @db.Uuid
+  package   CreditPackage? @relation(fields: [packageId], references: [id])
+
+  /// Set instead of packageId when this order is buying one month of a subscription tier
+  /// (PlatformSubscriptionsService.activateFromWebPayment), not a credit package.
+  subscriptionTier SubscriptionTier?
 
   provider PaymentProvider
   amount   Decimal               @db.Decimal(10, 2)

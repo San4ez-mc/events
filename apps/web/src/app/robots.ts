@@ -12,7 +12,6 @@ export default function robots(): MetadataRoute.Robots {
           "/admin",
           "/organizer",
           "/profile",
-          "/credits",
           "/my-registrations",
           "/saved",
           "/friends",

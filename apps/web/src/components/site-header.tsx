@@ -44,6 +44,9 @@ export function SiteHeader() {
           <Link href="/organizer/events" className="hover:opacity-80">
             {t("nav.organizer")}
           </Link>
+          <Link href="/credits" className="hover:opacity-80">
+            {t("nav.pricing")}
+          </Link>
         </nav>
 
         <div className="flex items-center gap-3">

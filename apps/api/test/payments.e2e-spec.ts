@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
+import { SUBSCRIPTION_TIERS } from "@kiro/config";
 import { AppModule } from "../src/app.module";
 import { configureApp } from "../src/bootstrap";
 import { PrismaService } from "../src/prisma/prisma.service";
@@ -41,6 +42,7 @@ describe("Payments (e2e)", () => {
   afterAll(async () => {
     await prisma.listingCreditLedger.deleteMany({ where: { user: { email: { startsWith: testEmailPrefix } } } });
     await prisma.platformPaymentOrder.deleteMany({ where: { user: { email: { startsWith: testEmailPrefix } } } });
+    await prisma.platformSubscription.deleteMany({ where: { user: { email: { startsWith: testEmailPrefix } } } });
     await prisma.user.deleteMany({ where: { email: { startsWith: testEmailPrefix } } });
     await app.close();
   });
@@ -301,6 +303,129 @@ describe("Payments (e2e)", () => {
         .set("Authorization", `Bearer ${admin.token}`)
         .expect(200);
       expect(await balanceOf(token)).toBe(before + packageCredits);
+    });
+  });
+
+  describe("Subscription orders (web — same mechanism, WayForPay/Mono only, one month at a time)", () => {
+    async function mySubscription(token: string) {
+      const res = await request(app.getHttpServer()).get("/api/v1/platform-subscriptions/mine").set("Authorization", `Bearer ${token}`).expect(200);
+      return res.body as { tier: string | null; status: string | null; expiresAt: string | null; autoRenewing: boolean };
+    }
+
+    it("lists tiers publicly with real prices, never hardcoded", async () => {
+      const res = await request(app.getHttpServer()).get("/api/v1/platform-subscriptions/tiers").expect(200);
+      const pro = res.body.find((t: { tier: string }) => t.tier === "PRO");
+      expect(pro.price).toBe(SUBSCRIPTION_TIERS.PRO.price);
+      expect(pro.monthlyCredits).toBe(SUBSCRIPTION_TIERS.PRO.monthlyCredits);
+    });
+
+    it("rejects an order with neither packageId nor subscriptionTier, or with both", async () => {
+      const { token } = await registerUser("SubNeither");
+      await request(app.getHttpServer()).post("/api/v1/payments/orders").set("Authorization", `Bearer ${token}`).send({ provider: "WAYFORPAY" }).expect(400);
+      await request(app.getHttpServer())
+        .post("/api/v1/payments/orders")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ packageId, subscriptionTier: "STARTER", provider: "WAYFORPAY" })
+        .expect(400);
+    });
+
+    it("rejects a subscription order via MANUAL_IBAN", async () => {
+      const { token } = await registerUser("SubIban");
+      await request(app.getHttpServer())
+        .post("/api/v1/payments/orders")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ subscriptionTier: "STARTER", provider: "MANUAL_IBAN" })
+        .expect(400);
+    });
+
+    it("a paid WayForPay subscription order activates the tier and grants that month's credits, idempotently on redelivery", async () => {
+      const { token } = await registerUser("SubWfp");
+      const before = await balanceOf(token);
+
+      const created = await request(app.getHttpServer())
+        .post("/api/v1/payments/orders")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ subscriptionTier: "PRO", provider: "WAYFORPAY" })
+        .expect(201);
+      expect(Number(created.body.order.amount)).toBe(SUBSCRIPTION_TIERS.PRO.price);
+      const orderId = created.body.order.id;
+
+      const payload = { merchantAccount: wayForPayAccount, orderReference: orderId, amount: SUBSCRIPTION_TIERS.PRO.price, currency: "UAH", transactionStatus: "Approved" };
+      const signature = wayForPaySignature([
+        payload.merchantAccount,
+        payload.orderReference,
+        String(payload.amount),
+        payload.currency,
+        "",
+        "",
+        payload.transactionStatus,
+        "",
+      ]);
+
+      await request(app.getHttpServer()).post("/api/v1/payments/webhooks/wayforpay").send({ ...payload, merchantSignature: signature }).expect(200);
+
+      const order = await prisma.platformPaymentOrder.findUniqueOrThrow({ where: { id: orderId } });
+      expect(order.status).toBe("PAID");
+      const sub = await mySubscription(token);
+      expect(sub.tier).toBe("PRO");
+      expect(await balanceOf(token)).toBe(before + SUBSCRIPTION_TIERS.PRO.monthlyCredits);
+
+      // Redelivered webhook must not double-activate or double-grant.
+      await request(app.getHttpServer()).post("/api/v1/payments/webhooks/wayforpay").send({ ...payload, merchantSignature: signature }).expect(200);
+      expect(await balanceOf(token)).toBe(before + SUBSCRIPTION_TIERS.PRO.monthlyCredits);
+      expect(await prisma.platformSubscription.count({ where: { userId: created.body.order.userId } })).toBe(1);
+    });
+
+    it("renewing before expiry extends from the current expiry, not from now", async () => {
+      const { token, userId } = await registerUser("SubRenew");
+
+      const first = await request(app.getHttpServer())
+        .post("/api/v1/payments/orders")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ subscriptionTier: "STARTER", provider: "WAYFORPAY" })
+        .expect(201);
+      const firstPayload = { merchantAccount: wayForPayAccount, orderReference: first.body.order.id, amount: SUBSCRIPTION_TIERS.STARTER.price, currency: "UAH", transactionStatus: "Approved" };
+      const firstSig = wayForPaySignature([firstPayload.merchantAccount, firstPayload.orderReference, String(firstPayload.amount), firstPayload.currency, "", "", firstPayload.transactionStatus, ""]);
+      await request(app.getHttpServer()).post("/api/v1/payments/webhooks/wayforpay").send({ ...firstPayload, merchantSignature: firstSig }).expect(200);
+      const afterFirst = await mySubscription(token);
+
+      const second = await request(app.getHttpServer())
+        .post("/api/v1/payments/orders")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ subscriptionTier: "STARTER", provider: "WAYFORPAY" })
+        .expect(201);
+      const secondPayload = { merchantAccount: wayForPayAccount, orderReference: second.body.order.id, amount: SUBSCRIPTION_TIERS.STARTER.price, currency: "UAH", transactionStatus: "Approved" };
+      const secondSig = wayForPaySignature([secondPayload.merchantAccount, secondPayload.orderReference, String(secondPayload.amount), secondPayload.currency, "", "", secondPayload.transactionStatus, ""]);
+      await request(app.getHttpServer()).post("/api/v1/payments/webhooks/wayforpay").send({ ...secondPayload, merchantSignature: secondSig }).expect(200);
+      const afterSecond = await mySubscription(token);
+
+      const firstExpiry = new Date(afterFirst.expiresAt!).getTime();
+      const secondExpiry = new Date(afterSecond.expiresAt!).getTime();
+      // ~30 days added on top of the first expiry, not on top of "now" (which would only add ~30 days from a moment already past `firstExpiry`).
+      expect(secondExpiry - firstExpiry).toBeGreaterThan(29 * 24 * 60 * 60 * 1000);
+      expect(await prisma.platformSubscription.count({ where: { userId } })).toBe(2);
+    });
+
+    it("a paid Mono subscription order activates the tier via ECDSA-verified webhook", async () => {
+      const { token, userId } = await registerUser("SubMono");
+      const before = await balanceOf(token);
+
+      const order = await prisma.platformPaymentOrder.create({
+        data: { userId, subscriptionTier: "STARTER", provider: "MONO", amount: SUBSCRIPTION_TIERS.STARTER.price, currency: "UAH" },
+      });
+      const body = JSON.stringify({ invoiceId: "inv_sub_1", status: "success", reference: order.id });
+      const signature = signEcdsa("sha256", Buffer.from(body), privateKey).toString("base64");
+
+      await request(app.getHttpServer())
+        .post("/api/v1/payments/webhooks/mono")
+        .set("Content-Type", "application/json")
+        .set("X-Sign", signature)
+        .send(body)
+        .expect(200);
+
+      const sub = await mySubscription(token);
+      expect(sub.tier).toBe("STARTER");
+      expect(await balanceOf(token)).toBe(before + SUBSCRIPTION_TIERS.STARTER.monthlyCredits);
     });
   });
 });

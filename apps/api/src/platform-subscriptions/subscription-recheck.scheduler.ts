@@ -9,6 +9,10 @@ import { PlatformSubscriptionsService } from "./platform-subscriptions.service";
  * happened and would incorrectly drop access at the old expiry. Runs hourly and only touches rows
  * actually due (expiresAt within the next day, or already past it, i.e. renewed-or-truly-lapsed) —
  * cheap even with many subscribers, since most rows aren't due most hours.
+ *
+ * Web (WayForPay/Mono) subscriptions have no external source of truth to recheck — they're not
+ * auto-renewing, so once `expiresAt` passes without a new PlatformPaymentOrder activating the next
+ * month, the same run also flips those rows to EXPIRED and re-syncs the affected users.
  */
 @Injectable()
 export class SubscriptionRecheckScheduler {
@@ -29,5 +33,7 @@ export class SubscriptionRecheckScheduler {
     for (const { id } of due) {
       await this.subscriptionsService.recheckGoogleSubscription(id).catch((err) => this.logger.error(`recheck ${id} failed`, err));
     }
+
+    await this.subscriptionsService.expireLapsedWebSubscriptions().catch((err) => this.logger.error("expireLapsedWebSubscriptions failed", err));
   }
 }

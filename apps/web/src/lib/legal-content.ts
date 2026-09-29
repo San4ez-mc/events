@@ -25,7 +25,7 @@ export const COMPANY_NAME_EN = "Sole Proprietor (FOP) Oleksandr Matsuk";
 export const COMPANY_TAX_ID = "3404907619";
 export const COMPANY_ADDRESS = "м. Тернопіль, вул. Львівська, 1";
 export const COMPANY_ADDRESS_EN = "1 Lvivska St, Ternopil, Ukraine";
-export const COMPANY_PHONE = "+38066358365";
+export const COMPANY_PHONE = "+380966358365";
 
 const privacyUk: LegalDoc = {
   title: "Політика конфіденційності",
@@ -198,8 +198,8 @@ const privacyEn: LegalDoc = {
 };
 
 const termsUk: LegalDoc = {
-  title: "Умови користування",
-  updated: "Останнє оновлення: 27 вересня 2026",
+  title: "Правила і умови",
+  updated: "Останнє оновлення: 29 вересня 2026",
   intro:
     "Користуючись Кіро (сайтом і мобільним додатком), ви погоджуєтесь із цими умовами. Якщо не погоджуєтесь, будь ласка, не користуйтесь сервісом.",
   sections: [
@@ -230,7 +230,7 @@ const termsUk: LegalDoc = {
       items: [
         "Ви відповідаєте за точність опису події, її проведення та виконання вимог закону.",
         "Платні події: оплата учасників та повернення коштів відбуваються між вами й учасником; платформа лише надає інструменти обліку, якщо інше прямо не вказано.",
-        "Публікація подій може потребувати кредитів. Правила їх використання вказані в розділі «Кредити».",
+        "Публікація подій може потребувати кредитів — разових (сторінка «Ціни») або отриманих щомісяця за підпискою «Старт»/«Про». Підписка також відкриває співорганізаторів, повторювані події, пріоритет у стрічці та бейдж. Умови оплати — на сторінці «Публічна оферта».",
       ],
     },
     {
@@ -261,8 +261,8 @@ const termsUk: LegalDoc = {
 };
 
 const termsEn: LegalDoc = {
-  title: "Terms of Use",
-  updated: "Last updated: 27 September 2026",
+  title: "Terms and Conditions",
+  updated: "Last updated: 29 September 2026",
   intro:
     "By using Kiro (the website and mobile app) you agree to these terms. If you do not agree, please do not use the service.",
   sections: [
@@ -293,7 +293,7 @@ const termsEn: LegalDoc = {
       items: [
         "You are responsible for the accuracy of your event description, for running it and for complying with the law.",
         "Paid events: payment from participants and refunds are between you and the participant; the platform only provides record-keeping tools unless stated otherwise.",
-        "Publishing events may require credits; the rules are in the Credits section.",
+        "Publishing events may require credits — bought one-off (see \"Pricing\") or granted monthly by a Starter/Pro subscription. The subscription also unlocks co-organizers, recurring events, feed priority and a badge. Payment terms are on the \"Public Offer\" page.",
       ],
     },
     {
@@ -413,45 +413,53 @@ const deletionEn: LegalDoc = {
 
 const offerUk: LegalDoc = {
   title: "Публічна оферта",
-  updated: "Останнє оновлення: 27 вересня 2026",
+  updated: "Останнє оновлення: 29 вересня 2026",
   intro:
-    "Цей документ є публічною офертою (договором) відповідно до ст. 633, 641 Цивільного кодексу України. Оплата пакета кредитів на сайті kiro.fineko.space або в мобільному додатку Кіро є повним і безумовним прийняттям (акцептом) цієї оферти.",
+    "Цей документ є публічною офертою (договором) відповідно до ст. 633, 641 Цивільного кодексу України. Оплата пакета кредитів або підписки на сайті kiro.fineko.space чи в мобільному додатку Кіро є повним і безумовним прийняттям (акцептом) цієї оферти.",
   sections: [
     {
       heading: "1. Предмет договору",
       paragraphs: [
-        "Продавець (реквізити — на сторінці «Контакти») надає покупцю (організатору подій) пакет «кредитів» — цифрове право на публікацію відповідної кількості подій у сервісі Кіро. Кредити не є грошовим засобом, не підлягають обміну на готівку і діють лише в межах сервісу.",
+        "Продавець (реквізити — на сторінці «Контакти») надає покупцю (організатору подій) один із двох цифрових продуктів: пакет «кредитів» — разове право на публікацію відповідної кількості подій, або підписку «Старт»/«Про» — щомісячне право на публікацію (кредити нараховуються щомісяця) разом із додатковими можливостями сервісу. Ні кредити, ні підписка не є грошовим засобом, не підлягають обміну на готівку і діють лише в межах сервісу Кіро.",
       ],
     },
     {
-      heading: "2. Ціна та порядок оплати",
+      heading: "2. Кредити: ціна та оплата",
       items: [
-        "Актуальні пакети та ціни показуються на сторінці «Кредити» перед оплатою; на момент публікації цієї оферти діють: «1 публікація» — 199 грн, «5 публікацій» — 799 грн, «10 публікацій» — 1499 грн.",
+        "Актуальні пакети та ціни показуються на сторінці «Ціни» перед оплатою; на момент публікації цієї оферти діють: «1 публікація» — 199 грн, «5 публікацій» — 799 грн, «10 публікацій» — 1499 грн.",
         "Оплата приймається через платіжні системи WayForPay та/або Monobank Acquiring. Дані банківської картки вводяться на стороні платіжної системи; продавець їх не бачить і не зберігає.",
       ],
     },
     {
-      heading: "3. Порядок надання (\"доставки\")",
+      heading: "3. Підписка: ціна, тривалість, поновлення",
+      items: [
+        "Тарифи на момент публікації цієї оферти: «Старт» — 199 грн/місяць (5 кредитів щомісяця), «Про» — 449 грн/місяць (15 кредитів щомісяця, пріоритет у стрічці, бейдж «Перевірений організатор», доступ до співорганізаторів і повторюваних подій). Актуальні тарифи — на сторінці «Ціни».",
+        "Одна оплата активує рівно один місяць доступу від дати оплати (або продовжує поточний період, якщо ви оплачуєте заздалегідь). Підписка НЕ списується автоматично: щоб продовжити користування після завершення оплаченого місяця, потрібно оплатити наступний період вручну на сторінці «Ціни». Про наближення завершення періоду сервіс попереджає в акаунті/сповіщеннях.",
+        "Оплата приймається через WayForPay та/або Monobank Acquiring (банківський переказ для підписки не приймається).",
+      ],
+    },
+    {
+      heading: "4. Порядок надання (\"доставки\")",
       paragraphs: [
-        "Кредити зараховуються на акаунт покупця автоматично, одразу після підтвердження оплати платіжною системою — зазвичай упродовж кількох хвилин. Якщо кредити не зараховані протягом 24 годин після успішної оплати, звертайтесь на " +
+        "Кредити нараховуються, а підписка активується на акаунт покупця автоматично, одразу після підтвердження оплати платіжною системою — зазвичай упродовж кількох хвилин. Якщо цього не відбулося протягом 24 годин після успішної оплати, звертайтесь на " +
           CONTACT_EMAIL +
           " із зазначенням email акаунта та часу оплати.",
       ],
     },
     {
-      heading: "4. Право на відмову від договору",
+      heading: "5. Право на відмову від договору",
       paragraphs: [
-        "Кредити є цифровим контентом, що не постачається на матеріальному носії. Відповідно до Закону України «Про захист прав споживачів», право на відмову від договору про постачання цифрового контенту втрачається з моменту, коли його постачання розпочалося за прямою згодою споживача (тобто з моменту зарахування кредитів). Умови повернення коштів за невикористані кредити — на сторінці «Повернення коштів».",
+        "Кредити й підписка є цифровим контентом, що не постачається на матеріальному носії. Відповідно до Закону України «Про захист прав споживачів», право на відмову від договору про постачання цифрового контенту втрачається з моменту, коли його постачання розпочалося за прямою згодою споживача (тобто з моменту нарахування кредитів або активації підписки). Умови повернення коштів — на сторінці «Повернення коштів».",
       ],
     },
     {
-      heading: "5. Відповідальність",
+      heading: "6. Відповідальність",
       paragraphs: [
-        "Продавець надає лише технічну платформу для публікації подій і прийому оплати за кредити. Продавець не є організатором подій, розміщених у сервісі третіми особами, і не відповідає за їх проведення, якість, безпеку чи скасування.",
+        "Продавець надає лише технічну платформу для публікації подій і прийому оплати за кредити та підписку. Продавець не є організатором подій, розміщених у сервісі третіми особами, і не відповідає за їх проведення, якість, безпеку чи скасування.",
       ],
     },
     {
-      heading: "6. Реквізити продавця",
+      heading: "7. Реквізити продавця",
       paragraphs: ["Повні реквізити — на сторінці «Контакти»."],
     },
   ],
@@ -459,43 +467,51 @@ const offerUk: LegalDoc = {
 
 const offerEn: LegalDoc = {
   title: "Public Offer",
-  updated: "Last updated: 27 September 2026",
+  updated: "Last updated: 29 September 2026",
   intro:
-    "This is a public offer (contract) under Articles 633 and 641 of the Civil Code of Ukraine. Paying for a credit package on kiro.fineko.space or in the Kiro mobile app is full and unconditional acceptance of this offer.",
+    "This is a public offer (contract) under Articles 633 and 641 of the Civil Code of Ukraine. Paying for a credit package or a subscription on kiro.fineko.space or in the Kiro mobile app is full and unconditional acceptance of this offer.",
   sections: [
     {
       heading: "1. Subject of the agreement",
       paragraphs: [
-        "The Seller (details on the \"Contacts\" page) provides the Buyer (an event organizer) a package of \"credits\" — a digital right to publish a corresponding number of events on Kiro. Credits are not a monetary instrument, are not exchangeable for cash, and are valid only within the service.",
+        "The Seller (details on the \"Contacts\" page) provides the Buyer (an event organizer) one of two digital products: a package of \"credits\" — a one-off right to publish a corresponding number of events, or a \"Starter\"/\"Pro\" subscription — a monthly right to publish (credits are granted every month) plus additional service features. Neither credits nor a subscription are a monetary instrument, are exchangeable for cash, or are valid outside the Kiro service.",
       ],
     },
     {
-      heading: "2. Price and payment",
+      heading: "2. Credits: price and payment",
       items: [
-        "Current packages and prices are shown on the \"Credits\" page before payment; at the time this offer was published: \"1 publication\" — 199 UAH, \"5 publications\" — 799 UAH, \"10 publications\" — 1499 UAH.",
+        "Current packages and prices are shown on the \"Pricing\" page before payment; at the time this offer was published: \"1 publication\" — 199 UAH, \"5 publications\" — 799 UAH, \"10 publications\" — 1499 UAH.",
         "Payment is accepted via WayForPay and/or Monobank Acquiring. Card details are entered on the payment provider's side; the Seller never sees or stores them.",
       ],
     },
     {
-      heading: "3. Delivery",
-      paragraphs: [
-        `Credits are added to the Buyer's account automatically, immediately after the payment provider confirms payment — usually within a few minutes. If credits are not added within 24 hours of a successful payment, contact ${CONTACT_EMAIL} with your account email and the payment time.`,
+      heading: "3. Subscription: price, duration, renewal",
+      items: [
+        "Tiers at the time this offer was published: \"Starter\" — 199 UAH/month (5 credits/month), \"Pro\" — 449 UAH/month (15 credits/month, feed priority, \"Verified organizer\" badge, access to co-organizers and recurring events). Current tiers are on the \"Pricing\" page.",
+        "One payment activates exactly one month of access from the payment date (or extends the current period if paid in advance). The subscription does NOT auto-renew: to keep using it after the paid month ends, pay for the next period manually on the \"Pricing\" page. The service warns you in-account/via notifications as the period nears its end.",
+        "Payment is accepted via WayForPay and/or Monobank Acquiring (bank transfer is not accepted for subscriptions).",
       ],
     },
     {
-      heading: "4. Right of withdrawal",
+      heading: "4. Delivery",
       paragraphs: [
-        "Credits are digital content not supplied on a tangible medium. Under Ukraine's consumer protection law, the right to withdraw from a digital-content contract is lost once supply begins with the consumer's prior express consent (i.e. once credits are credited). Refund terms for unused credits are on the \"Refund Policy\" page.",
+        `Credits are added, or the subscription activated, on the Buyer's account automatically, immediately after the payment provider confirms payment — usually within a few minutes. If this hasn't happened within 24 hours of a successful payment, contact ${CONTACT_EMAIL} with your account email and the payment time.`,
       ],
     },
     {
-      heading: "5. Liability",
+      heading: "5. Right of withdrawal",
       paragraphs: [
-        "The Seller provides only the technical platform for publishing events and accepting payment for credits. The Seller is not the organizer of events listed by third parties and is not responsible for how they are run, their quality, safety, or cancellation.",
+        "Credits and subscriptions are digital content not supplied on a tangible medium. Under Ukraine's consumer protection law, the right to withdraw from a digital-content contract is lost once supply begins with the consumer's prior express consent (i.e. once credits are granted or the subscription activated). Refund terms are on the \"Refund Policy\" page.",
       ],
     },
     {
-      heading: "6. Seller details",
+      heading: "6. Liability",
+      paragraphs: [
+        "The Seller provides only the technical platform for publishing events and accepting payment for credits and subscriptions. The Seller is not the organizer of events listed by third parties and is not responsible for how they are run, their quality, safety, or cancellation.",
+      ],
+    },
+    {
+      heading: "7. Seller details",
       paragraphs: ["Full details are on the \"Contacts\" page."],
     },
   ],
@@ -503,31 +519,38 @@ const offerEn: LegalDoc = {
 
 const refundUk: LegalDoc = {
   title: "Повернення коштів",
-  updated: "Останнє оновлення: 27 вересня 2026",
-  intro: "Умови повернення коштів за пакети кредитів, придбані на kiro.fineko.space або в мобільному додатку Кіро.",
+  updated: "Останнє оновлення: 29 вересня 2026",
+  intro: "Умови повернення коштів за пакети кредитів і підписку, придбані на kiro.fineko.space або в мобільному додатку Кіро.",
   sections: [
     {
       heading: "1. Коли кошти повертаються повністю",
       items: [
-        "Технічна помилка на нашій стороні: оплата пройшла, але кредити не зараховані, або кредити зараховано двічі за одну оплату.",
-        "Помилкове/дубльоване списання платіжною системою за один і той самий пакет.",
+        "Технічна помилка на нашій стороні: оплата пройшла, але кредити не зараховані чи підписка не активована, або нараховано/активовано двічі за одну оплату.",
+        "Помилкове/дубльоване списання платіжною системою за один і той самий пакет чи період підписки.",
       ],
     },
     {
-      heading: "2. Коли можна повернути невикористані кредити",
+      heading: "2. Кредити: коли можна повернути невикористані",
       paragraphs: [
         "Якщо жоден кредит із придбаного пакета ще не був використаний для публікації події, ви можете запросити повернення протягом 14 днів з дати оплати.",
       ],
     },
     {
-      heading: "3. Коли кошти не повертаються",
+      heading: "3. Підписка: коли можна повернути оплату за період",
+      paragraphs: [
+        "Якщо з моменту активації минуло не більше 14 днів і ви ще не використали жодного кредиту, отриманого за цей період, та жодної можливості тарифу «Про» (додавання співорганізатора, створення серії повторюваних подій) — можна запросити повернення оплати за цей період підписки.",
+      ],
+    },
+    {
+      heading: "4. Коли кошти не повертаються",
       items: [
-        "Кредит уже використано для публікації події — незалежно від того, відбулася подія чи ні (за проведення власних подій відповідає організатор, див. «Умови користування», п. 4).",
+        "Кредит (разовий чи з підписки) уже використано для публікації події — незалежно від того, відбулася подія чи ні (за проведення власних подій відповідає організатор, див. «Правила і умови», п. 4).",
+        "Для тарифу «Про» — уже використано хоча б одну з ексклюзивних можливостей періоду (співорганізатор, повторювана подія).",
         "Минуло понад 14 днів з моменту оплати.",
       ],
     },
     {
-      heading: "4. Як подати запит на повернення",
+      heading: "5. Як подати запит на повернення",
       paragraphs: [
         `Напишіть на ${CONTACT_EMAIL} з email, яким зареєстровано акаунт, приблизною датою й сумою оплати, і короткою причиною. Розглядаємо звернення протягом 10 робочих днів; кошти повертаються тим самим платіжним провайдером (WayForPay або Monobank) на картку, з якої була оплата.`,
       ],
@@ -537,31 +560,38 @@ const refundUk: LegalDoc = {
 
 const refundEn: LegalDoc = {
   title: "Refund Policy",
-  updated: "Last updated: 27 September 2026",
-  intro: "Refund terms for credit packages purchased on kiro.fineko.space or in the Kiro mobile app.",
+  updated: "Last updated: 29 September 2026",
+  intro: "Refund terms for credit packages and subscriptions purchased on kiro.fineko.space or in the Kiro mobile app.",
   sections: [
     {
       heading: "1. Full refund",
       items: [
-        "A technical error on our side: payment went through but credits were not added, or credits were added twice for one payment.",
-        "A duplicate/erroneous charge by the payment provider for the same package.",
+        "A technical error on our side: payment went through but credits weren't added or the subscription wasn't activated, or either happened twice for one payment.",
+        "A duplicate/erroneous charge by the payment provider for the same package or subscription period.",
       ],
     },
     {
-      heading: "2. Unused credits",
+      heading: "2. Credits: unused credits",
       paragraphs: [
         "If none of the credits in a purchased package have been used to publish an event yet, you can request a refund within 14 days of the payment date.",
       ],
     },
     {
-      heading: "3. No refund",
+      heading: "3. Subscription: refunding a period",
+      paragraphs: [
+        "If no more than 14 days have passed since activation, and you haven't used any credit granted for that period nor any Pro-tier feature (adding a co-organizer, creating a recurring series), you can request a refund for that subscription payment.",
+      ],
+    },
+    {
+      heading: "4. No refund",
       items: [
-        "A credit has already been used to publish an event — regardless of whether the event actually took place (the organizer is responsible for running their own events, see \"Terms of Use\", section 4).",
+        "A credit (one-off or from a subscription) has already been used to publish an event — regardless of whether the event actually took place (the organizer is responsible for running their own events, see \"Terms and Conditions\", section 4).",
+        "For the Pro tier — at least one exclusive feature of the period has already been used (co-organizer, recurring event).",
         "More than 14 days have passed since payment.",
       ],
     },
     {
-      heading: "4. How to request a refund",
+      heading: "5. How to request a refund",
       paragraphs: [
         `Email ${CONTACT_EMAIL} with your account's email, the approximate payment date and amount, and a short reason. We review requests within 10 business days; funds are returned by the same payment provider (WayForPay or Monobank) to the card used to pay.`,
       ],

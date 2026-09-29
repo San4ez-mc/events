@@ -46,7 +46,7 @@ export class MonoAdapter implements PaymentProviderAdapter {
       body: JSON.stringify({
         amount: amountKopecks,
         ccy: 980, // ISO 4217 numeric code for UAH
-        merchantPaymInfo: { reference: order.id, destination: order.package.name },
+        merchantPaymInfo: { reference: order.id, destination: order.product.name },
         webHookUrl: this.webhookUrl,
       }),
     });

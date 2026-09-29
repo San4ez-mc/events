@@ -35,7 +35,7 @@ export class WayForPayAdapter implements PaymentProviderAdapter {
       String(orderDate),
       order.amount,
       order.currency,
-      order.package.name,
+      order.product.name,
       "1",
       order.amount,
     ]);
@@ -48,7 +48,7 @@ export class WayForPayAdapter implements PaymentProviderAdapter {
       orderDate: String(orderDate),
       amount: order.amount,
       currency: order.currency,
-      "productName[]": order.package.name,
+      "productName[]": order.product.name,
       "productCount[]": "1",
       "productPrice[]": order.amount,
     });
