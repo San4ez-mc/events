@@ -70,6 +70,7 @@ export default function ProfileScreen() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [prefs, setPrefs] = useState<Prefs | null>(null);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -98,6 +99,10 @@ export default function ProfileScreen() {
       setPrefs(me.preferences ?? null);
       setLoaded(true);
     })().catch(() => setLoaded(true));
+    void fetch(`${API_URL}/api/v1/credits/balance`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body) => body && setCreditBalance(body.balance))
+      .catch(() => {});
   }, []);
 
   // Saves on every toggle (no separate Save button): optimistic, rolled back if the request fails.
@@ -231,6 +236,11 @@ export default function ProfileScreen() {
           <View style={styles.cardText}>
             <Text style={styles.name}>{form.name || user.name || user.nickname || email}</Text>
             <Text style={styles.email}>{email}</Text>
+            {creditBalance !== null && (
+              <Text style={styles.creditBalance}>
+                {t("events.wizard.creditsBalance")}: <Text style={{ fontWeight: "800" }}>{creditBalance}</Text>
+              </Text>
+            )}
           </View>
         </View>
 
@@ -455,6 +465,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   cardText: { flex: 1, gap: 2 },
   name: { color: colors.foreground, fontSize: 18, fontWeight: "700" },
   email: { color: colors.muted, fontSize: 13 },
+  creditBalance: { color: colors.foreground, fontSize: 12, marginTop: 2 },
   section: { color: colors.muted, fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.8, marginTop: spacing.md },
   form: { gap: spacing.md },
   hint: { color: colors.muted, fontSize: 12, marginTop: -spacing.sm },

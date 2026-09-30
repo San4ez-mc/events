@@ -324,9 +324,11 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
     }
   }, []);
 
+  // Loaded once up front (not just on the last step) so the cost is visible from the very start,
+  // not only as a surprise right before publishing.
   useEffect(() => {
-    if (step === STEPS - 1) void loadBalance();
-  }, [step, loadBalance]);
+    void loadBalance();
+  }, [loadBalance]);
 
   const startsAt = () => {
     const d = new Date(`${form.date}T${form.time}:00`);
@@ -552,6 +554,14 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
 
         {step === 0 && (
           <>
+            {balance !== null && (
+              <View style={styles.costBanner}>
+                <Ionicons name="pricetag-outline" size={16} color={colors.accentFrom} />
+                <Text style={styles.costBannerText}>
+                  {t("events.wizard.publishCost")} · {t("events.wizard.creditsBalance")}: <Text style={{ fontWeight: "800" }}>{balance}</Text>
+                </Text>
+              </View>
+            )}
             <Field label={t("events.wizard.title")} required>
               <TextInput value={form.title} onChangeText={(v) => set({ title: v })} placeholder={t("events.wizard.titlePlaceholder")} placeholderTextColor={colors.muted} style={styles.input} maxLength={120} />
             </Field>
@@ -872,6 +882,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   input: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, color: colors.foreground, paddingHorizontal: spacing.md, paddingVertical: 12, fontSize: 15 },
   multiline: { minHeight: 110, textAlignVertical: "top" },
   hint: { color: colors.muted, fontSize: 12 },
+  costBanner: { flexDirection: "row", alignItems: "center", gap: spacing.xs, backgroundColor: colors.surface, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  costBannerText: { color: colors.foreground, fontSize: 12, flexShrink: 1 },
   categoryTrigger: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 12 },
   categoryTriggerText: { color: colors.foreground, fontSize: 15, flexShrink: 1 },
   categoryTriggerPlaceholder: { color: colors.muted },
