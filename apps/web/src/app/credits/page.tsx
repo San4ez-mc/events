@@ -10,6 +10,8 @@ import type { CreateOrderResult, CreditPackage, PlatformPaymentOrder } from "@/l
 import { Button } from "@/components/ui/button";
 
 const CREDIT_PROVIDERS = ["WAYFORPAY", "MONO", "MANUAL_IBAN"] as const;
+/** Buying credits directly is hidden for now — only the subscription is user-facing; flip this back on to restore it. */
+const SHOW_BUY_CREDITS = false;
 const SUBSCRIPTION_PROVIDERS = ["WAYFORPAY", "MONO"] as const;
 const TIER_ORDER = ["STARTER", "PRO"] as const;
 type Tier = (typeof TIER_ORDER)[number];
@@ -213,17 +215,19 @@ export default function CreditsPage() {
         )}
       </section>
 
+      {balance !== null && (
+        <p className="mb-4 text-center text-sm text-muted">
+          {t("credits.balance")}: <strong className="text-foreground">{balance}</strong>
+        </p>
+      )}
+
+      {/* Buying credits directly is hidden for now — only the subscription is shown to users; the flow itself stays intact. */}
+      {SHOW_BUY_CREDITS && (
       <section>
         <div className="mb-6 text-center">
           <h2 className="text-xl font-bold">{t("pricing.creditsSectionTitle")}</h2>
           <p className="text-sm text-muted">{t("pricing.creditsSectionSubtitle")}</p>
         </div>
-
-        {balance !== null && (
-          <p className="mb-4 text-center text-sm text-muted">
-            {t("credits.balance")}: <strong className="text-foreground">{balance}</strong>
-          </p>
-        )}
 
         {packages === null && <p className="text-center text-muted">{t("common.loading")}</p>}
 
@@ -266,6 +270,7 @@ export default function CreditsPage() {
           </div>
         )}
       </section>
+      )}
 
       {user && (
         <>

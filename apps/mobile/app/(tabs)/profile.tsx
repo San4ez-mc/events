@@ -14,6 +14,9 @@ import { ScreenHeader } from "../../src/components/ui/ScreenHeader";
 import { radius, spacing, type Palette, useTheme, useThemedStyles } from "../../src/lib/theme";
 import { Chips } from "../../src/components/discover/FiltersSheet";
 
+/** Buying credits directly is hidden for now — only the subscription is user-facing; flip this back on to restore it. */
+const SHOW_BUY_CREDITS = false;
+
 const PREF_KEYS = [
   { key: "allowPush", labelKey: "profile.notifyPush" },
   { key: "allowEmail", labelKey: "profile.notifyEmail" },
@@ -341,13 +344,15 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.muted} />
         </Pressable>
 
-        <Pressable style={styles.row} onPress={() => router.push("/credits")}>
-          <Ionicons name="wallet" size={22} color={colors.accentFrom} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.rowText}>{t("credits.title")}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-        </Pressable>
+        {SHOW_BUY_CREDITS && (
+          <Pressable style={styles.row} onPress={() => router.push("/credits")}>
+            <Ionicons name="wallet" size={22} color={colors.accentFrom} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rowText}>{t("credits.title")}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+          </Pressable>
+        )}
 
         <Pressable style={styles.row} onPress={() => router.push("/subscription")}>
           <Ionicons name="star" size={22} color={colors.accentFrom} />

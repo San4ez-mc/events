@@ -83,6 +83,8 @@ interface Form {
 }
 
 const MAX_ADDITIONAL_CATEGORIES = 5;
+/** Buying credits directly is hidden for now — only the subscription is user-facing; flip this back on to restore it. */
+const SHOW_BUY_CREDITS = false;
 const STEPS = 5;
 const pad = (n: number) => String(n).padStart(2, "0");
 /** form.date stays ISO (YYYY-MM-DD) internally — only the text field shows/accepts DD.MM.YYYY,
@@ -822,7 +824,8 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
               </Text>
             )}
             {balance === 0 && <Button title={t("events.wizard.claimFreeCredits")} variant="secondary" onPress={() => void claimFree()} loading={busy} />}
-            {balance === 0 && <Button title={t("credits.title")} variant="secondary" onPress={() => router.push("/credits")} />}
+            {/* Buying credits is hidden for now — only the subscription is shown to users; the flow itself stays intact. */}
+            {SHOW_BUY_CREDITS && balance === 0 && <Button title={t("credits.title")} variant="secondary" onPress={() => router.push("/credits")} />}
           </>
         )}
 

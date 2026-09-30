@@ -26,7 +26,7 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
   const [showForm, setShowForm] = useState(false);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [joinWaitlist, setJoinWaitlist] = useState(false);
-  const [showAsParticipant, setShowAsParticipant] = useState(false);
+  const [showAsParticipant, setShowAsParticipant] = useState(true);
   const tiers = event.priceOptions ?? [];
   const [tierId, setTierId] = useState<string | null>(null);
   const selectedTier =
