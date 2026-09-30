@@ -518,6 +518,7 @@
       "confirmManual": "Confirm",
       "subscriptionLabel": "Subscription"
     },
+    "emptyList": "Nothing here yet",
     "credits": {
       "title": "Adjust credits",
       "userId": "User ID",
@@ -757,7 +758,9 @@
     "date": "Date",
     "time": "Start time",
     "timeHint": "HH:MM, e.g. 19:00",
-    "dateHint": "YYYY-MM-DD",
+    "dateHint": "DD.MM.YYYY",
+    "missingFields": "Fill in the required fields",
+    "startsAtPast": "The event's date and time must be in the future",
     "duration": "Duration, hours",
     "addMedia": "Add photo or video",
     "mediaHint": "Up to 10 files. The first photo becomes the cover.",

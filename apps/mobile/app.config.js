@@ -57,6 +57,7 @@ module.exports = {
       ["expo-image-picker", { photosPermission: "Кіро потребує доступу до фото та відео, щоб додати їх до вашої події." }],
       "expo-web-browser",
       "expo-notifications",
+      "expo-font",
     ],
     extra: {
       router: {},

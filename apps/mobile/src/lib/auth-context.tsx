@@ -122,9 +122,13 @@ export class ApiRequestError extends Error {
   code: string;
   details?: Record<string, string[]>;
 
-  constructor(body: { error?: { code?: string; message?: string; details?: Record<string, string[]> } }) {
-    super(body.error?.message ?? "Request failed");
-    this.code = body.error?.code ?? "INTERNAL_ERROR";
-    this.details = body.error?.details;
+  constructor(body: { error?: { code?: string; message?: string; details?: Record<string, string[]> } } | null) {
+    // A null body means the server's response wasn't valid JSON (e.g. a proxy's own HTML error
+    // page for a request it rejected before the API ever saw it) — never crash on that, since an
+    // uncaught error here stops this from being an ApiRequestError at all, hiding a specific error
+    // (like FILE_TOO_LARGE) behind a generic "something went wrong".
+    super(body?.error?.message ?? "Request failed");
+    this.code = body?.error?.code ?? "INTERNAL_ERROR";
+    this.details = body?.error?.details;
   }
 }

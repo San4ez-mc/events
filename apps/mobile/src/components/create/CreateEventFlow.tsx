@@ -85,6 +85,17 @@ interface Form {
 const MAX_ADDITIONAL_CATEGORIES = 5;
 const STEPS = 5;
 const pad = (n: number) => String(n).padStart(2, "0");
+/** form.date stays ISO (YYYY-MM-DD) internally — only the text field shows/accepts DD.MM.YYYY,
+ * the format Ukrainian users actually write dates in. Falls back to passthrough while the user
+ * is mid-typing (neither shape matches yet), which is harmless since it's just local form state. */
+function isoToDisplayDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : iso;
+}
+function displayToIsoDate(display: string): string {
+  const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(display);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : display;
+}
 const isoDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const addDays = (days: number) => {
   const d = new Date();
@@ -141,6 +152,33 @@ async function authed<T = unknown>(path: string, init: RequestInit = {}, retried
   return body as T;
 }
 
+/**
+ * The backend's VALIDATION_ERROR on publish carries exactly which fields are missing
+ * (`details._`) or, for a startsAt-in-the-past failure, a field-keyed message — the generic
+ * "check your data" text otherwise shown leaves the organizer guessing which of the 5 wizard
+ * steps to go back to.
+ */
+function describePublishError(err: ApiRequestError, t: (key: string) => string): string {
+  const details = err.details as Record<string, string[]> | undefined;
+  if (!details) return t(`errors.${err.code}`);
+
+  if (Array.isArray(details._) && details._.length > 0) {
+    const labels: Record<string, string> = {
+      title: t("events.wizard.title"),
+      categoryId: t("events.wizard.category"),
+      startsAt: t("create.date"),
+      description: t("events.wizard.description"),
+      cityId: t("events.wizard.city"),
+      onlineUrl: t("events.wizard.onlineUrl"),
+    };
+    const names = details._.map((field) => labels[field] ?? field).join(", ");
+    return `${t("create.missingFields")}: ${names}`;
+  }
+  if (details.startsAt) return t("create.startsAtPast");
+
+  return t(`errors.${err.code}`);
+}
+
 /** Spec §31/§68: title -> media -> category/when/where -> price/seats -> publish, with the draft autosaved on every step. */
 export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) {
   const { colors, styles } = useThemedStyles(makeStyles);
@@ -152,6 +190,8 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   const [slug, setSlug] = useState<string | null>(null);
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [categories, setCategories] = useState<Named[]>([]);
+  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const [additionalCategoriesEnabled, setAdditionalCategoriesEnabled] = useState(false);
   const [cities, setCities] = useState<Named[]>([]);
   const [districts, setDistricts] = useState<Named[]>([]);
   const [newDistrictName, setNewDistrictName] = useState("");
@@ -192,6 +232,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
         setSlug(e.slug);
         setPublishedAlready(e.status === "PUBLISHED");
         setMedia((e.media ?? []) as MediaItem[]);
+        setAdditionalCategoriesEnabled((e.additionalCategories ?? []).length > 0);
         setForm({
           ...INITIAL,
           title: e.title,
@@ -426,7 +467,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
       setSlug(published.slug ?? slug);
       setOutcome(published.status);
     } catch (err) {
-      setError(err instanceof ApiRequestError ? t(`errors.${err.code}`) : t("common.somethingWentWrong"));
+      setError(err instanceof ApiRequestError ? describePublishError(err, t) : t("common.somethingWentWrong"));
     } finally {
       setBusy(false);
     }
@@ -509,11 +550,31 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
 
         {step === 0 && (
           <>
-            <Field label={t("events.wizard.title")}>
+            <Field label={t("events.wizard.title")} required>
               <TextInput value={form.title} onChangeText={(v) => set({ title: v })} placeholder={t("events.wizard.titlePlaceholder")} placeholderTextColor={colors.muted} style={styles.input} maxLength={120} />
             </Field>
             <Section title={t("events.wizard.category")}>
-              <SearchPicker options={categoryOptions} selected={form.categoryId ? [form.categoryId] : []} multi={false} onChange={(ids) => set({ categoryId: ids[0] ?? null })} placeholder={t("filters.search")} emptyLabel={t("filters.noResults")} />
+              {categoryPickerOpen ? (
+                <SearchPicker
+                  options={categoryOptions}
+                  selected={form.categoryId ? [form.categoryId] : []}
+                  multi={false}
+                  onChange={(ids) => {
+                    set({ categoryId: ids[0] ?? null });
+                    setCategoryPickerOpen(false);
+                  }}
+                  placeholder={t("filters.search")}
+                  emptyLabel={t("filters.noResults")}
+                />
+              ) : (
+                <Pressable style={styles.categoryTrigger} onPress={() => setCategoryPickerOpen(true)}>
+                  <Text style={[styles.categoryTriggerText, !form.categoryId && styles.categoryTriggerPlaceholder]}>
+                    {categoryOptions.find((o) => o.id === form.categoryId)?.label ?? t("events.wizard.categoryPlaceholder")}
+                  </Text>
+                  <Ionicons name="chevron-down" size={18} color={colors.muted} />
+                </Pressable>
+              )}
+              <Text style={styles.hint}>{categoryAdded ? t("events.wizard.addCategorySubmitted") : t("events.wizard.addCategory")}</Text>
               <View style={styles.addDistrictRow}>
                 <TextInput
                   value={newCategoryName}
@@ -533,20 +594,27 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
                   {addingCategory ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={styles.addDistrictButtonText}>{t("events.wizard.addDistrictAdd")}</Text>}
                 </Pressable>
               </View>
-              <Text style={styles.hint}>{categoryAdded ? t("events.wizard.addCategorySubmitted") : t("events.wizard.addCategory")}</Text>
             </Section>
             <Section title={t("events.wizard.additionalCategories")}>
-              <Text style={styles.hint}>{t("events.wizard.additionalCategoriesHint")}</Text>
-              <SearchPicker
-                options={categoryOptions.filter((o) => o.id !== form.categoryId)}
-                selected={form.additionalCategoryIds}
-                multi
-                onChange={(ids) => set({ additionalCategoryIds: ids.slice(0, MAX_ADDITIONAL_CATEGORIES) })}
-                placeholder={t("filters.search")}
-                emptyLabel={t("filters.noResults")}
-              />
+              <Pressable style={styles.checkboxRow} onPress={() => setAdditionalCategoriesEnabled((v) => !v)} accessibilityRole="checkbox" accessibilityState={{ checked: additionalCategoriesEnabled }}>
+                <Ionicons name={additionalCategoriesEnabled ? "checkbox" : "square-outline"} size={20} color={additionalCategoriesEnabled ? colors.accentFrom : colors.muted} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.checkboxLabel}>{t("events.wizard.additionalCategories")}</Text>
+                  <Text style={styles.hint}>{t("events.wizard.additionalCategoriesHint")}</Text>
+                </View>
+              </Pressable>
+              {additionalCategoriesEnabled && (
+                <SearchPicker
+                  options={categoryOptions.filter((o) => o.id !== form.categoryId)}
+                  selected={form.additionalCategoryIds}
+                  multi
+                  onChange={(ids) => set({ additionalCategoryIds: ids.slice(0, MAX_ADDITIONAL_CATEGORIES) })}
+                  placeholder={t("filters.search")}
+                  emptyLabel={t("filters.noResults")}
+                />
+              )}
             </Section>
-            <Field label={t("events.wizard.description")}>
+            <Field label={t("events.wizard.description")} required>
               <TextInput value={form.description} onChangeText={(v) => set({ description: v })} placeholder={t("events.wizard.descriptionPlaceholder")} placeholderTextColor={colors.muted} style={[styles.input, styles.multiline]} multiline />
             </Field>
           </>
@@ -566,7 +634,9 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
                     </View>
                   )}
                   <Pressable style={styles.mediaRemove} onPress={() => void removeMedia(m.id)} hitSlop={8}>
-                    <Ionicons name="close" size={16} color={colors.white} />
+                    {/* Android adds asymmetric font padding around icon glyphs by default, which visibly
+                        off-centers a small glyph like "×" inside a tightly-sized circular button. */}
+                    <Ionicons name="close" size={16} color={colors.white} style={{ includeFontPadding: false, textAlignVertical: "center" }} />
                   </Pressable>
                 </View>
               ))}
@@ -593,7 +663,15 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
             </Section>
             <Section title={t("create.date")}>
               <Chips value={form.date} options={dateChips} onChange={(v) => set({ date: v })} />
-              <TextInput value={form.date} onChangeText={(v) => set({ date: v })} placeholder={t("create.dateHint")} placeholderTextColor={colors.muted} style={styles.input} keyboardType="numbers-and-punctuation" maxLength={10} />
+              <TextInput
+                value={isoToDisplayDate(form.date)}
+                onChangeText={(v) => set({ date: displayToIsoDate(v) })}
+                placeholder={t("create.dateHint")}
+                placeholderTextColor={colors.muted}
+                style={styles.input}
+                keyboardType="numbers-and-punctuation"
+                maxLength={10}
+              />
             </Section>
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
@@ -607,7 +685,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
             </Section>
             {form.format === "OFFLINE" ? (
               <>
-                <Section title={t("events.wizard.city")}>
+                <Section title={`${t("events.wizard.city")} *`}>
                   <SearchPicker options={cityOptions} selected={form.cityId ? [form.cityId] : []} multi={false} onChange={(ids) => set({ cityId: ids[0] ?? null, districtId: null })} placeholder={t("filters.search")} emptyLabel={t("filters.noResults")} />
                 </Section>
                 {form.cityId && (
@@ -763,11 +841,14 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  const { styles } = useThemedStyles(makeStyles);
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  const { colors, styles } = useThemedStyles(makeStyles);
   return (
     <View style={{ gap: 6 }}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.label}>
+        {label}
+        {required && <Text style={{ color: colors.danger }}> *</Text>}
+      </Text>
       {children}
     </View>
   );
@@ -786,6 +867,11 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   input: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, color: colors.foreground, paddingHorizontal: spacing.md, paddingVertical: 12, fontSize: 15 },
   multiline: { minHeight: 110, textAlignVertical: "top" },
   hint: { color: colors.muted, fontSize: 12 },
+  categoryTrigger: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 12 },
+  categoryTriggerText: { color: colors.foreground, fontSize: 15, flexShrink: 1 },
+  categoryTriggerPlaceholder: { color: colors.muted },
+  checkboxRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
+  checkboxLabel: { color: colors.foreground, fontSize: 14, fontWeight: "600" },
   addDistrictRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
   addDistrictInput: { flex: 1 },
   addDistrictButton: { backgroundColor: colors.accentFrom, borderRadius: radius.md, paddingHorizontal: spacing.lg, alignItems: "center", justifyContent: "center" },

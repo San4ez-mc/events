@@ -4,8 +4,6 @@ import { ConfigService } from "@nestjs/config";
 import type { EnvConfig } from "../../config/env.validation";
 import type { CheckoutInstructions, PayableOrder, PaymentProviderAdapter, WebhookOutcome } from "./payment-provider.interface";
 
-const PAY_URL = "https://secure.wayforpay.com/pay";
-
 /**
  * §51 — WayForPay's "Purchase" widget. No server-to-server call is needed to
  * start a checkout: the merchant signs a fixed field set locally
@@ -53,7 +51,10 @@ export class WayForPayAdapter implements PaymentProviderAdapter {
       "productPrice[]": order.amount,
     });
 
-    return { redirectUrl: `${PAY_URL}?${params.toString()}`, providerReference: order.id };
+    // WayForPay's /pay endpoint rejects GET ("Bad Request — This page requires only POST data"),
+    // so the client can't just navigate straight there — send it to our own auto-submit-POST page
+    // instead (same domain WayForPay itself expects in merchantDomainName).
+    return { redirectUrl: `https://${this.domainName}/pay/wayforpay?${params.toString()}`, providerReference: order.id };
   }
 
   async verifyWebhook(rawBody: Buffer): Promise<boolean> {

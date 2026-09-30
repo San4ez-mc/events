@@ -246,6 +246,7 @@ export default function AdminManageScreen() {
             <TextField label={t("admin.users.search")} value={userSearch} onChangeText={setUserSearch} placeholder={t("admin.users.search")} />
             <Button title={t("admin.users.search")} variant="secondary" onPress={() => void loadUsers(userSearch)} style={styles.small} />
             {users === null && <ActivityIndicator color={colors.accentFrom} />}
+            {users?.length === 0 && <Text style={styles.muted}>{t("admin.emptyList")}</Text>}
             {users?.map((u) => {
               const expanded = expandedUserId === u.id;
               return (
@@ -314,6 +315,7 @@ export default function AdminManageScreen() {
               ))}
             </ScrollView>
             {events === null && <ActivityIndicator color={colors.accentFrom} />}
+            {events?.length === 0 && <Text style={styles.muted}>{t("admin.emptyList")}</Text>}
             {events?.map((e) => (
               <View key={e.id} style={styles.card}>
                 <Text style={styles.title}>{e.title}</Text>
@@ -332,6 +334,7 @@ export default function AdminManageScreen() {
         {tab === "payments" && (
           <>
             {orders === null && <ActivityIndicator color={colors.accentFrom} />}
+            {orders?.length === 0 && <Text style={styles.muted}>{t("admin.emptyList")}</Text>}
             {orders?.map((o) => (
               <View key={o.id} style={styles.card}>
                 <Text style={styles.title}>{o.user.name ?? o.user.nickname ?? o.user.email}</Text>
