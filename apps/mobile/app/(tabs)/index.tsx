@@ -33,7 +33,21 @@ export default function DiscoverScreen() {
   const historyRef = useRef<EventCard[]>([]);
   const [toast, setToast] = useState<ToastData | null>(null);
   const [tutorialOpen, setTutorialOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { tutorial } = useLocalSearchParams<{ tutorial?: string }>();
+
+  const loadUnreadCount = useCallback(async () => {
+    const token = getAccessToken();
+    if (!token) return;
+    const res = await fetch(`${API_URL}/api/v1/notifications/unread-count`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) setUnreadCount((await res.json()).count);
+  }, []);
+
+  useEffect(() => {
+    void loadUnreadCount();
+    const poll = setInterval(() => void loadUnreadCount(), 30000);
+    return () => clearInterval(poll);
+  }, [loadUnreadCount]);
 
   /** Short "what just happened" banner (see ActionToast). */
   const notify = useCallback((icon: ToastData["icon"], color: string, text: string, actionLabel?: string, onAction?: () => void) => {
@@ -261,6 +275,24 @@ ${url}`, url, title: event.title }).catch(() => {});
             {countActiveFilters(filters) > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{countActiveFilters(filters)}</Text>
+              </View>
+            )}
+          </Pressable>
+          <Pressable onPress={() => setTutorialOpen(true)} style={styles.headerButton} accessibilityLabel={t("discover.showTips")}>
+            <Ionicons name="school-outline" size={22} color={colors.white} />
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              router.push("/notifications");
+              setUnreadCount(0);
+            }}
+            style={styles.headerButton}
+            accessibilityLabel={t("nav.notifications")}
+          >
+            <Ionicons name="notifications-outline" size={22} color={colors.white} />
+            {unreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{unreadCount > 99 ? "99+" : unreadCount}</Text>
               </View>
             )}
           </Pressable>

@@ -24,6 +24,9 @@
     "myEventsEmpty": "Тут з'являться події, на які ви запишетесь. Час обрати першу!",
     "notificationsSubtitle": "Усе важливе про ваші події",
     "notificationsEmpty": "Поки що тихо. Ми повідомимо, щойно щось станеться.",
+    "notificationsClear": "Очистити",
+    "notificationsClearConfirmTitle": "Очистити всі сповіщення?",
+    "notificationsClearConfirmBody": "Цю дію не можна скасувати.",
     "profileSubtitle": "Ваш акаунт і налаштування"
   },
   "common": {

@@ -24,6 +24,9 @@
     "myEventsEmpty": "Events you join will show up here. Time to pick your first one!",
     "notificationsSubtitle": "Everything important about your events",
     "notificationsEmpty": "All quiet for now. We'll let you know when something happens.",
+    "notificationsClear": "Clear",
+    "notificationsClearConfirmTitle": "Clear all notifications?",
+    "notificationsClearConfirmBody": "This can't be undone.",
     "profileSubtitle": "Your account and settings"
   },
   "common": {

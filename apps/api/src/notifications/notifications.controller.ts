@@ -34,6 +34,12 @@ export class NotificationsController {
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete()
+  deleteAll(@CurrentUser() user: AuthenticatedUser) {
+    return this.notificationsService.deleteAll(user.id);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Post("devices")
   registerDevice(@CurrentUser() user: AuthenticatedUser, @Body() dto: RegisterDeviceDto) {
     return this.notificationsService.registerDevice(user.id, dto.pushToken, dto.platform);

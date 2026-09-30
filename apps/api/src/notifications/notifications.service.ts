@@ -239,6 +239,10 @@ export class NotificationsService {
     });
   }
 
+  async deleteAll(userId: string): Promise<void> {
+    await this.prisma.notification.deleteMany({ where: { userId } });
+  }
+
   /** Reminder/warning jobs use this to avoid sending the same one-off notification twice. */
   async existsForPayload(userId: string, type: NotificationType, payloadKey: string, payloadValue: string): Promise<boolean> {
     const existing = await this.prisma.notification.findFirst({

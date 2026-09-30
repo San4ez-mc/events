@@ -46,10 +46,10 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="notifications"
+        name="saved"
         options={{
-          title: t("nav.notifications"),
-          tabBarIcon: ({ color, size }) => <Ionicons name="notifications" color={color} size={size} />,
+          title: t("myEvents.saved"),
+          tabBarIcon: ({ color, size }) => <Ionicons name="heart" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
@@ -59,6 +59,8 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="person" color={color} size={size} />,
         }}
       />
+      {/* Not a bottom tab anymore (replaced by "saved" above) — still reachable via the bell icon on Discover. */}
+      <Tabs.Screen name="notifications" options={{ href: null }} />
     </Tabs>
   );
 }
