@@ -74,6 +74,8 @@ export interface EventDetail extends EventCard {
   ownerId: string;
   seriesId?: string | null;
   endsAt?: string | null;
+  /** UX §10 — categories beyond the primary one (max 5). */
+  additionalCategories?: { category: { id: string; nameUk: string; nameEn: string } }[];
 }
 
 /** §29 — recurring events: one occurrence is a normal, independent Event row. */

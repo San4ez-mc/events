@@ -131,6 +131,8 @@
       "descriptionPlaceholder": "Розкажіть, чого очікувати на події",
       "category": "Категорія",
       "categoryPlaceholder": "Оберіть категорію",
+      "additionalCategories": "Додаткові категорії",
+      "additionalCategoriesHint": "До 5 інших категорій, де теж варто показувати цю подію.",
       "format": "Формат",
       "formatOffline": "Офлайн",
       "formatOnline": "Онлайн",

@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 export const EVENT_CARD_INCLUDE = {
   media: { orderBy: { sortOrder: "asc" as const }, take: 1 },
   category: true,
+  additionalCategories: { include: { category: true } },
   city: true,
   district: true,
 } satisfies Prisma.EventInclude;

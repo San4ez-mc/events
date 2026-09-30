@@ -131,6 +131,8 @@
       "descriptionPlaceholder": "Describe what to expect at the event",
       "category": "Category",
       "categoryPlaceholder": "Select a category",
+      "additionalCategories": "Additional categories",
+      "additionalCategoriesHint": "Up to 5 other categories where this event should also show up.",
       "format": "Format",
       "formatOffline": "Offline",
       "formatOnline": "Online",

@@ -424,12 +424,27 @@ model Category {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  events        Event[]
-  subscriptions Subscription[]
+  events          Event[]
+  eventCategories EventCategory[]
+  subscriptions   Subscription[]
 
   @@index([parentId])
   @@index([mergedIntoCategoryId])
   @@map("categories")
+}
+
+/// UX §10 — an event's additional (non-primary) categories. See the comment on Event.categoryId.
+model EventCategory {
+  eventId    String   @db.Uuid
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  categoryId String   @db.Uuid
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([eventId, categoryId])
+  @@index([categoryId])
+  @@map("event_categories")
 }
 
 // ---------------------------------------------------------------------------
@@ -532,6 +547,10 @@ model Event {
 
   categoryId String?   @db.Uuid
   category   Category? @relation(fields: [categoryId], references: [id])
+  /// UX §10 — an event can belong to more than one category. `categoryId` above stays the required
+  /// "primary" one (used for the single-category discovery/search ranking bonus and card display);
+  /// this is the rest. Both discovery and search filters match against primary OR additional.
+  additionalCategories EventCategory[]
 
   language String @default("uk") /// §84 — event.language; user content isn't auto-translated
 

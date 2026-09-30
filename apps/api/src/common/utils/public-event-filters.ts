@@ -43,13 +43,19 @@ export function buildPublicEventWhere(query: PublicEventFilterParams, now: Date)
     and.push(query.capacityMax == null ? { OR: [{ capacity: range }, { capacity: null }] } : { capacity: range });
   }
 
+  // UX §10 — an event can have additional (non-primary) categories; a category filter matches either.
+  if (query.categoryIds?.length) {
+    and.push({
+      OR: [{ categoryId: { in: query.categoryIds } }, { additionalCategories: { some: { categoryId: { in: query.categoryIds } } } }],
+    });
+  }
+
   return {
     AND: and,
     status: "PUBLISHED",
     visibility: "PUBLIC",
     cityId: query.cityIds?.length ? { in: query.cityIds } : undefined,
     districtId: query.districtIds?.length ? { in: query.districtIds } : undefined,
-    categoryId: query.categoryIds?.length ? { in: query.categoryIds } : undefined,
     format: query.format,
     priceType: query.freeOnly ? { in: ["FREE", "DONATION"] } : undefined,
     ageRestriction: query.adultsOnly ? { gte: 18 } : undefined,

@@ -43,6 +43,8 @@ export interface WizardData {
   fields: WizardField[];
   faq: { question: string; answer: string }[];
   tiers: { id?: string; name: string; price: string; capacity: string }[];
+  /** UX §10 — categories beyond the primary one (max 5, never includes categoryId itself). */
+  additionalCategoryIds: string[];
 }
 
 export const EMPTY_WIZARD_DATA: WizardData = {
@@ -72,6 +74,7 @@ export const EMPTY_WIZARD_DATA: WizardData = {
   fields: [],
   faq: [],
   tiers: [],
+  additionalCategoryIds: [],
 };
 
 export interface StepProps {

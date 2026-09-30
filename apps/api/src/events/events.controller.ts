@@ -12,6 +12,7 @@ import { ListMyEventsDto } from "./dto/list-my-events.dto";
 import { CancelEventDto } from "./dto/cancel-event.dto";
 import { SetFaqDto } from "./dto/set-faq.dto";
 import { SetPriceOptionsDto } from "./dto/set-price-options.dto";
+import { SetEventCategoriesDto } from "./dto/set-event-categories.dto";
 import { RateLimit } from "../common/throttle";
 
 @ApiTags("events")
@@ -55,6 +56,11 @@ export class EventsController {
   @Put(":id/faq")
   setFaq(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() dto: SetFaqDto) {
     return this.eventsService.setFaq(id, user.id, dto);
+  }
+
+  @Put(":id/categories")
+  setCategories(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() dto: SetEventCategoriesDto) {
+    return this.eventsService.setCategories(id, user.id, dto);
   }
 
   @RateLimit(20)

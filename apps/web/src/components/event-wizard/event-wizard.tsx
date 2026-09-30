@@ -60,6 +60,7 @@ function toWizardData(event: EventDetail): WizardData {
       required: f.required,
       options: (f.optionsJson ?? []).join(", "),
     })),
+    additionalCategoryIds: (event.additionalCategories ?? []).map((c) => c.category.id),
   };
 }
 
@@ -266,6 +267,18 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
         }),
       });
       if (!faqRes.ok) throw new ApiRequestError(await faqRes.json());
+
+      const categoriesRes = await fetch(`/api/v1/events/${id}/categories`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Client-Platform": "web",
+          Authorization: `Bearer ${getAccessToken() ?? ""}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({ categoryIds: data.additionalCategoryIds }),
+      });
+      if (!categoriesRes.ok) throw new ApiRequestError(await categoriesRes.json());
       return true;
     } catch (err) {
       setError(

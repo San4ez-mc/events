@@ -20,6 +20,7 @@ import type { CreateEventDto } from "./dto/create-event.dto";
 import type { UpdateEventDto } from "./dto/update-event.dto";
 import type { SetFaqDto } from "./dto/set-faq.dto";
 import type { SetPriceOptionsDto } from "./dto/set-price-options.dto";
+import type { SetEventCategoriesDto } from "./dto/set-event-categories.dto";
 import type { ListMyEventsDto } from "./dto/list-my-events.dto";
 
 /** Changing any of these on an already-published event requires explicit confirmation (§78). */
@@ -180,6 +181,23 @@ export class EventsService {
     return this.prisma.eventPriceOption.findMany({ where: { eventId }, orderBy: { sortOrder: "asc" } });
   }
 
+  /** UX §10 — the event's additional (non-primary) categories, replaced in one call. Never includes the primary category itself. */
+  async setCategories(eventId: string, userId: string, dto: SetEventCategoriesDto) {
+    const event = await this.eventAccess.assertPermission(eventId, userId, "EDIT_EVENT");
+    const categoryIds = [...new Set(dto.categoryIds)].filter((id) => id !== event.categoryId);
+
+    if (categoryIds.length) {
+      const found = await this.prisma.category.count({ where: { id: { in: categoryIds }, status: "ACTIVE" } });
+      if (found !== categoryIds.length) throw new ApiException("VALIDATION_ERROR", "Unknown category", 400);
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.eventCategory.deleteMany({ where: { eventId } }),
+      this.prisma.eventCategory.createMany({ data: categoryIds.map((categoryId) => ({ eventId, categoryId })) }),
+    ]);
+    return this.prisma.eventCategory.findMany({ where: { eventId }, include: { category: true }, orderBy: { createdAt: "asc" } });
+  }
+
   async findMine(userId: string, params: ListMyEventsDto): Promise<CursorPage<unknown>> {
     const limit = Math.min(params.limit ?? PAGINATION.defaultLimit, PAGINATION.maxLimit);
 
@@ -210,6 +228,7 @@ export class EventsService {
       include: {
         media: { orderBy: { sortOrder: "asc" } },
         category: true,
+        additionalCategories: { include: { category: true }, orderBy: { createdAt: "asc" } },
         city: true,
         district: true,
         registrationFields: { orderBy: { sortOrder: "asc" } },
@@ -243,6 +262,7 @@ export class EventsService {
       include: {
         media: { orderBy: { sortOrder: "asc" } },
         category: true,
+        additionalCategories: { include: { category: true }, orderBy: { createdAt: "asc" } },
         city: true,
         district: true,
         registrationFields: { orderBy: { sortOrder: "asc" } },

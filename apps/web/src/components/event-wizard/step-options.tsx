@@ -1,10 +1,15 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "@/lib/locale-context";
+import { api } from "@/lib/api-client";
+import type { Category } from "@/lib/geo-types";
 import { TextField } from "@/components/ui/text-field";
 import type { RegistrationFieldType } from "@kiro/types";
 import type { StepProps, WizardField } from "./types";
+
+const MAX_ADDITIONAL_CATEGORIES = 5;
 
 const FIELD_TYPES: RegistrationFieldType[] = [
   "TEXT",
@@ -19,13 +24,32 @@ const input = "rounded-md border border-border bg-background px-3 py-2 text-sm";
 
 /** §25/§39/§68 — advanced organizer settings: visibility, deadline, 18+, rules, payment link, custom registration questions. */
 export function StepOptions({ data, onChange }: StepProps) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
+  const [categories, setCategories] = useState<Category[] | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const res = await api.GET("/api/v1/categories");
+      if (res.data) setCategories(res.data as Category[]);
+    })();
+  }, []);
 
   function updateField(index: number, patch: Partial<WizardField>) {
     onChange({
       fields: data.fields.map((f, i) => (i === index ? { ...f, ...patch } : f)),
     });
   }
+
+  function toggleAdditionalCategory(id: string) {
+    const selected = data.additionalCategoryIds.includes(id);
+    if (selected) {
+      onChange({ additionalCategoryIds: data.additionalCategoryIds.filter((x) => x !== id) });
+    } else if (data.additionalCategoryIds.length < MAX_ADDITIONAL_CATEGORIES) {
+      onChange({ additionalCategoryIds: [...data.additionalCategoryIds, id] });
+    }
+  }
+
+  const flatCategories = (categories ?? []).flatMap((c) => (c.children.length > 0 ? c.children : [c])).filter((c) => c.id !== data.categoryId);
 
   return (
     <div className="flex flex-col gap-6">
@@ -97,6 +121,29 @@ export function StepOptions({ data, onChange }: StepProps) {
           placeholder="https://"
         />
       )}
+
+      <section className="flex flex-col gap-3">
+        <h3 className="text-sm font-semibold">{t("events.wizard.additionalCategories")}</h3>
+        <p className="text-xs text-muted">{t("events.wizard.additionalCategoriesHint")}</p>
+        {categories === null && <p className="text-xs text-muted">{t("common.loading")}</p>}
+        <div className="flex flex-wrap gap-2">
+          {flatCategories.map((c) => {
+            const on = data.additionalCategoryIds.includes(c.id);
+            const disabled = !on && data.additionalCategoryIds.length >= MAX_ADDITIONAL_CATEGORIES;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                disabled={disabled}
+                onClick={() => toggleAdditionalCategory(c.id)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50 ${on ? "accent-gradient border-transparent text-white" : "border-border hover:bg-surface"}`}
+              >
+                {locale === "uk" ? c.nameUk : c.nameEn}
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       <section className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold">

@@ -335,6 +335,49 @@ describe("Spec gaps (e2e)", () => {
       expect(cleared.body.faqItems).toHaveLength(0);
     });
   });
+  describe("additional event categories (§10)", () => {
+    it("lets the organizer attach up to 5 extra categories, rejects strangers, excludes the primary, and matches discovery filters", async () => {
+      const { organizer, id } = await publishedEvent();
+      const stranger = await newUser("stranger");
+      const boardGames = (await prisma.category.findUniqueOrThrow({ where: { slug: "board-games" } })).id;
+      const parties = (await prisma.category.findUniqueOrThrow({ where: { slug: "parties" } })).id;
+
+      await http()
+        .put(`/api/v1/events/${id}/categories`)
+        .set("Authorization", `Bearer ${stranger.token}`)
+        .send({ categoryIds: [boardGames] })
+        .expect(403);
+
+      // the primary category itself is silently filtered out, never duplicated as "additional"
+      const saved = await http()
+        .put(`/api/v1/events/${id}/categories`)
+        .set("Authorization", `Bearer ${organizer.token}`)
+        .send({ categoryIds: [boardGames, parties, categoryId] })
+        .expect(200);
+      expect(saved.body.map((c: { category: { id: string } }) => c.category.id).sort()).toEqual([boardGames, parties].sort());
+
+      const owner = await http().get(`/api/v1/events/${id}`).set("Authorization", `Bearer ${organizer.token}`).expect(200);
+      expect(owner.body.additionalCategories.map((c: { category: { id: string } }) => c.category.id).sort()).toEqual([boardGames, parties].sort());
+
+      // discovery matches on the additional category, not just the primary one
+      const discovered = await http().get(`/api/v1/discovery?categoryIds=${boardGames}`).expect(200);
+      expect(discovered.body.items.some((e: { id: string }) => e.id === id)).toBe(true);
+
+      // replacing the set drops what's no longer sent
+      const replaced = await http()
+        .put(`/api/v1/events/${id}/categories`)
+        .set("Authorization", `Bearer ${organizer.token}`)
+        .send({ categoryIds: [parties] })
+        .expect(200);
+      expect(replaced.body.map((c: { category: { id: string } }) => c.category.id)).toEqual([parties]);
+
+      await http()
+        .put(`/api/v1/events/${id}/categories`)
+        .set("Authorization", `Bearer ${organizer.token}`)
+        .send({ categoryIds: Array.from({ length: 6 }, () => boardGames) })
+        .expect(400); // more than 5 items, even though they'd dedup to one
+    });
+  });
   describe("ticket types (§24)", () => {
     it("requires a tier when the event has several, enforces per-tier capacity and shows sold-out on the page", async () => {
       const { organizer, id, slug } = await publishedEvent();

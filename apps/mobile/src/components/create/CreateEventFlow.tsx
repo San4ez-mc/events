@@ -53,11 +53,13 @@ interface EventDetail {
   ageRestriction: number | null;
   rules: string | null;
   paymentUrl: string | null;
+  additionalCategories?: { category: { id: string } }[];
 }
 interface Form {
   title: string;
   description: string;
   categoryId: string | null;
+  additionalCategoryIds: string[];
   format: "OFFLINE" | "ONLINE";
   date: string;
   time: string;
@@ -80,6 +82,7 @@ interface Form {
   paymentUrl: string;
 }
 
+const MAX_ADDITIONAL_CATEGORIES = 5;
 const STEPS = 5;
 const pad = (n: number) => String(n).padStart(2, "0");
 const isoDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -95,6 +98,7 @@ const INITIAL: Form = {
   title: "",
   description: "",
   categoryId: null,
+  additionalCategoryIds: [],
   format: "OFFLINE",
   date: addDays(1),
   time: "19:00",
@@ -193,6 +197,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
           title: e.title,
           description: e.description ?? "",
           categoryId: e.categoryId ?? null,
+          additionalCategoryIds: (e.additionalCategories ?? []).map((c) => c.category.id),
           format: e.format,
           date: start ? `${start.getFullYear()}-${p2(start.getMonth() + 1)}-${p2(start.getDate())}` : INITIAL.date,
           time: start ? `${p2(start.getHours())}:${p2(start.getMinutes())}` : INITIAL.time,
@@ -327,8 +332,10 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   async function saveDraft(currentStep: number) {
     if (currentStep === 0) {
       if (form.title.trim().length < 3) throw new Error(t("create.titleTooShort"));
-      if (!eventId) {
+      let id = eventId;
+      if (!id) {
         const created = await authed<{ id: string; slug: string }>("/events", { method: "POST", body: JSON.stringify({ title: form.title.trim() }) });
+        id = created.id;
         setEventId(created.id);
         setSlug(created.slug);
         const extra = payloadFor(0);
@@ -336,10 +343,11 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
           const updated = await authed<{ slug: string }>(`/events/${created.id}`, { method: "PATCH", body: JSON.stringify(extra) });
           setSlug(updated.slug ?? created.slug);
         }
-        return;
+      } else {
+        const updated = await authed<{ slug: string }>(`/events/${id}`, { method: "PATCH", body: JSON.stringify({ title: form.title.trim(), ...payloadFor(0) }) });
+        setSlug(updated.slug ?? slug);
       }
-      const updated = await authed<{ slug: string }>(`/events/${eventId}`, { method: "PATCH", body: JSON.stringify({ title: form.title.trim(), ...payloadFor(0) }) });
-      setSlug(updated.slug ?? slug);
+      await authed(`/events/${id}/categories`, { method: "PUT", body: JSON.stringify({ categoryIds: form.additionalCategoryIds }) });
       return;
     }
     const body = payloadFor(currentStep);
@@ -526,6 +534,17 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
                 </Pressable>
               </View>
               <Text style={styles.hint}>{categoryAdded ? t("events.wizard.addCategorySubmitted") : t("events.wizard.addCategory")}</Text>
+            </Section>
+            <Section title={t("events.wizard.additionalCategories")}>
+              <Text style={styles.hint}>{t("events.wizard.additionalCategoriesHint")}</Text>
+              <SearchPicker
+                options={categoryOptions.filter((o) => o.id !== form.categoryId)}
+                selected={form.additionalCategoryIds}
+                multi
+                onChange={(ids) => set({ additionalCategoryIds: ids.slice(0, MAX_ADDITIONAL_CATEGORIES) })}
+                placeholder={t("filters.search")}
+                emptyLabel={t("filters.noResults")}
+              />
             </Section>
             <Field label={t("events.wizard.description")}>
               <TextInput value={form.description} onChangeText={(v) => set({ description: v })} placeholder={t("events.wizard.descriptionPlaceholder")} placeholderTextColor={colors.muted} style={[styles.input, styles.multiline]} multiline />

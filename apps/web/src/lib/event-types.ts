@@ -94,6 +94,8 @@ export interface EventDetail extends EventSummary {
   paymentUrl: string | null;
   cancellationReason: string | null;
   category: { id: string; nameUk: string; nameEn: string } | null;
+  /** UX §10 — categories beyond the primary one, set via PUT /events/:id/categories. */
+  additionalCategories: { category: { id: string; nameUk: string; nameEn: string } }[];
   city: { id: string; nameUk: string; nameEn: string } | null;
   district: { id: string; nameUk: string } | null;
   registrationFields: RegistrationField[];
@@ -176,6 +178,7 @@ export interface EventCard extends EventSummary {
   capacity?: number | null;
   social?: SocialProof;
   category: { id: string; nameUk: string; nameEn: string } | null;
+  additionalCategories?: { category: { id: string; nameUk: string; nameEn: string } }[];
   city: { id: string; nameUk: string; nameEn: string } | null;
   district: { id: string; nameUk: string } | null;
 }

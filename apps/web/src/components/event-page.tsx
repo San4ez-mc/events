@@ -94,6 +94,18 @@ export function EventPage({
           </strong>
           {categoryName && <span>· {categoryName}</span>}
         </span>
+        {event.additionalCategories.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {event.additionalCategories.map(({ category }) => (
+              <span
+                key={category.id}
+                className="rounded-full border border-border px-2.5 py-0.5 text-xs"
+              >
+                {locale === "uk" ? category.nameUk : category.nameEn}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {social && (

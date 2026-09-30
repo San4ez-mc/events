@@ -267,6 +267,16 @@ export default function EventDetailScreen() {
         <Text style={styles.meta}>{formatPriceLabel(event, t)}</Text>
       </View>
 
+      {event.additionalCategories && event.additionalCategories.length > 0 && (
+        <View style={styles.categoryChips}>
+          {event.additionalCategories.map(({ category }) => (
+            <View key={category.id} style={styles.categoryChip}>
+              <Text style={styles.categoryChipText}>{category.nameUk}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
       {social && (
         <View style={styles.socialBar}>
           <View style={styles.socialRow}>
@@ -598,6 +608,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   title: { color: colors.foreground, fontSize: 24, fontWeight: "700" },
   metaRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
   meta: { color: colors.muted, fontSize: 13 },
+  categoryChips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  categoryChip: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 4 },
+  categoryChipText: { color: colors.muted, fontSize: 12 },
   description: { color: colors.foreground, fontSize: 14, lineHeight: 20 },
   section: { gap: spacing.xs },
   sectionTitle: { color: colors.foreground, fontSize: 14, fontWeight: "600" },
