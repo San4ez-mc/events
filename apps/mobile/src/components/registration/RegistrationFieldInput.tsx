@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import { TextField } from "../ui/TextField";
+import { formatPhoneInput } from "../../lib/format";
 import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 interface RegistrationField {
@@ -28,13 +29,24 @@ export function RegistrationFieldInput({
     return <TextField label={label} value={typeof value === "string" ? value : ""} onChangeText={onChange} multiline />;
   }
 
-  if (field.type === "TEXT" || field.type === "PHONE" || field.type === "EMAIL" || field.type === "DATE") {
+  if (field.type === "PHONE") {
+    return (
+      <TextField
+        label={label}
+        value={typeof value === "string" ? value : ""}
+        onChangeText={(v) => onChange(formatPhoneInput(v))}
+        keyboardType="phone-pad"
+      />
+    );
+  }
+
+  if (field.type === "TEXT" || field.type === "EMAIL" || field.type === "DATE") {
     return (
       <TextField
         label={label}
         value={typeof value === "string" ? value : ""}
         onChangeText={onChange}
-        keyboardType={field.type === "PHONE" ? "phone-pad" : field.type === "EMAIL" ? "email-address" : "default"}
+        keyboardType={field.type === "EMAIL" ? "email-address" : "default"}
         autoCapitalize="none"
         placeholder={field.type === "DATE" ? "YYYY-MM-DD" : undefined}
       />
