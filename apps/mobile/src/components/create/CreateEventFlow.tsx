@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as SecureStore from "expo-secure-store";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { API_URL, getAccessToken, refreshAccessToken } from "../../lib/api-client";
@@ -85,6 +86,7 @@ interface Form {
 const MAX_ADDITIONAL_CATEGORIES = 5;
 /** Buying credits directly is hidden for now — only the subscription is user-facing; flip this back on to restore it. */
 const SHOW_BUY_CREDITS = false;
+const GIFT_SHOWN_KEY = "kiro_create_gift_shown";
 const STEPS = 5;
 const pad = (n: number) => String(n).padStart(2, "0");
 /** form.date stays ISO (YYYY-MM-DD) internally — only the text field shows/accepts DD.MM.YYYY,
@@ -205,6 +207,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
+  const [giftOpen, setGiftOpen] = useState(false);
   const [outcome, setOutcome] = useState<null | "PUBLISHED" | "PENDING_MODERATION" | "REJECTED">(null);
   const [publishedAlready, setPublishedAlready] = useState(false);
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
@@ -318,17 +321,34 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
 
   const loadBalance = useCallback(async () => {
     try {
-      setBalance((await authed<{ balance: number }>("/credits/balance")).balance);
+      const { balance: b } = await authed<{ balance: number }>("/credits/balance");
+      setBalance(b);
+      // First-ever visit with nothing claimed yet: a one-time welcome gift, not just the quiet
+      // "claim free credits" button that was easy to miss at the bottom of the balance line.
+      if (b === 0 && !editEventId) {
+        const shown = await SecureStore.getItemAsync(GIFT_SHOWN_KEY).catch(() => null);
+        if (!shown) setGiftOpen(true);
+      }
     } catch {
       /* balance is informational */
     }
-  }, []);
+  }, [editEventId]);
 
   // Loaded once up front (not just on the last step) so the cost is visible from the very start,
   // not only as a surprise right before publishing.
   useEffect(() => {
     void loadBalance();
   }, [loadBalance]);
+
+  function dismissGift() {
+    setGiftOpen(false);
+    void SecureStore.setItemAsync(GIFT_SHOWN_KEY, "1").catch(() => {});
+  }
+
+  async function claimGift() {
+    await claimFree();
+    dismissGift();
+  }
 
   const startsAt = () => {
     const d = new Date(`${form.date}T${form.time}:00`);
@@ -536,9 +556,10 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   const start = startsAt();
 
   return (
-    // Android needs an explicit "height" behavior (not the no-op `undefined`) to actually shrink
-    // available space when the keyboard opens — otherwise the Description/Rules fields end up
-    // hidden behind the keyboard with nothing to scroll them into view.
+    <>
+    {/* Android needs an explicit "height" behavior (not the no-op `undefined`) to actually shrink
+        available space when the keyboard opens — otherwise the Description/Rules fields end up
+        hidden behind the keyboard with nothing to scroll them into view. */}
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView style={styles.flex} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ScreenHeader title={t("nav.create")} subtitle={t("create.subtitle")} icon="add-circle" />
@@ -853,6 +874,21 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+
+    <Modal visible={giftOpen} transparent animationType="fade" onRequestClose={dismissGift}>
+      <View style={styles.giftBackdrop}>
+        <View style={styles.giftCard}>
+          <Text style={styles.giftEmoji}>🎁</Text>
+          <Text style={styles.giftTitle}>{t("create.giftTitle")}</Text>
+          <Text style={styles.giftBody}>{t("create.giftBody")}</Text>
+          <Button title={t("events.wizard.claimFreeCredits")} onPress={() => void claimGift()} loading={busy} />
+          <Pressable onPress={dismissGift} hitSlop={8}>
+            <Text style={styles.giftDismiss}>{t("create.giftLater")}</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
@@ -883,6 +919,12 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   multiline: { minHeight: 110, textAlignVertical: "top" },
   hint: { color: colors.muted, fontSize: 12 },
   costBanner: { flexDirection: "row", alignItems: "center", gap: spacing.xs, backgroundColor: colors.surface, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  giftBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center", padding: spacing.xl },
+  giftCard: { backgroundColor: colors.background, borderRadius: radius.lg, padding: spacing.xl, gap: spacing.md, alignItems: "center", width: "100%" },
+  giftEmoji: { fontSize: 48 },
+  giftTitle: { color: colors.foreground, fontSize: 18, fontWeight: "800", textAlign: "center" },
+  giftBody: { color: colors.muted, fontSize: 14, textAlign: "center" },
+  giftDismiss: { color: colors.muted, fontSize: 13, marginTop: spacing.xs },
   costBannerText: { color: colors.foreground, fontSize: 12, flexShrink: 1 },
   categoryTrigger: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 12 },
   categoryTriggerText: { color: colors.foreground, fontSize: 15, flexShrink: 1 },

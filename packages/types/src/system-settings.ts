@@ -13,7 +13,7 @@ export type SystemSettingKey = (typeof SystemSettingKey)[keyof typeof SystemSett
 
 /** Hard-coded fallback defaults, used only if a row is missing from the DB. */
 export const SYSTEM_SETTING_DEFAULTS = {
-  [SystemSettingKey.NEW_ORGANIZER_FREE_CREDITS]: 5,
+  [SystemSettingKey.NEW_ORGANIZER_FREE_CREDITS]: 7,
   [SystemSettingKey.REVIEW_WINDOW_DAYS]: 7,
   [SystemSettingKey.FEED_PASS_COOLDOWN_DAYS]: 30,
   [SystemSettingKey.DEFAULT_REMINDER_HOURS]: [24, 1] as number[],
