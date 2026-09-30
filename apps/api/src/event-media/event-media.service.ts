@@ -112,24 +112,28 @@ export class EventMediaService {
   }
 
   private async processAndStoreImage(eventId: string, buffer: Buffer, ext: string, sortOrder: number) {
-    const original = sharp(buffer, { failOn: "none" });
-    const metadata = await original.metadata();
+    // §23 — strip EXIF (incl. any GPS tag) from the stored original too, not just display/thumbnail:
+    // its URL is public (returned in the event API response) even though the gallery itself only ever
+    // renders displayUrl. rotate() bakes EXIF orientation into the pixels before that metadata is
+    // dropped by re-encoding (sharp drops it by default unless .withMetadata() is called) — this also
+    // fixes width/height below, since a plain metadata() read reports pre-rotation (90°-swapped for a
+    // sideways-held phone shot) dimensions instead of how the image actually displays.
+    const rotated = sharp(buffer, { failOn: "none" }).rotate();
+    const encoded =
+      ext === "png" ? rotated.png() : ext === "webp" ? rotated.webp({ quality: 95 }) : rotated.jpeg({ quality: 95 });
+    const { data: originalBuffer, info } = await encoded.toBuffer({ resolveWithObject: true });
 
-    // §23 — strip EXIF/metadata by re-encoding (sharp drops it by default
-    // unless .withMetadata() is called, which we deliberately don't call).
     const originalKey = this.storage.buildKey(`events/${eventId}/original`, `image.${ext}`);
-    await this.storage.putObject(originalKey, buffer, `image/${ext === "jpg" ? "jpeg" : ext}`);
+    await this.storage.putObject(originalKey, originalBuffer, `image/${ext === "jpg" ? "jpeg" : ext}`);
 
-    const displayBuffer = await sharp(buffer, { failOn: "none" })
-      .rotate() // apply EXIF orientation before stripping it
+    const displayBuffer = await sharp(originalBuffer)
       .resize(DISPLAY_MAX_DIMENSION, DISPLAY_MAX_DIMENSION, { fit: "inside", withoutEnlargement: true })
       .jpeg({ quality: JPEG_QUALITY })
       .toBuffer();
     const displayKey = this.storage.buildKey(`events/${eventId}/display`, "image.jpg");
     await this.storage.putObject(displayKey, displayBuffer, "image/jpeg");
 
-    const thumbnailBuffer = await sharp(buffer, { failOn: "none" })
-      .rotate()
+    const thumbnailBuffer = await sharp(originalBuffer)
       .resize(THUMBNAIL_MAX_DIMENSION, THUMBNAIL_MAX_DIMENSION, { fit: "inside", withoutEnlargement: true })
       .jpeg({ quality: JPEG_QUALITY })
       .toBuffer();
@@ -143,8 +147,8 @@ export class EventMediaService {
         originalUrl: this.storage.publicUrl(originalKey),
         displayUrl: this.storage.publicUrl(displayKey),
         thumbnailUrl: this.storage.publicUrl(thumbnailKey),
-        width: metadata.width,
-        height: metadata.height,
+        width: info.width,
+        height: info.height,
         sortOrder,
         moderationStatus: "APPROVED", // §41 — no mandatory pre-moderation for MVP
       },
