@@ -10,6 +10,7 @@ import type { Request, Response } from "express";
 import { Prisma } from "@prisma/client";
 import type { ApiErrorBody, ApiErrorCode } from "@kiro/types";
 import { ApiException } from "../exceptions/api.exception";
+import { EditsReporterService } from "../../edits-reporter/edits-reporter.service";
 
 /**
  * Catches every exception the app throws (including ones Nest itself throws,
@@ -21,6 +22,8 @@ import { ApiException } from "../exceptions/api.exception";
 export class ApiExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger("ExceptionFilter");
 
+  constructor(private readonly editsReporter: EditsReporterService) {}
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -30,9 +33,12 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const { status, body } = this.toApiError(exception);
 
     if (status >= 500) {
-      this.logger.error(
-        `${request.method} ${request.url} -> ${status} [${requestId}]`,
-        exception instanceof Error ? exception.stack : String(exception),
+      const detail = exception instanceof Error ? exception.stack ?? exception.message : String(exception);
+      this.logger.error(`${request.method} ${request.url} -> ${status} [${requestId}]`, detail);
+      void this.editsReporter.report(
+        `${request.method} ${request.url} -> ${status}\n\n${detail}`,
+        "kiro-api",
+        requestId,
       );
     }
 

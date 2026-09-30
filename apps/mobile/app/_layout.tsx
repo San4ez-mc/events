@@ -6,6 +6,9 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "../src/lib/auth-context";
 import { LocaleProvider } from "../src/lib/locale-context";
 import { ThemeProvider, useTheme } from "../src/lib/theme";
+import { installCrashReporter } from "../src/lib/crash-reporter";
+
+installCrashReporter();
 
 /** The navigator lives below ThemeProvider so its header/background and the status-bar icons follow the chosen theme. */
 function ThemedStack() {

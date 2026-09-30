@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { ChatModule } from "./chat/chat.module";
 import { FlagsModule } from "./flags/flags.module";
 import { FeedbackModule } from "./feedback/feedback.module";
+import { ClientErrorsModule } from "./client-errors/client-errors.module";
 import { AnalyticsModule } from "./analytics/analytics.module";
 import { PlacesModule } from "./places/places.module";
 import { SocialProofModule } from "./common/social-proof/social-proof.module";
@@ -15,6 +16,7 @@ import { validateEnv } from "./config/env.validation";
 import { ApiExceptionFilter } from "./common/filters/api-exception.filter";
 import { RequestIdMiddleware } from "./common/middleware/request-id.middleware";
 import { PrismaModule } from "./prisma/prisma.module";
+import { EditsReporterModule } from "./edits-reporter/edits-reporter.module";
 import { MailModule } from "./mail/mail.module";
 import { StorageModule } from "./storage/storage.module";
 import { AuthModule } from "./auth/auth.module";
@@ -52,6 +54,7 @@ import { AdminModule } from "./admin/admin.module";
       isGlobal: true,
       validate: validateEnv,
     }),
+    EditsReporterModule,
     LoggerModule.forRoot({
       pinoHttp: {
         level: process.env.LOG_LEVEL ?? "info",
@@ -74,6 +77,7 @@ import { AdminModule } from "./admin/admin.module";
     PlacesModule,
     FlagsModule,
     FeedbackModule,
+    ClientErrorsModule,
     ChatModule,
     AnalyticsModule,
     MailModule,
