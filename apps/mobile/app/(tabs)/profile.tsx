@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { Alert, Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -23,6 +23,8 @@ const PREF_KEYS = [
   { key: "hideSocialLinks", labelKey: "profile.hideSocialLinks" },
   { key: "hideUpcomingEvents", labelKey: "profile.hideUpcomingEvents" },
   { key: "hideAttendanceHistory", labelKey: "profile.hideAttendanceHistory" },
+  { key: "showAge", labelKey: "profile.showAge" },
+  { key: "friendsOnlyProfile", labelKey: "profile.friendsOnlyProfile" },
 ] as const;
 type PrefKey = (typeof PREF_KEYS)[number]["key"];
 type Prefs = Record<PrefKey, boolean>;
@@ -337,6 +339,14 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.muted} />
         </Pressable>
 
+        <Pressable style={styles.row} onPress={() => router.push("/subscription")}>
+          <Ionicons name="star" size={22} color={colors.accentFrom} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowText}>{t("pricing.subscriptionTitle")}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        </Pressable>
+
         <Pressable style={styles.row} onPress={() => router.push("/invitations")}>
           <Ionicons name="mail-open" size={22} color={colors.accentFrom} />
           <View style={{ flex: 1 }}>
@@ -376,6 +386,28 @@ export default function ProfileScreen() {
             onChange={setThemeMode}
           />
         </View>
+        <Text style={styles.section}>{t("legal.sectionTitle")}</Text>
+        <Pressable style={styles.row} onPress={() => void Linking.openURL(`${API_URL}/terms`)}>
+          <Ionicons name="document-text-outline" size={22} color={colors.muted} />
+          <Text style={styles.rowText}>{t("legal.termsAndConditions")}</Text>
+        </Pressable>
+        <Pressable style={styles.row} onPress={() => void Linking.openURL(`${API_URL}/offer`)}>
+          <Ionicons name="document-text-outline" size={22} color={colors.muted} />
+          <Text style={styles.rowText}>{t("legal.publicOffer")}</Text>
+        </Pressable>
+        <Pressable style={styles.row} onPress={() => void Linking.openURL(`${API_URL}/refund`)}>
+          <Ionicons name="document-text-outline" size={22} color={colors.muted} />
+          <Text style={styles.rowText}>{t("legal.refundPolicy")}</Text>
+        </Pressable>
+        <Pressable style={styles.row} onPress={() => void Linking.openURL(`${API_URL}/privacy`)}>
+          <Ionicons name="document-text-outline" size={22} color={colors.muted} />
+          <Text style={styles.rowText}>{t("legal.privacyPolicy")}</Text>
+        </Pressable>
+        <Pressable style={styles.row} onPress={() => void Linking.openURL(`${API_URL}/contacts`)}>
+          <Ionicons name="document-text-outline" size={22} color={colors.muted} />
+          <Text style={styles.rowText}>{t("legal.contacts")}</Text>
+        </Pressable>
+
         <Pressable style={styles.row} onPress={confirmLogout}>
           <Ionicons name="log-out-outline" size={22} color={colors.danger} />
           <Text style={[styles.rowText, { color: colors.danger }]}>{t("auth.logout")}</Text>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { ApiRequestError, useAuth } from "../../src/lib/auth-context";
 import { useTranslations } from "../../src/lib/locale-context";
@@ -33,6 +34,7 @@ export default function EventDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets();
 
   const loadEvent = useCallback(async () => {
     const token = getAccessToken();
@@ -413,17 +415,20 @@ export default function EventDetailScreen() {
         onInputFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150)}
       />
 
-      <View style={styles.registrationBox}>
-        {error && <Text style={styles.error}>{error}</Text>}
-        {renderRegistration()}
-        {/* Donation events: entry is free, and giving doesn't depend on registering, so the link is always there. */}
-        {event.priceType === "DONATION" && event.paymentUrl ? (
-          <Button title={t("registration.donate")} variant="secondary" onPress={() => void Linking.openURL(event.paymentUrl!)} />
-        ) : null}
-      </View>
-
-      {event.priceType === "PAID" && <Text style={styles.disclaimer}>{t("events.page.paidDisclaimer")}</Text>}
       </ScrollView>
+
+      {/* Sticky so the primary action is always reachable without scrolling to the bottom (UX §67). */}
+      <View style={[styles.stickyFooter, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+        <View style={styles.registrationBox}>
+          {error && <Text style={styles.error}>{error}</Text>}
+          {renderRegistration()}
+          {/* Donation events: entry is free, and giving doesn't depend on registering, so the link is always there. */}
+          {event.priceType === "DONATION" && event.paymentUrl ? (
+            <Button title={t("registration.donate")} variant="secondary" onPress={() => void Linking.openURL(event.paymentUrl!)} />
+          ) : null}
+        </View>
+        {event.priceType === "PAID" && <Text style={styles.disclaimer}>{t("events.page.paidDisclaimer")}</Text>}
+      </View>
       </KeyboardAvoidingView>
 
       <Modal visible={reportOpen} transparent animationType="fade" onRequestClose={() => setReportOpen(false)}>
@@ -596,7 +601,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   description: { color: colors.foreground, fontSize: 14, lineHeight: 20 },
   section: { gap: spacing.xs },
   sectionTitle: { color: colors.foreground, fontSize: 14, fontWeight: "600" },
-  registrationBox: { marginTop: spacing.md, gap: spacing.sm },
+  stickyFooter: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background, paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.sm },
+  registrationBox: { gap: spacing.sm },
   form: { gap: spacing.sm },
   participantToggle: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   participantToggleLabel: { color: colors.foreground, fontSize: 13, flexShrink: 1 },

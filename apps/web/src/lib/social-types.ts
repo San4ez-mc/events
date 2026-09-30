@@ -26,6 +26,8 @@ export interface PublicProfile {
   memberSince: string;
   /** Perk of the PRO organizer subscription tier. */
   isVerifiedOrganizer: boolean;
+  /** Only present if the owner opted in via "show my age" — otherwise always null. */
+  age: number | null;
   socialLinks: { type: string; url: string }[];
   friendCount: number;
   eventsCreatedCount: number;
@@ -35,6 +37,8 @@ export interface PublicProfile {
   ratingAverage: number | null;
   reviewsCount: number;
   relationshipStatus: RelationshipStatus;
+  /** True when the owner made their profile friends-only and the viewer isn't a friend — every field above except id/name/nickname/avatarUrl/memberSince/isVerifiedOrganizer is a stub. */
+  friendsOnly: boolean;
 }
 
 export interface FriendRequest {

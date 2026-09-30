@@ -6,6 +6,7 @@ import type { CursorPage, CursorPageQuery } from "@kiro/types";
 import { PrismaService } from "../prisma/prisma.service";
 import { ResourceNotFoundException } from "../common/exceptions/common-exceptions";
 import { decodeScoredCursor, encodeScoredCursor, sliceAfterScoredCursor } from "../common/utils/scored-cursor";
+import { ageOn } from "../common/utils/age";
 import { buildPublicEventWhere } from "../common/utils/public-event-filters";
 import { EVENT_CARD_INCLUDE, type EventCard } from "../common/utils/event-card-include";
 import { AnalyticsService } from "../analytics/analytics.service";
@@ -53,7 +54,7 @@ export class DiscoveryService {
     // cursor) still gets a fresh `now`, which then propagates to every later page it mints.
     const now = cursor?.now != null ? new Date(cursor.now) : new Date();
     const viewer = userId ? await this.prisma.user.findUnique({ where: { id: userId }, select: { birthDate: true } }) : null;
-    const isMinor = !!viewer?.birthDate && this.ageOn(viewer.birthDate, now) < 18;
+    const isMinor = !!viewer?.birthDate && ageOn(viewer.birthDate, now) < 18;
     const blockedOwnerIds = await this.getBlockedUserIds(userId);
     const candidates = await this.prisma.event.findMany({
       where: {
@@ -166,13 +167,6 @@ export class DiscoveryService {
       new Intl.DateTimeFormat("en-GB", { hour: "numeric", hourCycle: "h23", timeZone: timezone || "Europe/Kyiv" }).format(startsAt),
     );
     return from <= to ? hour >= from && hour < to : hour >= from || hour < to;
-  }
-
-  private ageOn(birthDate: Date, on: Date): number {
-    let age = on.getUTCFullYear() - birthDate.getUTCFullYear();
-    const beforeBirthday = on.getUTCMonth() < birthDate.getUTCMonth() || (on.getUTCMonth() === birthDate.getUTCMonth() && on.getUTCDate() < birthDate.getUTCDate());
-    if (beforeBirthday) age -= 1;
-    return age;
   }
 
   private buildFeedWhere(

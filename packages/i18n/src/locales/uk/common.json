@@ -402,6 +402,10 @@
     "hideSocialLinks": "Сховати соцмережі в профілі",
     "hideUpcomingEvents": "Сховати майбутні події в профілі",
     "hideAttendanceHistory": "Сховати історію відвідувань",
+    "showAge": "Показувати вік у профілі",
+    "friendsOnlyProfile": "Показувати профіль тільки друзям",
+    "age": "років",
+    "friendsOnlyNotice": "Цей профіль видно лише друзям власника.",
     "viewPublic": "Як бачать інші",
     "socialLinks": "Соцмережі",
     "socialType": "Тип",
@@ -796,6 +800,14 @@
     "send": "Надіслати",
     "delete": "Видалити",
     "participantsOnly": "Чат доступний підтвердженим учасникам"
+  },
+  "legal": {
+    "sectionTitle": "Правова інформація",
+    "termsAndConditions": "Правила і умови",
+    "publicOffer": "Публічна оферта",
+    "refundPolicy": "Повернення коштів",
+    "privacyPolicy": "Конфіденційність",
+    "contacts": "Контакти"
   },
   "welcome": {
     "title": "Ласкаво просимо до Кіро!",

@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsDateString, IsIn, IsOptional, IsString, IsUrl, Matches, MaxLength, MinLength } from "class-validator";
+import { IsDateString, IsIn, IsOptional, IsString, IsUrl, Matches, MaxLength } from "class-validator";
 
 export class UpdateProfileDto {
   @ApiPropertyOptional()
@@ -8,11 +8,10 @@ export class UpdateProfileDto {
   @MaxLength(100)
   name?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: "Also the public profile URL handle (/users/:nickname) — letters, digits, underscore, hyphen only." })
   @IsOptional()
   @IsString()
-  @MinLength(2)
-  @MaxLength(30)
+  @Matches(/^[a-zA-Z0-9_-]{2,30}$/, { message: "Use only letters, digits, underscore or hyphen" })
   nickname?: string;
 
   @ApiPropertyOptional()

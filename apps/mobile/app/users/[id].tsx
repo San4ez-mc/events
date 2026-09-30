@@ -21,6 +21,8 @@ interface PublicProfile {
   bio: string | null;
   memberSince: string;
   isVerifiedOrganizer: boolean;
+  age: number | null;
+  friendsOnly: boolean;
   friendCount: number;
   eventsCreatedCount: number;
   upcomingEvents: EventCard[];
@@ -104,46 +106,58 @@ export default function PublicProfileScreen() {
           </View>
           <Text style={styles.muted}>
             {t("profile.memberSince")} {formatShortDate(profile.memberSince)}
+            {profile.age != null ? ` · ${profile.age} ${t("profile.age")}` : ""}
           </Text>
         </View>
       </View>
 
-      {profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
-
-      <View style={styles.stats}>
-        <Text style={styles.muted}>
-          <Text style={styles.strong}>{profile.friendCount}</Text> {t("profile.friends")}
-        </Text>
-        <Text style={styles.muted}>
-          <Text style={styles.strong}>{profile.eventsCreatedCount}</Text> {t("profile.eventsCreated")}
-        </Text>
-        <Text style={styles.muted}>{profile.ratingAverage != null ? `⭐ ${profile.ratingAverage.toFixed(1)} (${profile.reviewsCount})` : t("profile.noRating")}</Text>
-      </View>
-
-      <View style={styles.actions}>
-        <Button
-          title={t("profile.share")}
-          variant="secondary"
-          onPress={() => void Share.share({ message: `${name}\n${API_URL}/users/${profile.id}`, url: `${API_URL}/users/${profile.id}` }).catch(() => {})}
-        />
-        {user && profile.relationshipStatus === "NONE" && <Button title={t("profile.addFriend")} onPress={() => void addFriend()} loading={acting} />}
-        {profile.relationshipStatus === "PENDING_SENT" && <Button title={t("profile.pendingSent")} variant="secondary" disabled onPress={() => {}} />}
-        {profile.relationshipStatus === "PENDING_RECEIVED" && <Button title={t("profile.pendingReceived")} variant="secondary" onPress={() => router.push("/friends")} />}
-        {profile.relationshipStatus === "FRIENDS" && <Button title={`✓ ${t("profile.friends")}`} variant="secondary" onPress={() => router.push("/friends")} />}
-      </View>
-
-      {user && profile.relationshipStatus !== "SELF" && profile.eventsCreatedCount > 0 && <OrganizerFollow organizerId={profile.id} />}
-
-      {profile.upcomingEvents.length > 0 && (
+      {profile.friendsOnly ? (
+        <View style={styles.friendsOnlyBox}>
+          <Text style={styles.muted}>{t("profile.friendsOnlyNotice")}</Text>
+          {user && profile.relationshipStatus === "NONE" && <Button title={t("profile.addFriend")} onPress={() => void addFriend()} loading={acting} />}
+          {profile.relationshipStatus === "PENDING_SENT" && <Button title={t("profile.pendingSent")} variant="secondary" disabled onPress={() => {}} />}
+          {profile.relationshipStatus === "PENDING_RECEIVED" && <Button title={t("profile.pendingReceived")} variant="secondary" onPress={() => router.push("/friends")} />}
+        </View>
+      ) : (
         <>
-          <Text style={styles.section}>{t("profile.upcomingEvents")}</Text>
-          {profile.upcomingEvents.map(eventRow)}
-        </>
-      )}
-      {profile.pastEvents.length > 0 && (
-        <>
-          <Text style={styles.section}>{t("profile.pastEvents")}</Text>
-          {profile.pastEvents.map(eventRow)}
+          {profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
+
+          <View style={styles.stats}>
+            <Text style={styles.muted}>
+              <Text style={styles.strong}>{profile.friendCount}</Text> {t("profile.friends")}
+            </Text>
+            <Text style={styles.muted}>
+              <Text style={styles.strong}>{profile.eventsCreatedCount}</Text> {t("profile.eventsCreated")}
+            </Text>
+            <Text style={styles.muted}>{profile.ratingAverage != null ? `⭐ ${profile.ratingAverage.toFixed(1)} (${profile.reviewsCount})` : t("profile.noRating")}</Text>
+          </View>
+
+          <View style={styles.actions}>
+            <Button
+              title={t("profile.share")}
+              variant="secondary"
+              onPress={() => void Share.share({ message: `${name}\n${API_URL}/users/${profile.id}`, url: `${API_URL}/users/${profile.id}` }).catch(() => {})}
+            />
+            {user && profile.relationshipStatus === "NONE" && <Button title={t("profile.addFriend")} onPress={() => void addFriend()} loading={acting} />}
+            {profile.relationshipStatus === "PENDING_SENT" && <Button title={t("profile.pendingSent")} variant="secondary" disabled onPress={() => {}} />}
+            {profile.relationshipStatus === "PENDING_RECEIVED" && <Button title={t("profile.pendingReceived")} variant="secondary" onPress={() => router.push("/friends")} />}
+            {profile.relationshipStatus === "FRIENDS" && <Button title={`✓ ${t("profile.friends")}`} variant="secondary" onPress={() => router.push("/friends")} />}
+          </View>
+
+          {user && profile.relationshipStatus !== "SELF" && profile.eventsCreatedCount > 0 && <OrganizerFollow organizerId={profile.id} />}
+
+          {profile.upcomingEvents.length > 0 && (
+            <>
+              <Text style={styles.section}>{t("profile.upcomingEvents")}</Text>
+              {profile.upcomingEvents.map(eventRow)}
+            </>
+          )}
+          {profile.pastEvents.length > 0 && (
+            <>
+              <Text style={styles.section}>{t("profile.pastEvents")}</Text>
+              {profile.pastEvents.map(eventRow)}
+            </>
+          )}
         </>
       )}
     </ScrollView>
@@ -163,6 +177,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   muted: { color: colors.muted, fontSize: 13 },
   strong: { color: colors.foreground, fontWeight: "700" },
   bio: { color: colors.foreground, fontSize: 14, lineHeight: 20 },
+  friendsOnlyBox: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm },
   stats: { flexDirection: "row", flexWrap: "wrap", gap: spacing.lg },
   actions: { gap: spacing.sm },
   section: { color: colors.foreground, fontSize: 15, fontWeight: "700", marginTop: spacing.md },

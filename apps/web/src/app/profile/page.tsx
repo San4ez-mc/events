@@ -30,6 +30,8 @@ interface Prefs {
   hideSocialLinks: boolean;
   hideUpcomingEvents: boolean;
   hideAttendanceHistory: boolean;
+  showAge: boolean;
+  friendsOnlyProfile: boolean;
 }
 
 interface Me {
@@ -63,6 +65,8 @@ const TOGGLES: { key: keyof Prefs; labelKey: string }[] = [
   { key: "hideSocialLinks", labelKey: "profile.hideSocialLinks" },
   { key: "hideUpcomingEvents", labelKey: "profile.hideUpcomingEvents" },
   { key: "hideAttendanceHistory", labelKey: "profile.hideAttendanceHistory" },
+  { key: "showAge", labelKey: "profile.showAge" },
+  { key: "friendsOnlyProfile", labelKey: "profile.friendsOnlyProfile" },
 ];
 
 /** §21/§23 — own profile: photo, basic data, language, privacy toggles, notification opt-outs. */
@@ -146,6 +150,8 @@ export default function ProfilePage() {
               hideSocialLinks: me.preferences.hideSocialLinks,
               hideUpcomingEvents: me.preferences.hideUpcomingEvents,
               hideAttendanceHistory: me.preferences.hideAttendanceHistory,
+              showAge: me.preferences.showAge,
+              friendsOnlyProfile: me.preferences.friendsOnlyProfile,
             }),
           })
         : null;

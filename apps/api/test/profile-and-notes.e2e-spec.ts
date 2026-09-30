@@ -117,6 +117,107 @@ describe("Profile & private notes (e2e)", () => {
     expect(after.body.socialLinks).toHaveLength(0);
   });
 
+  it("a public profile is resolvable by nickname (case-insensitively) as well as by id", async () => {
+    const owner = await registerUser("NickOwner");
+    const nickname = `Nick${Date.now()}`;
+    await request(app.getHttpServer())
+      .patch("/api/v1/users/me")
+      .set("Authorization", `Bearer ${owner.token}`)
+      .send({ nickname })
+      .expect(200);
+
+    const byId = await request(app.getHttpServer()).get(`/api/v1/users/${owner.userId}/profile`).expect(200);
+    expect(byId.body.id).toBe(owner.userId);
+
+    const byNickname = await request(app.getHttpServer()).get(`/api/v1/users/${nickname.toLowerCase()}/profile`).expect(200);
+    expect(byNickname.body.id).toBe(owner.userId);
+  });
+
+  it("rejects a nickname that's already taken (case-insensitively) or has invalid characters", async () => {
+    const first = await registerUser("NickTakenA");
+    const nickname = `taken${Date.now()}`;
+    await request(app.getHttpServer())
+      .patch("/api/v1/users/me")
+      .set("Authorization", `Bearer ${first.token}`)
+      .send({ nickname })
+      .expect(200);
+
+    const second = await registerUser("NickTakenB");
+    const res = await request(app.getHttpServer())
+      .patch("/api/v1/users/me")
+      .set("Authorization", `Bearer ${second.token}`)
+      .send({ nickname: nickname.toUpperCase() })
+      .expect(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+
+    await request(app.getHttpServer())
+      .patch("/api/v1/users/me")
+      .set("Authorization", `Bearer ${second.token}`)
+      .send({ nickname: "has spaces" })
+      .expect(400);
+  });
+
+  it("age is only shown on the public profile when the owner opts in via showAge", async () => {
+    const owner = await registerUser("AgeOwner");
+    await request(app.getHttpServer())
+      .patch("/api/v1/users/me")
+      .set("Authorization", `Bearer ${owner.token}`)
+      .send({ birthDate: "1990-06-15" })
+      .expect(200);
+
+    const hidden = await request(app.getHttpServer()).get(`/api/v1/users/${owner.userId}/profile`).expect(200);
+    expect(hidden.body.age).toBeNull();
+
+    await request(app.getHttpServer())
+      .patch("/api/v1/users/me/preferences")
+      .set("Authorization", `Bearer ${owner.token}`)
+      .send({ showAge: true })
+      .expect(200);
+
+    const shown = await request(app.getHttpServer()).get(`/api/v1/users/${owner.userId}/profile`).expect(200);
+    expect(typeof shown.body.age).toBe("number");
+    expect(shown.body.age).toBeGreaterThan(30);
+  });
+
+  it("a friends-only profile shows only a minimal card to non-friends, and the full profile to friends", async () => {
+    const owner = await registerUser("FriendsOnlyOwner");
+    await request(app.getHttpServer())
+      .patch("/api/v1/users/me")
+      .set("Authorization", `Bearer ${owner.token}`)
+      .send({ bio: "Secret bio" })
+      .expect(200);
+    await request(app.getHttpServer())
+      .patch("/api/v1/users/me/preferences")
+      .set("Authorization", `Bearer ${owner.token}`)
+      .send({ friendsOnlyProfile: true })
+      .expect(200);
+
+    const stranger = await registerUser("FriendsOnlyStranger");
+    const strangerView = await request(app.getHttpServer())
+      .get(`/api/v1/users/${owner.userId}/profile`)
+      .set("Authorization", `Bearer ${stranger.token}`)
+      .expect(200);
+    expect(strangerView.body.friendsOnly).toBe(true);
+    expect(strangerView.body.bio).toBeNull();
+    expect(strangerView.body.name).toBeTruthy();
+    expect(strangerView.body.relationshipStatus).toBe("NONE");
+
+    const friend = await registerUser("FriendsOnlyFriend");
+    await befriend(owner, friend);
+    const friendView = await request(app.getHttpServer())
+      .get(`/api/v1/users/${owner.userId}/profile`)
+      .set("Authorization", `Bearer ${friend.token}`)
+      .expect(200);
+    expect(friendView.body.friendsOnly).toBe(false);
+    expect(friendView.body.bio).toBe("Secret bio");
+
+    const self = await request(app.getHttpServer())
+      .get(`/api/v1/users/${owner.userId}/profile`)
+      .set("Authorization", `Bearer ${owner.token}`)
+      .expect(200);
+    expect(self.body.friendsOnly).toBe(false);
+  });
+
   it("a user blocked by the target can't view their profile (404, not leaking existence)", async () => {
     const owner = await registerUser("Owner");
     const blocked = await registerUser("Blocked");

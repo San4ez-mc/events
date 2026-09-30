@@ -21,8 +21,10 @@ export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
   const [cities, setCities] = useState<Named[]>([]);
   const [categories, setCategories] = useState<Named[]>([]);
+  const [districts, setDistricts] = useState<Named[]>([]);
   const [cityId, setCityId] = useState<string | null>(null);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  const [districtIds, setDistrictIds] = useState<string[]>([]);
   const [freeOnly, setFreeOnly] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -37,8 +39,21 @@ export default function WelcomeScreen() {
     })();
   }, []);
 
+  useEffect(() => {
+    setDistrictIds([]);
+    if (!cityId) {
+      setDistricts([]);
+      return;
+    }
+    void fetch(`${API_URL}/api/v1/geography/districts?cityId=${cityId}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then(setDistricts)
+      .catch(() => setDistricts([]));
+  }, [cityId]);
+
   const name = (n: Named) => (locale === "uk" ? n.nameUk : n.nameEn);
   const toggleCategory = (id: string) => setCategoryIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
+  const toggleDistrict = (id: string) => setDistrictIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
 
   async function save() {
     const token = getAccessToken();
@@ -48,7 +63,7 @@ export default function WelcomeScreen() {
         await fetch(`${API_URL}/api/v1/users/me/preferences`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ preferredCityId: cityId ?? undefined, preferredCategoryIds: categoryIds, freeOnly }),
+          body: JSON.stringify({ preferredCityId: cityId ?? undefined, preferredCategoryIds: categoryIds, preferredDistrictIds: districtIds, freeOnly }),
         }).catch(() => null);
       }
     } finally {
@@ -70,6 +85,13 @@ export default function WelcomeScreen() {
 
       <Text style={styles.section}>{t("welcome.city")}</Text>
       <View style={styles.row}>{cities.map((c) => chip(c.id, name(c), cityId === c.id, () => setCityId(c.id)))}</View>
+
+      {cityId && districts.length > 0 && (
+        <>
+          <Text style={styles.section}>{t("welcome.districts")}</Text>
+          <View style={styles.row}>{districts.map((d) => chip(d.id, name(d), districtIds.includes(d.id), () => toggleDistrict(d.id)))}</View>
+        </>
+      )}
 
       <Text style={styles.section}>{t("welcome.interests")}</Text>
       <View style={styles.row}>{categories.map((c) => chip(c.id, name(c), categoryIds.includes(c.id), () => toggleCategory(c.id)))}</View>

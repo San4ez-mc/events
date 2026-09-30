@@ -9,6 +9,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ApiException } from "../common/exceptions/api.exception";
 import { ResourceNotFoundException } from "../common/exceptions/common-exceptions";
 import { EVENT_CARD_INCLUDE } from "../common/utils/event-card-include";
+import { ageOn } from "../common/utils/age";
 import { FriendsService } from "../friends/friends.service";
 import { AuditLogService } from "../audit/audit-log.service";
 import { StorageService } from "../storage/storage.service";
@@ -54,6 +55,16 @@ export class UsersService {
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
+    if (dto.nickname !== undefined) {
+      // The nickname doubles as the public profile URL handle (/users/:nickname), so it must be
+      // unique — checked case-insensitively so "John" and "john" can't both claim it.
+      const taken = await this.prisma.user.findFirst({
+        where: { nickname: { equals: dto.nickname, mode: "insensitive" }, id: { not: userId } },
+        select: { id: true },
+      });
+      if (taken) throw new ApiException("VALIDATION_ERROR", "This nickname is already taken", 400, { nickname: ["Already taken"] });
+    }
+
     const user = await this.prisma.user.update({
       where: { id: userId },
       // A changed number is no longer verified.
@@ -208,13 +219,19 @@ export class UsersService {
    * default, no toggle for it either), social links/upcoming events hidden
    * if the target opted out, plus the viewer's relationship to them so the
    * client can render "Add friend" vs "Friends" vs "Pending" correctly.
+   *
+   * `idOrNickname` accepts either a UUID (existing internal links keep working unchanged) or a
+   * nickname (the public profile URL handle, e.g. /users/john_doe) — resolved case-insensitively.
    */
-  async getPublicProfile(viewerId: string | undefined, targetUserId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: targetUserId },
-      select: { ...PUBLIC_PROFILE_SELECT, preferences: true },
+  async getPublicProfile(viewerId: string | undefined, idOrNickname: string) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrNickname);
+    const user = await this.prisma.user.findFirst({
+      where: isUuid ? { id: idOrNickname } : { nickname: { equals: idOrNickname, mode: "insensitive" } },
+      // birthDate is never returned as-is — only used below to compute `age` when the owner opted in.
+      select: { ...PUBLIC_PROFILE_SELECT, birthDate: true, preferences: true },
     });
     if (!user) throw new ResourceNotFoundException("User not found");
+    const targetUserId = user.id;
 
     const relationshipStatus = await this.friendsService.getRelationshipStatus(viewerId, targetUserId);
     if (relationshipStatus === "BLOCKED_ME") {
@@ -222,8 +239,33 @@ export class UsersService {
       throw new ResourceNotFoundException("User not found");
     }
 
+    const isSelfOrFriend = relationshipStatus === "SELF" || relationshipStatus === "FRIENDS";
+    if (user.preferences?.friendsOnlyProfile && !isSelfOrFriend) {
+      // §23 — friends-only: everyone else gets just enough to send a friend request, nothing else.
+      return {
+        id: user.id,
+        name: user.name,
+        nickname: user.nickname,
+        avatarUrl: user.avatarUrl,
+        bio: null,
+        memberSince: user.createdAt,
+        isVerifiedOrganizer: user.subscriptionTier === "PRO",
+        age: null,
+        socialLinks: [],
+        friendCount: 0,
+        eventsCreatedCount: 0,
+        upcomingEvents: [],
+        pastEvents: [],
+        ratingAverage: null,
+        reviewsCount: 0,
+        relationshipStatus,
+        friendsOnly: true,
+      };
+    }
+
     const hideSocialLinks = user.preferences?.hideSocialLinks ?? false;
     const hideUpcomingEvents = user.preferences?.hideUpcomingEvents ?? false;
+    const age = user.preferences?.showAge && user.birthDate ? ageOn(user.birthDate, new Date()) : null;
 
     const [friendCount, eventsCreatedCount, upcomingEvents, pastEvents, ratingSummary] = await Promise.all([
       this.prisma.friendship.count({
@@ -265,6 +307,7 @@ export class UsersService {
       bio: user.bio,
       memberSince: user.createdAt,
       isVerifiedOrganizer: user.subscriptionTier === "PRO",
+      age,
       socialLinks: hideSocialLinks ? [] : user.socialLinks,
       friendCount,
       eventsCreatedCount,
@@ -273,6 +316,7 @@ export class UsersService {
       ratingAverage: ratingSummary._avg.rating,
       reviewsCount: ratingSummary._count,
       relationshipStatus,
+      friendsOnly: false,
     };
   }
 

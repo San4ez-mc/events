@@ -402,6 +402,10 @@
     "hideSocialLinks": "Hide social links on my profile",
     "hideUpcomingEvents": "Hide upcoming events on my profile",
     "hideAttendanceHistory": "Hide attendance history",
+    "showAge": "Show my age on my profile",
+    "friendsOnlyProfile": "Show my profile to friends only",
+    "age": "years old",
+    "friendsOnlyNotice": "This profile is visible to the owner's friends only.",
     "viewPublic": "How others see it",
     "socialLinks": "Social links",
     "socialType": "Type",
@@ -796,6 +800,14 @@
     "send": "Send",
     "delete": "Delete",
     "participantsOnly": "The chat is available to confirmed participants"
+  },
+  "legal": {
+    "sectionTitle": "Legal",
+    "termsAndConditions": "Terms and Conditions",
+    "publicOffer": "Public Offer",
+    "refundPolicy": "Refund Policy",
+    "privacyPolicy": "Privacy",
+    "contacts": "Contacts"
   },
   "welcome": {
     "title": "Welcome to Kiro!",

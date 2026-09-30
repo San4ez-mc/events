@@ -94,68 +94,78 @@ export function PublicProfileContent() {
           </h1>
           <p className="text-xs text-muted">
             {t("profile.memberSince")} {new Date(profile.memberSince).toLocaleDateString(locale === "uk" ? "uk-UA" : "en-US")}
+            {profile.age != null && ` · ${profile.age} ${t("profile.age")}`}
           </p>
         </div>
       </div>
 
-      {profile.bio && <p className="mb-6 whitespace-pre-wrap text-sm">{profile.bio}</p>}
-
-      <div className="mb-6 flex flex-wrap gap-6 text-sm text-muted">
-        <span>
-          <strong className="text-foreground">{profile.friendCount}</strong> {t("profile.friends")}
-        </span>
-        <span>
-          <strong className="text-foreground">{profile.eventsCreatedCount}</strong> {t("profile.eventsCreated")}
-        </span>
-        <span>
-          {profile.ratingAverage != null ? (
-            <>
-              ⭐ <strong className="text-foreground">{profile.ratingAverage.toFixed(1)}</strong> (
-              {profile.reviewsCount} {profile.reviewsCount === 1 ? t("profile.reviewsCountOne") : t("profile.reviewsCountMany")})
-            </>
-          ) : (
-            t("profile.noRating")
-          )}
-        </span>
-      </div>
-
-      <div className="mb-8 flex flex-wrap gap-2">
-        <Button variant="secondary" onClick={share}>
-          {copied ? t("profile.linkCopied") : t("profile.share")}
-        </Button>
-        {renderFriendAction()}
-      </div>
-
-      {profile.socialLinks.length > 0 && (
-        <div className="mb-8 flex flex-wrap gap-3 text-sm">
-          {profile.socialLinks.map((link) => (
-            <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="text-muted underline">
-              {link.type}
-            </a>
-          ))}
+      {profile.friendsOnly ? (
+        <div className="mb-8 rounded-lg border border-border p-4 text-sm text-muted">
+          <p className="mb-3">{t("profile.friendsOnlyNotice")}</p>
+          {renderFriendAction()}
         </div>
-      )}
+      ) : (
+        <>
+          {profile.bio && <p className="mb-6 whitespace-pre-wrap text-sm">{profile.bio}</p>}
 
-      {profile.upcomingEvents.length > 0 && (
-        <section className="mb-8">
-          <h2 className="mb-3 text-sm font-semibold">{t("profile.upcomingEvents")}</h2>
-          <div className="flex flex-col gap-2">
-            {profile.upcomingEvents.map((event) => (
-              <EventResultRow key={event.id} event={event} locale={locale} t={t} />
-            ))}
+          <div className="mb-6 flex flex-wrap gap-6 text-sm text-muted">
+            <span>
+              <strong className="text-foreground">{profile.friendCount}</strong> {t("profile.friends")}
+            </span>
+            <span>
+              <strong className="text-foreground">{profile.eventsCreatedCount}</strong> {t("profile.eventsCreated")}
+            </span>
+            <span>
+              {profile.ratingAverage != null ? (
+                <>
+                  ⭐ <strong className="text-foreground">{profile.ratingAverage.toFixed(1)}</strong> (
+                  {profile.reviewsCount} {profile.reviewsCount === 1 ? t("profile.reviewsCountOne") : t("profile.reviewsCountMany")})
+                </>
+              ) : (
+                t("profile.noRating")
+              )}
+            </span>
           </div>
-        </section>
-      )}
 
-      {profile.pastEvents.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-sm font-semibold">{t("profile.pastEvents")}</h2>
-          <div className="flex flex-col gap-2">
-            {profile.pastEvents.map((event) => (
-              <EventResultRow key={event.id} event={event} locale={locale} t={t} />
-            ))}
+          <div className="mb-8 flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={share}>
+              {copied ? t("profile.linkCopied") : t("profile.share")}
+            </Button>
+            {renderFriendAction()}
           </div>
-        </section>
+
+          {profile.socialLinks.length > 0 && (
+            <div className="mb-8 flex flex-wrap gap-3 text-sm">
+              {profile.socialLinks.map((link) => (
+                <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="text-muted underline">
+                  {link.type}
+                </a>
+              ))}
+            </div>
+          )}
+
+          {profile.upcomingEvents.length > 0 && (
+            <section className="mb-8">
+              <h2 className="mb-3 text-sm font-semibold">{t("profile.upcomingEvents")}</h2>
+              <div className="flex flex-col gap-2">
+                {profile.upcomingEvents.map((event) => (
+                  <EventResultRow key={event.id} event={event} locale={locale} t={t} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {profile.pastEvents.length > 0 && (
+            <section>
+              <h2 className="mb-3 text-sm font-semibold">{t("profile.pastEvents")}</h2>
+              <div className="flex flex-col gap-2">
+                {profile.pastEvents.map((event) => (
+                  <EventResultRow key={event.id} event={event} locale={locale} t={t} />
+                ))}
+              </div>
+            </section>
+          )}
+        </>
       )}
     </div>
   );

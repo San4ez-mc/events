@@ -68,8 +68,11 @@ model User {
   emailVerifiedAt DateTime?
   passwordHash    String
 
-  name      String?
-  nickname  String?
+  name String?
+  /// Also the public profile URL handle (/users/:nickname — UsersService.getPublicProfile resolves
+  /// either a UUID or a nickname). Uniqueness is checked case-insensitively at the service layer;
+  /// this DB constraint is still case-sensitive, so it can't be the only guard.
+  nickname  String?  @unique
   avatarUrl String?
   bio       String?
 
@@ -175,11 +178,17 @@ model UserPreferences {
 
   /// §23 profile-privacy toggles. Per-event "show me as a participant" is a
   /// separate, already-built field (`Registration.showAsParticipant`) — not
-  /// duplicated here. Friends-only visibility (vs. just public/hidden) isn't
-  /// implemented yet; these are plain on/off.
+  /// duplicated here.
   hideSocialLinks       Boolean @default(false)
   hideUpcomingEvents    Boolean @default(false)
   hideAttendanceHistory Boolean @default(false)
+
+  /// Opt-in: age is never shown unless the user turns this on (UsersService.getPublicProfile
+  /// computes it from birthDate — birthDate itself is never returned to other users).
+  showAge Boolean @default(false)
+  /// When on, only accepted friends (and the owner) see the full profile — everyone else gets a
+  /// minimal card (name/nickname/avatar + relationship status) so they can still send a request.
+  friendsOnlyProfile Boolean @default(false)
 
   locationPermissionState LocationPermissionState @default(UNKNOWN)
 

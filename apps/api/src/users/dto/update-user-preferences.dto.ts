@@ -44,6 +44,16 @@ export class UpdateUserPreferencesDto {
   @IsBoolean()
   hideAttendanceHistory?: boolean;
 
+  @ApiPropertyOptional({ description: "Opt-in: show a computed age (from birthDate) on the public profile." })
+  @IsOptional()
+  @IsBoolean()
+  showAge?: boolean;
+
+  @ApiPropertyOptional({ description: "Only accepted friends (and the owner) see the full public profile." })
+  @IsOptional()
+  @IsBoolean()
+  friendsOnlyProfile?: boolean;
+
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()
   @IsUUID()
