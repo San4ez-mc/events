@@ -816,6 +816,8 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
             </View>
             {balance !== null && (
               <Text style={styles.summaryLine}>
+                {t("events.wizard.publishCost")}
+                {"  ·  "}
                 {t("events.wizard.creditsBalance")}: <Text style={{ fontWeight: "800", color: colors.foreground }}>{balance}</Text>
               </Text>
             )}

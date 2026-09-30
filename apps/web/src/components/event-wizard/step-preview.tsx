@@ -88,7 +88,7 @@ export function StepPreview({
         <div className="flex w-full flex-col items-center gap-3 border-t border-border pt-4">
           {balance !== null && (
             <p className="text-sm text-muted">
-              {t("events.wizard.creditsBalance")}: <strong>{balance}</strong>
+              {t("events.wizard.publishCost")} &middot; {t("events.wizard.creditsBalance")}: <strong>{balance}</strong>
             </p>
           )}
 
