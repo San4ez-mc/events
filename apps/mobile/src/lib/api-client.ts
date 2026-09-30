@@ -9,6 +9,13 @@ import { getStoredRefreshToken, setStoredRefreshToken } from "./token-storage";
  */
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3100";
 
+/**
+ * The Next.js web app's own origin — legal pages (terms/offer/refund/privacy/contacts) live there,
+ * not on the API. In production both are the same domain (Next.js proxies /api/* to the backend),
+ * so this falls back to API_URL rather than a dev-only default that would break in a real build.
+ */
+export const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL ?? API_URL;
+
 let currentAccessToken: string | null = null;
 
 export function getAccessToken(): string | null {

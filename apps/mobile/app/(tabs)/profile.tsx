@@ -3,7 +3,7 @@ import { Alert, Image, KeyboardAvoidingView, Linking, Platform, Pressable, Scrol
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import { API_URL, getAccessToken, refreshAccessToken } from "../../src/lib/api-client";
+import { API_URL, WEB_URL, getAccessToken, refreshAccessToken } from "../../src/lib/api-client";
 import { ApiRequestError, useAuth } from "../../src/lib/auth-context";
 import { useTranslations } from "../../src/lib/locale-context";
 import { formatPhoneInput } from "../../src/lib/format";
@@ -397,23 +397,23 @@ export default function ProfileScreen() {
           />
         </View>
         <Text style={styles.section}>{t("legal.sectionTitle")}</Text>
-        <Pressable style={styles.row} onPress={() => void Linking.openURL(`${API_URL}/terms`)}>
+        <Pressable style={styles.row} onPress={() => void Linking.openURL(`${WEB_URL}/terms`)}>
           <Ionicons name="document-text-outline" size={22} color={colors.muted} />
           <Text style={styles.rowText}>{t("legal.termsAndConditions")}</Text>
         </Pressable>
-        <Pressable style={styles.row} onPress={() => void Linking.openURL(`${API_URL}/offer`)}>
+        <Pressable style={styles.row} onPress={() => void Linking.openURL(`${WEB_URL}/offer`)}>
           <Ionicons name="document-text-outline" size={22} color={colors.muted} />
           <Text style={styles.rowText}>{t("legal.publicOffer")}</Text>
         </Pressable>
-        <Pressable style={styles.row} onPress={() => void Linking.openURL(`${API_URL}/refund`)}>
+        <Pressable style={styles.row} onPress={() => void Linking.openURL(`${WEB_URL}/refund`)}>
           <Ionicons name="document-text-outline" size={22} color={colors.muted} />
           <Text style={styles.rowText}>{t("legal.refundPolicy")}</Text>
         </Pressable>
-        <Pressable style={styles.row} onPress={() => void Linking.openURL(`${API_URL}/privacy`)}>
+        <Pressable style={styles.row} onPress={() => void Linking.openURL(`${WEB_URL}/privacy`)}>
           <Ionicons name="document-text-outline" size={22} color={colors.muted} />
           <Text style={styles.rowText}>{t("legal.privacyPolicy")}</Text>
         </Pressable>
-        <Pressable style={styles.row} onPress={() => void Linking.openURL(`${API_URL}/contacts`)}>
+        <Pressable style={styles.row} onPress={() => void Linking.openURL(`${WEB_URL}/contacts`)}>
           <Ionicons name="document-text-outline" size={22} color={colors.muted} />
           <Text style={styles.rowText}>{t("legal.contacts")}</Text>
         </Pressable>
