@@ -122,6 +122,11 @@ export default function CreditsPage() {
       <div className="mb-10 text-center">
         <h1 className="mb-2 text-3xl font-bold">{t("pricing.heroTitle")}</h1>
         <p className="mx-auto max-w-xl text-sm text-muted">{t("pricing.heroSubtitle")}</p>
+        {balance !== null && (
+          <p className="mt-3 text-sm text-muted">
+            {t("credits.balance")}: <strong className="text-foreground">{balance}</strong>
+          </p>
+        )}
       </div>
 
       {error && <p className="mb-4 text-center text-sm text-danger">{t("credits.error")}</p>}
@@ -141,7 +146,19 @@ export default function CreditsPage() {
         {tiers === null && <p className="text-center text-muted">{t("common.loading")}</p>}
 
         {tiers !== null && (
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-3">
+            <div className="relative flex flex-col rounded-2xl border border-border p-6">
+              {!hasActiveSub && (
+                <span className="absolute -top-3 right-6 rounded-full bg-surface px-3 py-1 text-xs font-semibold">
+                  {t("pricing.youAreHere")}
+                </span>
+              )}
+              <h3 className="text-lg font-bold">{t("pricing.tierName.FREE")}</h3>
+              <p className="mb-4 text-xs text-muted">{t("pricing.tierTagline.FREE")}</p>
+              <p className="mb-5">
+                <span className="text-3xl font-extrabold">0</span> <span className="text-sm text-muted">{t("pricing.perMonth")}</span>
+              </p>
+            </div>
             {TIER_ORDER.map((tier) => {
               const info = tiers.find((x) => x.tier === tier);
               if (!info) return null;
@@ -214,12 +231,6 @@ export default function CreditsPage() {
           </div>
         )}
       </section>
-
-      {balance !== null && (
-        <p className="mb-4 text-center text-sm text-muted">
-          {t("credits.balance")}: <strong className="text-foreground">{balance}</strong>
-        </p>
-      )}
 
       {/* Buying credits directly is hidden for now — only the subscription is shown to users; the flow itself stays intact. */}
       {SHOW_BUY_CREDITS && (

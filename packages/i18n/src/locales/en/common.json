@@ -261,14 +261,15 @@
     "error": "Couldn't start this payment"
   },
   "pricing": {
-    "heroTitle": "Pricing for organizers",
-    "heroSubtitle": "Publish events, find participants, and grow your community on Kiro. Pick a subscription with perks, or pay only for the publications you plan.",
+    "heroTitle": "Pricing",
+    "heroSubtitle": "Publish events, find participants, and grow your community on Kiro. Pick a subscription with perks, or stay on the free plan.",
     "subscriptionTitle": "Subscription",
-    "subscriptionSubtitle": "Monthly credits plus tools for organizers who publish regularly.",
+    "subscriptionSubtitle": "Monthly credits plus extra tools.",
     "perMonth": "/mo",
     "mostPopular": "Most popular",
-    "tierName": { "STARTER": "Starter", "PRO": "Pro" },
-    "tierTagline": { "STARTER": "Try it risk-free", "PRO": "For serious organizers" },
+    "youAreHere": "You are here",
+    "tierName": { "FREE": "Free", "STARTER": "Starter", "PRO": "Pro" },
+    "tierTagline": { "FREE": "Basic features at no cost", "STARTER": "Try it risk-free", "PRO": "For serious organizers" },
     "feature": {
       "monthlyCredits": "credits every month",
       "coOrganizers": "Co-organizers",
