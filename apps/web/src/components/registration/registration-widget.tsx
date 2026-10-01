@@ -7,6 +7,7 @@ import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
 import { ApiRequestError } from "@/lib/auth-context";
 import type { EventDetail, Registration } from "@/lib/event-types";
+import { formatCurrency } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { RegistrationFieldInput } from "./registration-field-input";
 
@@ -193,7 +194,7 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
             <strong>
               {Number(tier.price) === 0
                 ? t("common.free")
-                : `${Number(tier.price)} ${event.currency}`}
+                : `${Number(tier.price)} ${formatCurrency(event.currency)}`}
             </strong>
           </label>
         ))}

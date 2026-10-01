@@ -72,6 +72,7 @@ interface AdminEvent {
   title: string;
   status: string;
   startsAt: string | null;
+  isTest: boolean;
   owner: { id: string; name: string | null; nickname: string | null; email: string };
 }
 interface AdminOrder {
@@ -318,6 +319,16 @@ export default function AdminScreen() {
     setBusy(id);
     try {
       await fetch(`${API_URL}/api/v1/admin/events/${id}/cancel`, { method: "POST", headers: headers(), body: JSON.stringify({}) });
+      await loadEvents(eventStatus);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function toggleEventTest(id: string, isTest: boolean) {
+    setBusy(id);
+    try {
+      await fetch(`${API_URL}/api/v1/admin/events/${id}/test`, { method: "PATCH", headers: headers(), body: JSON.stringify({ isTest }) });
       await loadEvents(eventStatus);
     } finally {
       setBusy(null);
@@ -590,14 +601,30 @@ export default function AdminScreen() {
             {events?.length === 0 && <Text style={styles.muted}>{t("admin.emptyList")}</Text>}
             {events?.map((e) => (
               <View key={e.id} style={styles.card}>
-                <Text style={styles.title}>{e.title}</Text>
+                <View style={styles.cardHeadRow}>
+                  <Text style={styles.title}>{e.title}</Text>
+                  {e.isTest && (
+                    <View style={styles.testBadge}>
+                      <Text style={styles.testBadgeText}>{t("admin.events.testBadge")}</Text>
+                    </View>
+                  )}
+                </View>
                 <Text style={styles.muted}>
                   {e.owner.name ?? e.owner.nickname ?? e.owner.email} · {e.status}
                 </Text>
                 {e.startsAt && <Text style={styles.muted}>{formatShortDateTime(e.startsAt)}</Text>}
-                {e.status !== "CANCELLED" && (
-                  <Button title={t("admin.events.cancel")} variant="danger" loading={busy === e.id} onPress={() => confirmCancelEvent(e.id)} style={styles.small} />
-                )}
+                <View style={styles.actions}>
+                  {e.status !== "CANCELLED" && (
+                    <Button title={t("admin.events.cancel")} variant="danger" loading={busy === e.id} onPress={() => confirmCancelEvent(e.id)} style={styles.small} />
+                  )}
+                  <Button
+                    title={e.isTest ? t("admin.events.unmarkTest") : t("admin.events.markTest")}
+                    variant="secondary"
+                    loading={busy === e.id}
+                    onPress={() => void toggleEventTest(e.id, !e.isTest)}
+                    style={styles.small}
+                  />
+                </View>
               </View>
             ))}
           </>
@@ -683,6 +710,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, gap: spacing.xs },
   title: { color: colors.foreground, fontSize: 14, fontWeight: "700" },
+  cardHeadRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, flexWrap: "wrap" },
+  testBadge: { backgroundColor: colors.danger, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 },
+  testBadgeText: { color: colors.white, fontSize: 10, fontWeight: "800" },
   body: { color: colors.foreground, fontSize: 13 },
   muted: { color: colors.muted, fontSize: 12 },
   label: { color: colors.foreground, fontSize: 12, fontWeight: "600" },

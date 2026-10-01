@@ -26,6 +26,7 @@ export interface EventCard {
   title: string;
   status: EventStatus;
   format: EventFormat;
+  isTest: boolean;
   startsAt: string | null;
   priceType: EventPriceType;
   price: string | null;

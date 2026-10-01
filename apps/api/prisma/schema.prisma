@@ -560,6 +560,10 @@ model Event {
   visibility EventVisibility @default(PUBLIC)
   format     EventFormat     @default(OFFLINE)
 
+  /// Admin-only badge (§ organizer tools, round 3) so real users can tell a developer/admin test
+  /// event apart from genuine ones. Never settable by the organizer's own self-service update.
+  isTest Boolean @default(false)
+
   startsAt DateTime?
   endsAt   DateTime?
   timezone String    @default("Europe/Kyiv")

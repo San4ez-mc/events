@@ -275,6 +275,11 @@ export default function EventDetailScreen() {
         </Pressable>
       )}
 
+      {event.isTest && (
+        <View style={styles.testBadge}>
+          <Text style={styles.testBadgeText}>{t("events.testBadge")}</Text>
+        </View>
+      )}
       {/* Title gets the full row's width to itself — it used to share the row with up to 4 icon
           buttons, which squeezed a longer title down to a sliver and wrapped it mid-word. */}
       <Text style={styles.title}>{event.title}</Text>
@@ -664,6 +669,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   pName: { color: colors.muted, fontSize: 11, maxWidth: 60 },
   disclaimer: { color: colors.muted, fontSize: 11, lineHeight: 16, backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md },
   title: { color: colors.foreground, fontSize: 24, fontWeight: "700" },
+  testBadge: { alignSelf: "flex-start", backgroundColor: colors.danger, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 4 },
+  testBadgeText: { color: colors.white, fontSize: 11, fontWeight: "800" },
   metaRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
   meta: { color: colors.muted, fontSize: 13 },
   categoryChips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },

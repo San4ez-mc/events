@@ -11,6 +11,7 @@ import {
 import { AttendeeStack } from "./attendee-stack";
 import type { SupportedLocale } from "@kiro/i18n";
 import type { EventCard as EventCardData } from "@/lib/event-types";
+import { formatCurrency } from "@/lib/format";
 
 /**
  * The single Tinder-style card (UX §3): cover photo, title, date, district,
@@ -70,13 +71,18 @@ export function EventCard({
       )}
 
       <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-4">
-        {categoryName ? (
-          <span className="rounded-full bg-black/45 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
-            {categoryName}
-          </span>
-        ) : (
-          <span />
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {event.isTest && (
+            <span className="rounded-full bg-red-500/90 px-3 py-1 text-xs font-bold text-white backdrop-blur">
+              {t("events.testBadge")}
+            </span>
+          )}
+          {categoryName && (
+            <span className="rounded-full bg-black/45 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
+              {categoryName}
+            </span>
+          )}
+        </div>
         <span
           className={`rounded-full px-3 py-1 text-xs font-bold backdrop-blur ${
             isFree
@@ -88,7 +94,7 @@ export function EventCard({
             ? event.priceType === "DONATION"
               ? t("common.donation")
               : t("common.free")
-            : `${event.price ?? "?"} ${event.currency}`}
+            : `${event.price ?? "?"} ${formatCurrency(event.currency)}`}
         </span>
       </div>
 

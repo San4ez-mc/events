@@ -102,6 +102,11 @@ export function SwipeCard({
 
         <View style={[styles.info, { bottom: bottomInset }]} pointerEvents="none">
           <View style={styles.chips}>
+            {event.isTest && (
+              <View style={[styles.chip, styles.chipTest]}>
+                <Text style={styles.chipText}>{t("events.testBadge")}</Text>
+              </View>
+            )}
             {event.category && (
               <View style={styles.chip}>
                 <Text style={styles.chipText}>{locale === "uk" ? event.category.nameUk : event.category.nameEn}</Text>
@@ -211,6 +216,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   chips: { flexDirection: "row", gap: spacing.sm, marginBottom: 4 },
   chip: { backgroundColor: "rgba(255,255,255,0.18)", borderRadius: radius.full, paddingHorizontal: 12, paddingVertical: 4 },
   chipFree: { backgroundColor: "rgba(16,185,129,0.9)" },
+  chipTest: { backgroundColor: "rgba(239,68,68,0.92)" },
   chipPaid: { backgroundColor: "rgba(255,255,255,0.92)" },
   chipText: { color: colors.white, fontSize: 12, fontWeight: "700" },
   title: { color: colors.white, fontSize: 28, fontWeight: "800", lineHeight: 33 },

@@ -3,6 +3,7 @@ import { CalendarDays, MapPin, Star, Tag, Users, Video } from "lucide-react";
 import type { SupportedLocale } from "@kiro/i18n";
 import { getT } from "@/lib/i18n-server";
 import type { EventDetail } from "@/lib/event-types";
+import { formatCurrency } from "@/lib/format";
 import { RegistrationWidget } from "@/components/registration/registration-widget";
 import { FollowButton } from "@/components/social/follow-button";
 import { ReviewsSection } from "@/components/reviews/reviews-section";
@@ -53,6 +54,14 @@ export function EventPage({
       {event.status !== "PUBLISHED" && event.status !== "COMPLETED" && (
         <div className="mb-4 rounded-md border border-[var(--accent-from)] bg-surface px-4 py-2 text-sm">
           {t("events.page.previewBanner")}
+        </div>
+      )}
+      {event.isTest && (
+        <div className="mb-4 flex items-center gap-2 rounded-md border border-red-500 bg-red-500/10 px-4 py-2 text-sm text-red-600">
+          <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
+            {t("events.testBadge")}
+          </span>
+          {t("events.testEventNotice")}
         </div>
       )}
 
@@ -108,7 +117,7 @@ export function EventPage({
               ? t("common.free")
               : event.priceType === "DONATION"
                 ? t("common.donation")
-                : `${event.price ?? "?"} ${event.currency}`}
+                : `${event.price ?? "?"} ${formatCurrency(event.currency)}`}
           </strong>
           {categoryName && <span>· {categoryName}</span>}
         </span>
@@ -266,7 +275,7 @@ export function EventPage({
                 <strong>
                   {Number(tier.price) === 0
                     ? t("common.free")
-                    : `${Number(tier.price)} ${event.currency}`}
+                    : `${Number(tier.price)} ${formatCurrency(event.currency)}`}
                 </strong>
               </li>
             ))}

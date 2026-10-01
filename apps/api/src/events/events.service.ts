@@ -69,6 +69,17 @@ export class EventsService {
     return this.applyUpdate(event, dto);
   }
 
+  /**
+   * Admin-only "test event" badge toggle — deliberately NOT on `UpdateEventDto`, since that DTO is
+   * shared with the organizer's own self-service PATCH /events/:id. Keeping it a dedicated method/route
+   * means an organizer can never flip this flag on their own event, only an admin can.
+   */
+  async adminSetTest(eventId: string, isTest: boolean) {
+    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw new ResourceNotFoundException("Event not found");
+    return this.prisma.event.update({ where: { id: eventId }, data: { isTest } });
+  }
+
   private async applyUpdate(event: Event, dto: UpdateEventDto) {
     const eventId = event.id;
     const touchesSignificantField = SIGNIFICANT_PUBLISHED_FIELDS.some(

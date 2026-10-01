@@ -4,6 +4,15 @@
  * platforms. Re-derives the digits from scratch on every keystroke, so pasting, backspacing and
  * a leading "0" or "380" all just work.
  */
+/**
+ * Currency codes as stored/returned by the API, shown the way people actually read money in
+ * Ukraine. Mirrors the mobile app's formatCurrency (apps/mobile/src/lib/format.ts).
+ */
+export function formatCurrency(code: string | null | undefined): string {
+  if (code === "UAH") return "грн";
+  return code ?? "";
+}
+
 export function formatPhoneInput(raw: string): string {
   let digits = raw.replace(/\D/g, "");
   if (digits.startsWith("380")) digits = digits.slice(3);

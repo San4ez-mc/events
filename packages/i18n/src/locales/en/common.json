@@ -105,6 +105,8 @@
     "hidePassword": "Hide password"
   },
   "events": {
+    "testBadge": "TEST",
+    "testEventNotice": "This is a test event created to check the app, not a real event.",
     "location": {
       "lockedHint": "The exact address and map are shown after you register for the event.",
       "joinOnline": "Join online",
@@ -507,7 +509,10 @@
       "owner": "Organizer",
       "editTitle": "Title",
       "cancelReason": "Cancellation reason (optional)",
-      "cancel": "Force cancel"
+      "cancel": "Force cancel",
+      "testBadge": "TEST",
+      "markTest": "Mark as test",
+      "unmarkTest": "Unmark as test"
     },
     "categories": {
       "title": "Category merge",

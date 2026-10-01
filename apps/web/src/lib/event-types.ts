@@ -41,6 +41,7 @@ export interface EventSummary {
   status: EventStatus;
   visibility: EventVisibility;
   format: EventFormat;
+  isTest: boolean;
   startsAt: string | null;
   endsAt: string | null;
   cityId: string | null;

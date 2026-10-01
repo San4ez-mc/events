@@ -10,6 +10,7 @@ import { UpdateEventDto } from "../../events/dto/update-event.dto";
 import { AdminEventsService } from "./admin-events.service";
 import { AdminListEventsDto } from "../dto/admin-list-events.dto";
 import { AdminCancelEventDto } from "../dto/cancel-event.dto";
+import { SetEventTestDto } from "../dto/set-event-test.dto";
 
 /** §72/§74 — admin can view/edit/cancel any event, any owner. */
 @ApiTags("admin")
@@ -41,6 +42,18 @@ export class AdminEventsController {
   ) {
     const updated = await this.eventsService.adminUpdate(id, dto);
     await this.auditLog.record({ actorUserId: user.id, action: "EVENT_ADMIN_UPDATE", entityType: "Event", entityId: id, after: dto, ip: req.ip });
+    return updated;
+  }
+
+  @Patch(":id/test")
+  async setTest(
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Body() dto: SetEventTestDto,
+  ) {
+    const updated = await this.eventsService.adminSetTest(id, dto.isTest);
+    await this.auditLog.record({ actorUserId: user.id, action: "EVENT_ADMIN_SET_TEST", entityType: "Event", entityId: id, after: { isTest: dto.isTest }, ip: req.ip });
     return updated;
   }
 

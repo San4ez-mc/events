@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { SupportedLocale } from "@kiro/i18n";
 import type { EventCard } from "@/lib/event-types";
+import { formatCurrency } from "@/lib/format";
 
 /** UX §9 — search is a plain list, not the swipe card. */
 export function EventResultRow({
@@ -41,7 +42,7 @@ export function EventResultRow({
             .join(" · ")}
         </span>
         <span className="text-xs">
-          {event.priceType === "FREE" ? t("common.free") : event.priceType === "DONATION" ? t("common.donation") : `${event.price ?? "?"} ${event.currency}`}
+          {event.priceType === "FREE" ? t("common.free") : event.priceType === "DONATION" ? t("common.donation") : `${event.price ?? "?"} ${formatCurrency(event.currency)}`}
         </span>
       </div>
     </Link>
