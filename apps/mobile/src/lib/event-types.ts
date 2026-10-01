@@ -53,6 +53,7 @@ export interface EventDetail extends EventCard {
   description: string | null;
   addressText: string | null;
   onlineUrl: string | null;
+  youtubeUrl?: string | null;
   capacity: number | null;
   registrationDeadline: string | null;
   rules: string | null;

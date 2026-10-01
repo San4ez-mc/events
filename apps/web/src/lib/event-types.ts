@@ -85,6 +85,7 @@ export interface EventDetail extends EventSummary {
   timezone: string;
   addressText: string | null;
   onlineUrl: string | null;
+  youtubeUrl: string | null;
   capacity: number | null;
   minParticipants: number | null;
   registrationDeadline: string | null;

@@ -61,6 +61,17 @@ export function EventPage({
         published={event.status === "PUBLISHED"}
       />
       <EventGallery media={event.media} />
+      {youtubeEmbedId(event.youtubeUrl) && (
+        <div className="mb-6 aspect-video w-full overflow-hidden rounded-2xl">
+          <iframe
+            src={`https://www.youtube.com/embed/${youtubeEmbedId(event.youtubeUrl)}`}
+            title="YouTube"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="h-full w-full"
+          />
+        </div>
+      )}
 
       <h1 className="mb-3 text-3xl font-bold leading-tight">{event.title}</h1>
 
@@ -344,6 +355,13 @@ export function EventPage({
       )}
     </article>
   );
+}
+
+/** Pulls the video id out of any common YouTube URL shape (watch?v=, youtu.be/, /embed/, /shorts/). */
+function youtubeEmbedId(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const m = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/.exec(url);
+  return m?.[1] ?? null;
 }
 
 function formatDateTime(iso: string, locale: SupportedLocale): string {

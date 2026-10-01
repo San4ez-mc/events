@@ -45,6 +45,7 @@ interface EventDetail {
   latitude: number | string | null;
   longitude: number | string | null;
   onlineUrl: string | null;
+  youtubeUrl: string | null;
   priceType: "FREE" | "PAID";
   price: number | string | null;
   capacity: number | string | null;
@@ -72,6 +73,7 @@ interface Form {
   latitude: number | null;
   longitude: number | null;
   onlineUrl: string;
+  youtubeUrl: string;
   priceType: "FREE" | "PAID" | "DONATION";
   price: string;
   capacity: string;
@@ -83,11 +85,14 @@ interface Form {
   paymentUrl: string;
 }
 
+const RECURRENCE_TYPES = ["DAILY", "WEEKLY", "EVERY_N_WEEKS", "EVERY_N_MONTHS"] as const;
+type RecurrenceType = (typeof RECURRENCE_TYPES)[number];
+
 const MAX_ADDITIONAL_CATEGORIES = 5;
 /** Buying credits directly is hidden for now — only the subscription is user-facing; flip this back on to restore it. */
 const SHOW_BUY_CREDITS = false;
 const GIFT_SHOWN_KEY = "kiro_create_gift_shown";
-const STEPS = 5;
+const STEPS = 3;
 const pad = (n: number) => String(n).padStart(2, "0");
 /** form.date stays ISO (YYYY-MM-DD) internally — only the text field shows/accepts DD.MM.YYYY,
  * the format Ukrainian users actually write dates in. Falls back to passthrough while the user
@@ -125,6 +130,7 @@ const INITIAL: Form = {
   latitude: null,
   longitude: null,
   onlineUrl: "",
+  youtubeUrl: "",
   priceType: "FREE",
   price: "",
   capacity: "",
@@ -208,6 +214,11 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   const [error, setError] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [giftOpen, setGiftOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [recurring, setRecurring] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>("WEEKLY");
+  const [recurrenceCount, setRecurrenceCount] = useState("");
+  const [seriesCreated, setSeriesCreated] = useState(false);
   const [outcome, setOutcome] = useState<null | "PUBLISHED" | "PENDING_MODERATION" | "REJECTED">(null);
   const [publishedAlready, setPublishedAlready] = useState(false);
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
@@ -224,6 +235,24 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
       })
       .catch(() => {});
   }, []);
+
+  // New event, nothing picked yet: default to the city used for the organizer's last event (one
+  // less thing to type for a repeat organizer), falling back to Kyiv since that's where most of
+  // the current audience is.
+  useEffect(() => {
+    if (editEventId) return;
+    void (async () => {
+      const mine = await authed<{ cityId: string | null }[]>("/events/mine").catch(() => null);
+      const lastCityId = mine?.find((e) => e.cityId)?.cityId;
+      if (lastCityId) {
+        set({ cityId: lastCityId });
+        return;
+      }
+      const cities = await fetch(`${API_URL}/api/v1/geography/cities`).then((r) => (r.ok ? r.json() : [])) as (Named & { slug?: string })[];
+      const kyiv = cities.find((c) => c.slug === "kyiv");
+      if (kyiv) set({ cityId: kyiv.id });
+    })();
+  }, [editEventId]);
 
   // Edit mode: load the organizer's event into the same form the wizard uses.
   useEffect(() => {
@@ -255,6 +284,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
           latitude: e.latitude != null ? Number(e.latitude) : null,
           longitude: e.longitude != null ? Number(e.longitude) : null,
           onlineUrl: e.onlineUrl ?? "",
+          youtubeUrl: e.youtubeUrl ?? "",
           priceType: e.priceType,
           price: e.price ? String(Number(e.price)) : "",
           capacity: e.capacity?.toString() ?? "",
@@ -357,11 +387,12 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
 
   /** The PATCH body for whatever the current step has collected. */
   function payloadFor(currentStep: number): Record<string, unknown> {
-    if (currentStep === 0) return { description: form.description.trim() || undefined, categoryId: form.categoryId ?? undefined };
-    if (currentStep === 2) {
+    if (currentStep === 0) {
       const start = startsAt();
       const hours = Math.max(0.5, Number(form.duration) || 2);
       return {
+        description: form.description.trim() || undefined,
+        categoryId: form.categoryId ?? undefined,
         format: form.format,
         ...(publishedAlready ? { notifyParticipants: true } : {}),
         startsAt: start?.toISOString(),
@@ -378,8 +409,9 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
           : { onlineUrl: form.onlineUrl.trim() || undefined }),
       };
     }
-    if (currentStep === 3) {
+    if (currentStep === 1) {
       return {
+        youtubeUrl: form.youtubeUrl.trim() || undefined,
         priceType: form.priceType,
         price: form.priceType === "PAID" && form.price ? Number(form.price) : undefined,
         capacity: form.capacity ? Number(form.capacity) : undefined,
@@ -418,6 +450,17 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
     const body = payloadFor(currentStep);
     if (eventId && Object.values(body).some((v) => v !== undefined)) {
       await authed(`/events/${eventId}`, { method: "PATCH", body: JSON.stringify(body) });
+    }
+
+    // New events only — editing an already-recurring event is a bulk-occurrence operation that
+    // belongs on the dedicated /series/:id screen (reachable from the event's "repeat" icon), not
+    // this one-shot inline toggle.
+    if (currentStep === 1 && recurring && !seriesCreated && eventId && !editEventId) {
+      await authed(`/events/${eventId}/series`, {
+        method: "POST",
+        body: JSON.stringify({ recurrenceType, count: recurrenceCount ? Number(recurrenceCount) : undefined }),
+      }).catch(() => {});
+      setSeriesCreated(true);
     }
   }
 
@@ -544,7 +587,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   const categoryOptions: Option[] = categories.flatMap((c) => [{ id: c.id, label: name(c) }, ...(c.children ?? []).map((ch) => ({ id: ch.id, label: name(ch), indent: true }))]);
   const cityOptions: Option[] = cities.map((c) => ({ id: c.id, label: name(c) }));
   const districtOptions: Option[] = districts.map((d) => ({ id: d.id, label: name(d) }));
-  const stepNames = [t("create.stepBasics"), t("create.stepMedia"), t("create.stepWhen"), t("create.stepPrice"), t("create.stepPreview")];
+  const stepNames = [t("create.stepBasics"), t("create.stepDetails"), t("create.stepPreview")];
   const dateChips = [
     { value: addDays(0), label: t("create.today") },
     { value: addDays(1), label: t("create.tomorrow") },
@@ -628,62 +671,9 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
                 </Pressable>
               </View>
             </Section>
-            <Section title={t("events.wizard.additionalCategories")}>
-              <Pressable style={styles.checkboxRow} onPress={() => setAdditionalCategoriesEnabled((v) => !v)} accessibilityRole="checkbox" accessibilityState={{ checked: additionalCategoriesEnabled }}>
-                <Ionicons name={additionalCategoriesEnabled ? "checkbox" : "square-outline"} size={20} color={additionalCategoriesEnabled ? colors.accentFrom : colors.muted} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.checkboxLabel}>{t("events.wizard.additionalCategories")}</Text>
-                  <Text style={styles.hint}>{t("events.wizard.additionalCategoriesHint")}</Text>
-                </View>
-              </Pressable>
-              {additionalCategoriesEnabled && (
-                <SearchPicker
-                  options={categoryOptions.filter((o) => o.id !== form.categoryId)}
-                  selected={form.additionalCategoryIds}
-                  multi
-                  onChange={(ids) => set({ additionalCategoryIds: ids.slice(0, MAX_ADDITIONAL_CATEGORIES) })}
-                  placeholder={t("filters.search")}
-                  emptyLabel={t("filters.noResults")}
-                />
-              )}
-            </Section>
             <Field label={t("events.wizard.description")} required>
               <TextInput value={form.description} onChangeText={(v) => set({ description: v })} placeholder={t("events.wizard.descriptionPlaceholder")} placeholderTextColor={colors.muted} style={[styles.input, styles.multiline]} multiline />
             </Field>
-          </>
-        )}
-
-        {step === 1 && (
-          <>
-            <Text style={styles.muted}>{t("create.mediaHint")}</Text>
-            <View style={styles.mediaGrid}>
-              {media.map((m, i) => (
-                <View key={m.id} style={styles.mediaCell}>
-                  <Image source={{ uri: m.thumbnailUrl }} style={styles.mediaImg} />
-                  {m.type === "VIDEO" && <Ionicons name="play-circle" size={26} color={colors.white} style={styles.mediaPlay} />}
-                  {i === 0 && (
-                    <View style={styles.coverBadge}>
-                      <Text style={styles.coverBadgeText}>1</Text>
-                    </View>
-                  )}
-                  <Pressable style={styles.mediaRemove} onPress={() => void removeMedia(m.id)} hitSlop={8}>
-                    {/* Android adds asymmetric font padding around icon glyphs by default, which visibly
-                        off-centers a small glyph like "×" inside a tightly-sized circular button. */}
-                    <Ionicons name="close" size={16} color={colors.white} style={{ includeFontPadding: false, textAlignVertical: "center" }} />
-                  </Pressable>
-                </View>
-              ))}
-              {media.length < 10 && (
-                <Pressable style={[styles.mediaCell, styles.mediaAdd]} onPress={() => void pickMedia()} disabled={busy}>
-                  {busy ? <ActivityIndicator color={colors.accentFrom} /> : <Ionicons name="add" size={32} color={colors.accentFrom} />}
-                </Pressable>
-              )}
-            </View>
-          </>
-        )}
-
-        {step === 2 && (
-          <>
             <Section title={t("events.wizard.format")}>
               <Chips
                 value={form.format}
@@ -760,81 +750,172 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
           </>
         )}
 
-        {step === 3 && (
+        {step === 1 && (
           <>
-            <Section title={t("events.wizard.priceType")}>
-              <Chips
-                value={form.priceType}
-                options={[
-                  { value: "FREE" as const, label: t("events.wizard.priceFree") },
-                  { value: "PAID" as const, label: t("events.wizard.pricePaid") },
-                  { value: "DONATION" as const, label: t("events.wizard.priceDonation") },
-                ]}
-                onChange={(v) => set({ priceType: v })}
+            <Text style={styles.muted}>{t("create.mediaHint")}</Text>
+            <View style={styles.mediaGrid}>
+              {media.map((m, i) => (
+                <View key={m.id} style={styles.mediaCell}>
+                  <Image source={{ uri: m.thumbnailUrl }} style={styles.mediaImg} />
+                  {m.type === "VIDEO" && <Ionicons name="play-circle" size={26} color={colors.white} style={styles.mediaPlay} />}
+                  {i === 0 && (
+                    <View style={styles.coverBadge}>
+                      <Text style={styles.coverBadgeText}>1</Text>
+                    </View>
+                  )}
+                  <Pressable style={styles.mediaRemove} onPress={() => void removeMedia(m.id)} hitSlop={8}>
+                    {/* Android adds asymmetric font padding around icon glyphs by default, which visibly
+                        off-centers a small glyph like "×" inside a tightly-sized circular button. */}
+                    <Ionicons name="close" size={16} color={colors.white} style={{ includeFontPadding: false, textAlignVertical: "center" }} />
+                  </Pressable>
+                </View>
+              ))}
+              {media.length < 10 && (
+                <Pressable style={[styles.mediaCell, styles.mediaAdd]} onPress={() => void pickMedia()} disabled={busy}>
+                  {busy ? <ActivityIndicator color={colors.accentFrom} /> : <Ionicons name="add" size={32} color={colors.accentFrom} />}
+                </Pressable>
+              )}
+            </View>
+            <Text style={styles.hint}>{t("create.mediaFormatsHint")}</Text>
+
+            <Field label={t("events.wizard.youtubeUrl")}>
+              <TextInput
+                value={form.youtubeUrl}
+                onChangeText={(v) => set({ youtubeUrl: v })}
+                placeholder="https://youtube.com/watch?v=..."
+                placeholderTextColor={colors.muted}
+                style={styles.input}
+                autoCapitalize="none"
+                keyboardType="url"
               />
-            </Section>
-            {form.priceType === "DONATION" && <Text style={styles.hint}>{t("events.wizard.donationHint")}</Text>}
-            {form.priceType !== "FREE" && (
+            </Field>
+
+            <Pressable style={styles.detailsToggle} onPress={() => setDetailsOpen((v) => !v)}>
+              <Text style={styles.detailsToggleText}>{t("create.moreSettings")}</Text>
+              <Ionicons name={detailsOpen ? "chevron-up" : "chevron-down"} size={18} color={colors.accentFrom} />
+            </Pressable>
+
+            {detailsOpen && (
               <>
-                {form.priceType === "PAID" && (
-                  <Field label={t("events.wizard.priceAmount")}>
-                    <TextInput value={form.price} onChangeText={(v) => set({ price: v.replace(/[^0-9.]/g, "") })} style={styles.input} keyboardType="decimal-pad" placeholder="350" placeholderTextColor={colors.muted} />
-                  </Field>
+                <Section title={t("events.wizard.additionalCategories")}>
+                  <Pressable style={styles.checkboxRow} onPress={() => setAdditionalCategoriesEnabled((v) => !v)} accessibilityRole="checkbox" accessibilityState={{ checked: additionalCategoriesEnabled }}>
+                    <Ionicons name={additionalCategoriesEnabled ? "checkbox" : "square-outline"} size={20} color={additionalCategoriesEnabled ? colors.accentFrom : colors.muted} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.checkboxLabel}>{t("events.wizard.additionalCategories")}</Text>
+                      <Text style={styles.hint}>{t("events.wizard.additionalCategoriesHint")}</Text>
+                    </View>
+                  </Pressable>
+                  {additionalCategoriesEnabled && (
+                    <SearchPicker
+                      options={categoryOptions.filter((o) => o.id !== form.categoryId)}
+                      selected={form.additionalCategoryIds}
+                      multi
+                      onChange={(ids) => set({ additionalCategoryIds: ids.slice(0, MAX_ADDITIONAL_CATEGORIES) })}
+                      placeholder={t("filters.search")}
+                      emptyLabel={t("filters.noResults")}
+                    />
+                  )}
+                </Section>
+
+                <Section title={t("events.wizard.priceType")}>
+                  <Chips
+                    value={form.priceType}
+                    options={[
+                      { value: "FREE" as const, label: t("events.wizard.priceFree") },
+                      { value: "PAID" as const, label: t("events.wizard.pricePaid") },
+                      { value: "DONATION" as const, label: t("events.wizard.priceDonation") },
+                    ]}
+                    onChange={(v) => set({ priceType: v })}
+                  />
+                </Section>
+                {form.priceType === "DONATION" && <Text style={styles.hint}>{t("events.wizard.donationHint")}</Text>}
+                {form.priceType !== "FREE" && (
+                  <>
+                    {form.priceType === "PAID" && (
+                      <Field label={t("events.wizard.priceAmount")}>
+                        <TextInput value={form.price} onChangeText={(v) => set({ price: v.replace(/[^0-9.]/g, "") })} style={styles.input} keyboardType="decimal-pad" placeholder="350" placeholderTextColor={colors.muted} />
+                      </Field>
+                    )}
+                    <Field label={t("events.wizard.paymentUrl")}>
+                      <TextInput value={form.paymentUrl} onChangeText={(v) => set({ paymentUrl: v })} style={styles.input} autoCapitalize="none" keyboardType="url" placeholder="https://" placeholderTextColor={colors.muted} />
+                    </Field>
+                  </>
                 )}
-                <Field label={t("events.wizard.paymentUrl")}>
-                  <TextInput value={form.paymentUrl} onChangeText={(v) => set({ paymentUrl: v })} style={styles.input} autoCapitalize="none" keyboardType="url" placeholder="https://" placeholderTextColor={colors.muted} />
+                <View style={styles.row}>
+                  <View style={{ flex: 1 }}>
+                    <Field label={t("create.maxPeople")}>
+                      <TextInput value={form.capacity} onChangeText={(v) => set({ capacity: v.replace(/\D/g, "") })} style={styles.input} keyboardType="number-pad" placeholder="20" placeholderTextColor={colors.muted} />
+                    </Field>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Field label={t("create.minPeople")}>
+                      <TextInput value={form.minParticipants} onChangeText={(v) => set({ minParticipants: v.replace(/\D/g, "") })} style={styles.input} keyboardType="number-pad" placeholder="8" placeholderTextColor={colors.muted} />
+                    </Field>
+                  </View>
+                </View>
+                <Section title={t("events.wizard.approvalMode")}>
+                  <Chips
+                    value={form.approvalMode}
+                    options={[
+                      { value: "AUTO" as const, label: t("events.wizard.approvalAuto") },
+                      { value: "ORGANIZER_APPROVAL" as const, label: t("events.wizard.approvalManual") },
+                    ]}
+                    onChange={(v) => set({ approvalMode: v })}
+                  />
+                </Section>
+                <Section title={t("events.wizard.visibility")}>
+                  <Chips
+                    value={form.visibility}
+                    options={[
+                      { value: "PUBLIC" as const, label: t("events.wizard.visibilityPublic") },
+                      { value: "PRIVATE" as const, label: t("events.wizard.visibilityLink") },
+                    ]}
+                    onChange={(v) => set({ visibility: v })}
+                  />
+                </Section>
+                <Section title={t("events.wizard.adultsOnly")}>
+                  <Chips
+                    value={form.adultsOnly ? "yes" : "no"}
+                    options={[
+                      { value: "no" as const, label: t("common.no") },
+                      { value: "yes" as const, label: "18+" },
+                    ]}
+                    onChange={(v) => set({ adultsOnly: v === "yes" })}
+                  />
+                </Section>
+                <Field label={t("events.wizard.rules")}>
+                  <TextInput value={form.rules} onChangeText={(v) => set({ rules: v })} style={[styles.input, styles.multiline]} multiline maxLength={10000} placeholderTextColor={colors.muted} />
                 </Field>
+
+                {!editEventId && (
+                  <Section title={t("organizerSeries.title")}>
+                    <Pressable style={styles.checkboxRow} onPress={() => setRecurring((v) => !v)} accessibilityRole="checkbox" accessibilityState={{ checked: recurring }}>
+                      <Ionicons name={recurring ? "checkbox" : "square-outline"} size={20} color={recurring ? colors.accentFrom : colors.muted} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.checkboxLabel}>{t("create.makeRecurring")}</Text>
+                        <Text style={styles.hint}>{t("organizerSeries.description")}</Text>
+                      </View>
+                    </Pressable>
+                    {recurring && (
+                      <>
+                        <Chips
+                          value={recurrenceType}
+                          options={RECURRENCE_TYPES.map((v) => ({ value: v, label: t(`organizerSeries.recurrenceTypeOptions.${v}`) }))}
+                          onChange={setRecurrenceType}
+                        />
+                        <Field label={t("organizerSeries.count")}>
+                          <TextInput value={recurrenceCount} onChangeText={setRecurrenceCount} keyboardType="number-pad" style={styles.input} placeholder="4" placeholderTextColor={colors.muted} />
+                        </Field>
+                      </>
+                    )}
+                  </Section>
+                )}
               </>
             )}
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Field label={t("create.maxPeople")}>
-                  <TextInput value={form.capacity} onChangeText={(v) => set({ capacity: v.replace(/\D/g, "") })} style={styles.input} keyboardType="number-pad" placeholder="20" placeholderTextColor={colors.muted} />
-                </Field>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Field label={t("create.minPeople")}>
-                  <TextInput value={form.minParticipants} onChangeText={(v) => set({ minParticipants: v.replace(/\D/g, "") })} style={styles.input} keyboardType="number-pad" placeholder="8" placeholderTextColor={colors.muted} />
-                </Field>
-              </View>
-            </View>
-            <Section title={t("events.wizard.approvalMode")}>
-              <Chips
-                value={form.approvalMode}
-                options={[
-                  { value: "AUTO" as const, label: t("events.wizard.approvalAuto") },
-                  { value: "ORGANIZER_APPROVAL" as const, label: t("events.wizard.approvalManual") },
-                ]}
-                onChange={(v) => set({ approvalMode: v })}
-              />
-            </Section>
-            <Section title={t("events.wizard.visibility")}>
-              <Chips
-                value={form.visibility}
-                options={[
-                  { value: "PUBLIC" as const, label: t("events.wizard.visibilityPublic") },
-                  { value: "PRIVATE" as const, label: t("events.wizard.visibilityLink") },
-                ]}
-                onChange={(v) => set({ visibility: v })}
-              />
-            </Section>
-            <Section title={t("events.wizard.adultsOnly")}>
-              <Chips
-                value={form.adultsOnly ? "yes" : "no"}
-                options={[
-                  { value: "no" as const, label: t("common.no") },
-                  { value: "yes" as const, label: "18+" },
-                ]}
-                onChange={(v) => set({ adultsOnly: v === "yes" })}
-              />
-            </Section>
-            <Field label={t("events.wizard.rules")}>
-              <TextInput value={form.rules} onChangeText={(v) => set({ rules: v })} style={[styles.input, styles.multiline]} multiline maxLength={10000} placeholderTextColor={colors.muted} />
-            </Field>
           </>
         )}
 
-        {step === 4 && (
+        {step === 2 && (
           <>
             <Text style={styles.summaryTitle}>{t("create.summary")}</Text>
             <View style={styles.summary}>
@@ -930,6 +1011,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   categoryTriggerText: { color: colors.foreground, fontSize: 15, flexShrink: 1 },
   categoryTriggerPlaceholder: { color: colors.muted },
   checkboxRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
+  detailsToggle: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, paddingVertical: spacing.sm },
+  detailsToggleText: { color: colors.accentFrom, fontSize: 14, fontWeight: "700" },
   checkboxLabel: { color: colors.foreground, fontSize: 14, fontWeight: "600" },
   addDistrictRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
   addDistrictInput: { flex: 1 },

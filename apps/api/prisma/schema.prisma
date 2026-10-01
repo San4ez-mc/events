@@ -576,6 +576,9 @@ model Event {
 
   onlineUrl String?
 
+  /// UX §10 — one optional YouTube link shown alongside the event's own photos/video in the gallery.
+  youtubeUrl String?
+
   capacity        Int?
   minParticipants Int?
 

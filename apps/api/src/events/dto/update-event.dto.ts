@@ -128,6 +128,11 @@ export class UpdateEventDto {
   @IsUrl({ require_tld: false })
   onlineUrl?: string;
 
+  @ApiPropertyOptional({ description: "Optional YouTube link, shown alongside the event's own photos/video." })
+  @IsOptional()
+  @IsUrl({ require_tld: false })
+  youtubeUrl?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Number)

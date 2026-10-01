@@ -16,6 +16,13 @@ import { formatCurrency, formatPriceLabel, formatShortDateTime } from "../../src
 import type { EventDetail, Registration } from "../../src/lib/event-types";
 import { radius, spacing, type Palette, useThemedStyles } from "../../src/lib/theme";
 
+/** Pulls the video id out of any common YouTube URL shape (watch?v=, youtu.be/, /embed/, /shorts/). */
+function youtubeEmbedId(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const m = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/.exec(url);
+  return m?.[1] ?? null;
+}
+
 export default function EventDetailScreen() {
   const { colors, styles } = useThemedStyles(makeStyles);
   const { slug, src } = useLocalSearchParams<{ slug: string; src?: string }>();
@@ -230,6 +237,14 @@ export default function EventDetailScreen() {
       <View style={styles.galleryBleed}>
         <EventGallery media={event.media} />
       </View>
+      {youtubeEmbedId(event.youtubeUrl) && (
+        <Pressable style={styles.youtubeCard} onPress={() => void Linking.openURL(event.youtubeUrl!)}>
+          <Image source={{ uri: `https://img.youtube.com/vi/${youtubeEmbedId(event.youtubeUrl)}/hqdefault.jpg` }} style={styles.youtubeThumb} />
+          <View style={styles.youtubePlay}>
+            <Ionicons name="logo-youtube" size={28} color={colors.white} />
+          </View>
+        </Pressable>
+      )}
 
       {/* Title gets the full row's width to itself — it used to share the row with up to 4 icon
           buttons, which squeezed a longer title down to a sliver and wrapped it mid-word. */}
@@ -585,6 +600,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   content: { padding: spacing.lg, paddingBottom: spacing.xxl * 2, gap: spacing.md },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
   galleryBleed: { marginHorizontal: -spacing.lg, marginTop: -spacing.lg },
+  youtubeCard: { aspectRatio: 16 / 9, borderRadius: radius.lg, overflow: "hidden", backgroundColor: colors.surface },
+  youtubeThumb: { width: "100%", height: "100%" },
+  youtubePlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.25)" },
   titleActions: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: spacing.sm, flexWrap: "wrap" },
   shareButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
   socialBar: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, gap: 6 },
