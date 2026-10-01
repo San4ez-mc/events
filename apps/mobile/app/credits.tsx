@@ -5,6 +5,7 @@ import { API_URL, getAccessToken } from "../src/lib/api-client";
 import { useAuth } from "../src/lib/auth-context";
 import { useTranslations } from "../src/lib/locale-context";
 import { Button } from "../src/components/ui/Button";
+import { ReferralBanner } from "../src/components/ReferralBanner";
 import { formatCurrency, formatShortDateTime } from "../src/lib/format";
 import { radius, spacing, type Palette, useThemedStyles } from "../src/lib/theme";
 
@@ -113,6 +114,8 @@ export default function CreditsScreen() {
   return (
     <ScrollView style={styles.flex} contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: t("credits.title"), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.foreground }} />
+
+      <ReferralBanner />
 
       {balance !== null && (
         <Text style={styles.balance}>

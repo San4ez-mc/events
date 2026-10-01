@@ -524,6 +524,11 @@ export default function EventDetailScreen() {
                 <Text style={styles.reportRowText}>{t("organizerInvite.title")}</Text>
               </Pressable>
             )}
+            {(event.status === "PUBLISHED" || event.status === "COMPLETED") && (
+              <Pressable style={styles.reportRow} onPress={() => { setReportOpen(false); router.push(`/share/${event.id}`); }}>
+                <Text style={styles.reportRowText}>{t("referral.title")}</Text>
+              </Pressable>
+            )}
             {!isOwner &&
               REPORT_REASONS.map((r) => (
                 <Pressable key={r} style={styles.reportRow} onPress={() => void sendReport(t(`events.actions.reasons.${r}`))}>

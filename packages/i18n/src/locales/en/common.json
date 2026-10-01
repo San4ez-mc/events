@@ -268,7 +268,27 @@
       "CANCELLED": "Cancelled",
       "REFUNDED": "Refunded"
     },
-    "error": "Couldn't start this payment"
+    "error": "Couldn't start this payment",
+    "referralBannerTitle": "Share and earn credits",
+    "referralBannerBody": "Post a story or post about an event and tag @kiro.ukraine to earn free listing credits.",
+    "referralBannerCta": "Submit a claim"
+  },
+  "referral": {
+    "title": "Share for credits",
+    "shareTitle": "Share this event",
+    "instructions": "Post this image as a story or post and tag @kiro.ukraine. Once an admin reviews it, you'll get {count} listing credits.",
+    "shareButton": "Share image",
+    "noteLabel": "Link to your post/story",
+    "notePlaceholder": "Paste a link to your post or story (or your @handle)",
+    "submit": "Submit for review",
+    "submitted": "Submitted — we'll review it soon",
+    "myClaims": "My claims",
+    "generalClaim": "General mention",
+    "status": {
+      "PENDING": "Pending",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
+    }
   },
   "pricing": {
     "heroTitle": "Pricing",
