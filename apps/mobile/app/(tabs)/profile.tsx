@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Alert, Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
 import { API_URL, WEB_URL, getAccessToken, refreshAccessToken } from "../../src/lib/api-client";
@@ -119,11 +119,22 @@ export default function ProfileScreen() {
       setPrefs(me.preferences ?? null);
       setLoaded(true);
     })().catch(() => setLoaded(true));
-    void fetch(`${API_URL}/api/v1/credits/balance`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((body) => body && setCreditBalance(body.balance))
-      .catch(() => {});
   }, []);
+
+  // A separate focus-triggered refresh, deliberately NOT reloading the editable form fields above —
+  // this tab stays mounted in the background, and re-fetching name/nickname/bio/phone on every
+  // focus would clobber an in-progress edit if the user briefly switched tabs. The balance has no
+  // such risk (never user-typed) and does need to reflect credits spent/granted elsewhere.
+  useFocusEffect(
+    useCallback(() => {
+      const token = getAccessToken();
+      if (!token) return;
+      void fetch(`${API_URL}/api/v1/credits/balance`, { headers: { Authorization: `Bearer ${token}` } })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((body) => body && setCreditBalance(body.balance))
+        .catch(() => {});
+    }, []),
+  );
 
   // Saves on every toggle (no separate Save button): optimistic, rolled back if the request fails.
   async function togglePref(key: PrefKey, value: boolean) {

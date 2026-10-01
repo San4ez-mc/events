@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Animated, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { router } from "expo-router";
+import { useCallback, useRef, useState } from "react";
+import { Alert, Animated, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { router, useFocusEffect } from "expo-router";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useTranslations } from "../../src/lib/locale-context";
 import { formatShortDateTime } from "../../src/lib/format";
@@ -31,6 +31,7 @@ export default function NotificationsScreen() {
   const { colors, styles } = useThemedStyles(makeStyles);
   const { t } = useTranslations();
   const [items, setItems] = useState<NotificationItem[] | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const highlightIds = useRef<Set<string>>(new Set());
   const fade = useRef(new Animated.Value(1)).current;
 
@@ -45,9 +46,20 @@ export default function NotificationsScreen() {
     if (highlightIds.current.size > 0) void authed("/notifications/read-all", { method: "PATCH" });
   }, [fade]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  // A plain mount-only effect never re-ran for a tab screen that React Navigation keeps mounted in
+  // the background — the badge count (its own poller elsewhere) updated, but reopening this tab
+  // kept showing the stale list until the whole app restarted. Re-fetch on every focus instead.
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
 
   const highlightColor = fade.interpolate({ inputRange: [0, 1], outputRange: [colors.background, colors.surface] });
 
@@ -92,7 +104,7 @@ export default function NotificationsScreen() {
     <View style={styles.container}>
       <ScreenHeader title={t("nav.notifications")} subtitle={t("screens.notificationsSubtitle")} icon="notifications" />
       {hasItems && (
-        <Pressable style={styles.clearButton} onPress={clearAll}>
+        <Pressable style={styles.clearButton} onPress={clearAll} hitSlop={12}>
           <Text style={styles.clearButtonText}>{t("screens.notificationsClear")}</Text>
         </Pressable>
       )}
@@ -110,6 +122,7 @@ export default function NotificationsScreen() {
           />
         )}
         ListEmptyComponent={items !== null ? <EmptyState icon="notifications-outline" text={t("screens.notificationsEmpty")} /> : null}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={colors.accentFrom} />}
       />
     </View>
   );
@@ -141,7 +154,7 @@ function NotificationRow({
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: spacing.lg },
-  clearButton: { alignSelf: "flex-end", marginBottom: spacing.sm },
+  clearButton: { alignSelf: "flex-end", marginBottom: spacing.sm, paddingVertical: spacing.xs, paddingHorizontal: spacing.sm },
   clearButtonText: { color: colors.muted, fontSize: 13, fontWeight: "600" },
   row: { paddingVertical: spacing.sm, paddingHorizontal: spacing.sm, borderRadius: radius.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: 2 },
   title: { color: colors.foreground, fontSize: 15, fontWeight: "600" },

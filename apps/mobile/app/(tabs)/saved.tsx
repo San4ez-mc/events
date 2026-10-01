@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useTranslations } from "../../src/lib/locale-context";
@@ -25,9 +25,13 @@ export default function SavedScreen() {
     setSaved(Array.isArray(body) ? body : ((body as CursorPage<EventCard>).items ?? []));
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  // A bottom-tab screen stays mounted in the background — a mount-only effect never re-ran when
+  // revisiting this tab, so a newly-saved event wouldn't show up until the app restarted.
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
 
   return (
     <View style={styles.container}>

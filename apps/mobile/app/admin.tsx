@@ -23,28 +23,40 @@ interface AdminReview {
   event: { title: string };
   author: { name: string | null; nickname: string | null };
 }
+interface AdminReport {
+  id: string;
+  targetType: string;
+  targetId: string;
+  reason: string;
+  description: string | null;
+  createdAt: string;
+  reporter: { name: string | null; nickname: string | null; email: string };
+}
 
 const STAFF = ["MODERATOR", "ADMIN", "SUPER_ADMIN"];
 
-/** Moderator toolbox on mobile: pre-publish moderation queue and review moderation (§53, §37, §72). */
+/** Moderator toolbox on mobile: pre-publish moderation queue, review moderation, and user reports (§53, §37, §39, §72). */
 export default function AdminScreen() {
   const { colors, styles } = useThemedStyles(makeStyles);
   const { user, isLoading } = useAuth();
   const { t } = useTranslations();
-  const [tab, setTab] = useState<"moderation" | "reviews">("moderation");
+  const [tab, setTab] = useState<"moderation" | "reviews" | "reports">("moderation");
   const [cases, setCases] = useState<ModerationCase[] | null>(null);
   const [reviews, setReviews] = useState<AdminReview[] | null>(null);
+  const [reports, setReports] = useState<AdminReport[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   const headers = () => ({ Authorization: `Bearer ${getAccessToken() ?? ""}`, "Content-Type": "application/json" });
 
   const load = useCallback(async () => {
-    const [m, r] = await Promise.all([
+    const [m, r, rep] = await Promise.all([
       fetch(`${API_URL}/api/v1/admin/moderation`, { headers: headers() }),
       fetch(`${API_URL}/api/v1/admin/reviews?status=PUBLISHED`, { headers: headers() }),
+      fetch(`${API_URL}/api/v1/admin/reports?status=OPEN`, { headers: headers() }),
     ]);
     setCases(m.ok ? await m.json() : []);
     setReviews(r.ok ? (await r.json()).items : []);
+    setReports(rep.ok ? (await rep.json()).items : []);
   }, []);
 
   useEffect(() => {
@@ -76,12 +88,22 @@ export default function AdminScreen() {
     }
   }
 
-  if (cases === null || reviews === null) return <ActivityIndicator style={{ flex: 1 }} color={colors.accentFrom} />;
+  async function resolveReport(id: string, status: "RESOLVED" | "DISMISSED", hideTarget: boolean) {
+    setBusy(id);
+    try {
+      await fetch(`${API_URL}/api/v1/admin/reports/${id}/resolve`, { method: "PATCH", headers: headers(), body: JSON.stringify({ status, hideTarget }) });
+      setReports((prev) => (prev ? prev.filter((r) => r.id !== id) : prev));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  if (cases === null || reviews === null || reports === null) return <ActivityIndicator style={{ flex: 1 }} color={colors.accentFrom} />;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.tabs}>
-        {(["moderation", "reviews"] as const).map((key) => (
+        {(["moderation", "reviews", "reports"] as const).map((key) => (
           <Pressable key={key} onPress={() => setTab(key)} style={[styles.tab, tab === key && styles.tabOn]}>
             <Text style={[styles.tabText, tab === key && { color: colors.white }]}>{t(`admin.nav.${key}`)}</Text>
           </Pressable>
@@ -119,6 +141,27 @@ export default function AdminScreen() {
               <View style={styles.actions}>
                 <Button title={t("admin.reviews.hide")} variant="secondary" onPress={() => void setReviewStatus(r.id, "HIDDEN")} loading={busy === r.id} style={styles.small} />
                 <Button title={t("admin.reviews.remove")} variant="danger" onPress={() => void setReviewStatus(r.id, "REMOVED")} loading={busy === r.id} style={styles.small} />
+              </View>
+            </View>
+          ))}
+        </>
+      )}
+
+      {tab === "reports" && (
+        <>
+          {reports.length === 0 && <Text style={styles.muted}>{t("admin.reports.empty")}</Text>}
+          {reports.map((r) => (
+            <View key={r.id} style={styles.card}>
+              <Text style={styles.title}>
+                {t("admin.reports.target")}: {r.targetType} ({r.targetId})
+              </Text>
+              <Text style={styles.body}>{r.reason}</Text>
+              {r.description ? <Text style={styles.muted}>{r.description}</Text> : null}
+              <Text style={styles.muted}>{r.reporter.name ?? r.reporter.nickname ?? r.reporter.email}</Text>
+              <View style={styles.actions}>
+                <Button title={`${t("admin.reports.resolve")} + ${t("admin.reports.hideTarget")}`} onPress={() => void resolveReport(r.id, "RESOLVED", true)} loading={busy === r.id} style={styles.small} />
+                <Button title={t("admin.reports.resolve")} variant="secondary" onPress={() => void resolveReport(r.id, "RESOLVED", false)} loading={busy === r.id} style={styles.small} />
+                <Button title={t("admin.reports.dismiss")} variant="secondary" onPress={() => void resolveReport(r.id, "DISMISSED", false)} loading={busy === r.id} style={styles.small} />
               </View>
             </View>
           ))}
