@@ -3,6 +3,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { ApiRequestError, useAuth } from "../../src/lib/auth-context";
 import { useTranslations } from "../../src/lib/locale-context";
@@ -152,6 +154,23 @@ export default function EventDetailScreen() {
     router.push(`/edit/${created.id}`);
   }
 
+  /** Downloads the server-generated .ics (no Google/calendar API involved — a plain file every
+   * calendar app, including Google Calendar, already knows how to import) and hands it to the
+   * OS share sheet so the user picks their calendar app directly. */
+  async function addToCalendar() {
+    if (!event) return;
+    try {
+      const file = await File.downloadFileAsync(`${API_URL}/api/v1/events/${event.id}/calendar.ics`, Paths.cache, { idempotent: true });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(file.uri, { mimeType: "text/calendar", dialogTitle: t("events.actions.addToCalendar") });
+      } else {
+        Alert.alert(t("common.somethingWentWrong"));
+      }
+    } catch {
+      Alert.alert(t("common.somethingWentWrong"));
+    }
+  }
+
   async function submit() {
     const token = getAccessToken();
     if (!token || !event) return;
@@ -278,6 +297,11 @@ export default function EventDetailScreen() {
         <Pressable style={styles.shareButton} onPress={() => void toggleSave()} accessibilityLabel={saved ? t("events.actions.saved") : t("events.actions.save")}>
           <Ionicons name={saved ? "heart" : "heart-outline"} size={22} color={saved ? colors.accentTo : colors.foreground} />
         </Pressable>
+        {event.startsAt && (
+          <Pressable style={styles.shareButton} onPress={() => void addToCalendar()} accessibilityLabel={t("events.actions.addToCalendar")}>
+            <Ionicons name="calendar-outline" size={20} color={colors.foreground} />
+          </Pressable>
+        )}
         <Pressable
           style={styles.shareButton}
           onPress={() => { track(event.id, "SHARE"); void Share.share({ message: `${event.title}\n${API_URL}/events/${event.slug}`, url: `${API_URL}/events/${event.slug}` }).catch(() => {}); }}

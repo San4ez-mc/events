@@ -80,6 +80,13 @@ export function EventPage({
           <span className={meta}>
             <CalendarDays className="h-4 w-4 shrink-0" aria-hidden="true" />
             {formatDateTime(event.startsAt, locale)}
+            <a
+              href={`/api/v1/events/${event.id}/calendar.ics`}
+              download
+              className="ml-2 text-accent underline underline-offset-2 hover:no-underline"
+            >
+              {t("events.actions.addToCalendar")}
+            </a>
           </span>
         )}
         {event.format === "OFFLINE" && (cityName || districtName) && (

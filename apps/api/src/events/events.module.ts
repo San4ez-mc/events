@@ -8,11 +8,12 @@ import { FriendsModule } from "../friends/friends.module";
 import { EventsController } from "./events.controller";
 import { EventsService } from "./events.service";
 import { ShareImageService } from "./share-image.service";
+import { CalendarExportService } from "./calendar-export.service";
 
 @Module({
   imports: [AuthModule, UsersModule, CreditsModule, ModerationModule, NotificationsModule, FriendsModule],
   controllers: [EventsController],
-  providers: [EventsService, ShareImageService],
+  providers: [EventsService, ShareImageService, CalendarExportService],
   exports: [EventsService],
 })
 export class EventsModule {}

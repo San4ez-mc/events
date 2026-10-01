@@ -10,6 +10,7 @@ import type { AuthenticatedUser } from "../auth/types/authenticated-user";
 import { TokenService } from "../auth/token.service";
 import { EventsService } from "./events.service";
 import { ShareImageService } from "./share-image.service";
+import { CalendarExportService } from "./calendar-export.service";
 import { CreateEventDto } from "./dto/create-event.dto";
 import { UpdateEventDto } from "./dto/update-event.dto";
 import { ListMyEventsDto } from "./dto/list-my-events.dto";
@@ -27,6 +28,7 @@ export class EventsController {
     private readonly tokenService: TokenService,
     private readonly configService: ConfigService<EnvConfig, true>,
     private readonly shareImageService: ShareImageService,
+    private readonly calendarExportService: CalendarExportService,
   ) {}
 
   @RateLimit(20)
@@ -116,6 +118,16 @@ export class EventsController {
   @Header("Cache-Control", "public, max-age=3600")
   async shareImage(@Param("id") id: string) {
     return new StreamableFile(await this.shareImageService.generate(id));
+  }
+
+  /** "Add to calendar" — a plain .ics file, same public-visibility rule as share-image/QR. */
+  @Public()
+  @Get(":id/calendar.ics")
+  @Header("Content-Type", "text/calendar; charset=utf-8")
+  @Header("Content-Disposition", "attachment; filename=event.ics")
+  async calendarExport(@Param("id") id: string) {
+    const ics = await this.calendarExportService.generate(id, this.configService.get("APP_URL", { infer: true }));
+    return new StreamableFile(Buffer.from(ics, "utf-8"));
   }
 
   /**
