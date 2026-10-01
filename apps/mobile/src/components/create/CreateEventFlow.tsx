@@ -852,7 +852,16 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
               ))}
               {media.length < 10 && (
                 <Pressable style={[styles.mediaCell, styles.mediaAdd]} onPress={() => void pickMedia()} disabled={busy}>
-                  {busy ? <ActivityIndicator color={colors.accentFrom} /> : <Ionicons name="add" size={32} color={colors.accentFrom} />}
+                  {busy ? (
+                    <ActivityIndicator color={colors.accentFrom} />
+                  ) : (
+                    <Ionicons
+                      name="add"
+                      size={32}
+                      color={colors.accentFrom}
+                      style={{ includeFontPadding: false, textAlignVertical: "center", lineHeight: 32 }}
+                    />
+                  )}
                 </Pressable>
               )}
             </View>
