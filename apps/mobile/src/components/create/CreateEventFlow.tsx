@@ -108,6 +108,28 @@ function displayToIsoDate(display: string): string {
   const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(display);
   return m ? `${m[3]}-${m[2]}-${m[1]}` : display;
 }
+/** Auto-inserts the dots as the user types digits — typing "66092026" with no dots used to pass
+ * straight through unvalidated (the regex above only matches an already-dotted string), silently
+ * storing a garbage date that only surfaced as a generic error much later, at submit time. */
+function formatEventDateInput(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 8);
+  if (!digits) return "";
+  let out = digits.slice(0, 2);
+  if (digits.length > 2) out += `.${digits.slice(2, 4)}`;
+  if (digits.length > 4) out += `.${digits.slice(4, 8)}`;
+  return out;
+}
+/** Range-checks day/month and round-trips through Date to catch real calendar validity (Feb 30, day 66, etc). */
+function isValidDisplayDate(display: string): boolean {
+  const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(display);
+  if (!m) return false;
+  const day = Number(m[1]);
+  const month = Number(m[2]);
+  const year = Number(m[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+  const d = new Date(year, month - 1, day);
+  return d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day;
+}
 const isoDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const addDays = (days: number) => {
   const d = new Date();
@@ -236,6 +258,17 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   const [giftOpen, setGiftOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  // Free-typed text, independent of form.date (ISO): only commits to form.date once it's a real
+  // calendar date, so a mid-typo like "66.09.2026" shows as invalid instead of being silently
+  // stored and only failing much later, at submit time, with no indication which field was wrong.
+  const [dateText, setDateText] = useState(() => isoToDisplayDate(form.date));
+  const dateTextInvalid = dateText.length === 10 && !isValidDisplayDate(dateText);
+  // Keep in sync when form.date changes from elsewhere (quick-pick chips, the calendar picker, or
+  // loading an existing event to edit) — never fires from the user's own typing, since that only
+  // calls set({ date }) once the typed text is already a complete, valid date.
+  useEffect(() => {
+    setDateText(isoToDisplayDate(form.date));
+  }, [form.date]);
   const [timePickerOpen, setTimePickerOpen] = useState(false);
   const [isPro, setIsPro] = useState<boolean | null>(null);
   const [recurring, setRecurring] = useState(false);
@@ -514,7 +547,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
       await saveDraft(step);
       setStep((s) => Math.min(STEPS - 1, s + 1));
     } catch (err) {
-      setError(err instanceof ApiRequestError ? t(`errors.${err.code}`) : err instanceof Error ? err.message : t("common.somethingWentWrong"));
+      setError(err instanceof ApiRequestError ? describePublishError(err, t) : err instanceof Error ? err.message : t("common.somethingWentWrong"));
     } finally {
       setBusy(false);
     }
@@ -726,18 +759,23 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
               <Chips value={form.date} options={dateChips} onChange={(v) => set({ date: v })} />
               <View style={styles.row}>
                 <TextInput
-                  value={isoToDisplayDate(form.date)}
-                  onChangeText={(v) => set({ date: displayToIsoDate(v) })}
+                  value={dateText}
+                  onChangeText={(v) => {
+                    const masked = formatEventDateInput(v);
+                    setDateText(masked);
+                    if (isValidDisplayDate(masked)) set({ date: displayToIsoDate(masked) });
+                  }}
                   placeholder={t("create.dateHint")}
                   placeholderTextColor={colors.muted}
-                  style={[styles.input, { flex: 1 }]}
-                  keyboardType="numbers-and-punctuation"
+                  style={[styles.input, { flex: 1 }, dateTextInvalid && styles.inputError]}
+                  keyboardType="number-pad"
                   maxLength={10}
                 />
                 <Pressable style={styles.iconToggle} onPress={() => setDatePickerOpen((v) => !v)} accessibilityLabel={t("create.pickDate")}>
                   <Ionicons name="calendar-outline" size={20} color={colors.foreground} />
                 </Pressable>
               </View>
+              {dateTextInvalid && <Text style={styles.fieldError}>{t("create.invalidDate")}</Text>}
               {datePickerOpen && (
                 <CalendarPicker
                   mode="date"
@@ -1128,5 +1166,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   summaryLine: { color: colors.muted, fontSize: 14 },
   doneText: { color: colors.foreground, fontSize: 16, textAlign: "center", fontWeight: "600" },
   error: { color: colors.danger, fontSize: 14, textAlign: "center" },
+  inputError: { borderColor: colors.danger },
+  fieldError: { color: colors.danger, fontSize: 12 },
   nav: { flexDirection: "row", gap: spacing.md },
 });

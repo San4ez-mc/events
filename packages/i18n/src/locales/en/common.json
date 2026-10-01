@@ -774,6 +774,7 @@
     "pickDate": "Pick a date from the calendar",
     "pickTime": "Pick a time from the list",
     "missingFields": "Fill in the required fields",
+    "invalidDate": "That date doesn't exist — check the day and month",
     "giftTitle": "7 free publications, on us!",
     "giftBody": "Create events with no limits until your gifted credits run out.",
     "giftLater": "Maybe later",
