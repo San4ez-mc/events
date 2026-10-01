@@ -80,7 +80,10 @@
 ## Сповіщення
 
 - ✅ **Усі** сповіщення тепер клікабельні з переходом за типом (подія → сторінка події, друзі → сторінка друзів, запрошення → сторінка запрошень; якщо в payload немає slug — довантажує подію за id). Бекенд для цього вже мав усе готове (`unread-count`, `read-all`), лише додав `DELETE /notifications` для очищення.
-- ⏳ Push-сповіщення (трей) — не перевірено ще, чи взагалі надходять
+- 🔴 **Push-сповіщення (трей) не надходять — знайдено точну причину.** Перевірив прод-базу: пристрій зареєстрований (`UserDevice`, токен є, `active: true`), і бекенд дійсно намагається слати — `NotificationDelivery` показує `status: FAILED` з точним текстом помилки від Expo: *"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation."* Це означає: сам код і реєстрація пристрою працюють правильно, не вистачає лише налаштування Firebase Cloud Messaging для Android-пушів у Expo/EAS. **Потрібна дія від вас** (я не маю доступу до Firebase Console/EAS credentials):
+  1. У Firebase Console → налаштування проєкту → Cloud Messaging — отримати ключ сервера (або, якщо Firebase-проєкту для цього застосунку ще нема, створити його й прив'язати `google-services.json`, який уже використовується для Google Sign-In)
+  2. Завантажити цей ключ в EAS: `eas credentials` → Android → Push Notifications: FCM, або через дашборд Expo (Project → Credentials)
+  3. Докладно: https://docs.expo.dev/push-notifications/fcm-credentials/
 - ✅ Непрочитані сповіщення підсвічуються при відкритті екрана і плавно "згасають" до звичайного фону через ~2.5с (Animated.timing)
 - ✅ Лічильник непрочитаних — бейдж на новій іконці дзвіночка в хедері екрана "Події" (дзвіночок прибрано з нижнього меню, замінено на сердечко "Збережені")
 - ✅ Кнопка "Очистити" на екрані сповіщень (з підтвердженням) — реально видаляє через новий `DELETE /notifications`. **Перевірено вживу на проді**: `unread-count` → 200, `DELETE /notifications` → 204.
