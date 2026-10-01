@@ -388,6 +388,7 @@ export const ModerationReasonCode = {
   ADULT_CONTENT: "ADULT_CONTENT",
   USER_REPORTED: "USER_REPORTED",
   MANUAL_REVIEW: "MANUAL_REVIEW",
+  PROFANITY: "PROFANITY",
 } as const;
 export type ModerationReasonCode = (typeof ModerationReasonCode)[keyof typeof ModerationReasonCode];
 

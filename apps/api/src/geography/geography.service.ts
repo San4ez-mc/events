@@ -89,7 +89,16 @@ export class GeographyService {
     return this.prisma.district.findMany({
       where: { cityId },
       orderBy: [{ status: "asc" }, { nameUk: "asc" }],
-      select: { id: true, cityId: true, nameUk: true, nameEn: true, status: true, source: true, createdAt: true },
+      select: {
+        id: true,
+        cityId: true,
+        nameUk: true,
+        nameEn: true,
+        status: true,
+        source: true,
+        createdAt: true,
+        createdByUser: { select: { id: true, name: true, nickname: true, email: true } },
+      },
     });
   }
 

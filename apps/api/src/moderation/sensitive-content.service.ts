@@ -39,6 +39,21 @@ export class SensitiveContentService {
     { pattern: /наркотик(и|ів|ами)?\s+(продаж|купити|доставка)/iu, reasonCode: "SENSITIVE_KEYWORDS" },
     { pattern: /\bescort\s+service\b/iu, reasonCode: "SENSITIVE_KEYWORDS" },
     { pattern: /\bdrugs?\s+for\s+sale\b/iu, reasonCode: "SENSITIVE_KEYWORDS" },
+
+    // Profanity (uk/ru root forms + common inflections, and English) — a public listing's
+    // title/description isn't the place for it, and unlike war-related content there's no
+    // legitimate ambiguous case that needs a human's judgment call, so this blocks outright
+    // rather than just flagging for review.
+    { pattern: /(?<![\p{L}\p{N}])[хx][уyu][йiie][\p{L}]*/iu, reasonCode: "PROFANITY" },
+    { pattern: /бляд[ьi]?/iu, reasonCode: "PROFANITY" },
+    { pattern: /єбан|ебан|їбат|ебат/iu, reasonCode: "PROFANITY" },
+    { pattern: /пизд/iu, reasonCode: "PROFANITY" },
+    { pattern: /сук[аи](?![\p{L}])/iu, reasonCode: "PROFANITY" },
+    { pattern: /мудак|мудил/iu, reasonCode: "PROFANITY" },
+    { pattern: /(?<![\p{L}\p{N}])fuck(?:ing|er|ed)?(?![\p{L}\p{N}])/iu, reasonCode: "PROFANITY" },
+    { pattern: /(?<![\p{L}\p{N}])sh[i1]t(?:ty)?(?![\p{L}\p{N}])/iu, reasonCode: "PROFANITY" },
+    { pattern: /(?<![\p{L}\p{N}])bitch(?:es)?(?![\p{L}\p{N}])/iu, reasonCode: "PROFANITY" },
+    { pattern: /(?<![\p{L}\p{N}])asshole(?![\p{L}\p{N}])/iu, reasonCode: "PROFANITY" },
   ];
 
   private readonly flagPatterns: { pattern: RegExp; reasonCode: ModerationReasonCode }[] = [

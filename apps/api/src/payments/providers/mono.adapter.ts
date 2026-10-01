@@ -7,9 +7,6 @@ import type { CheckoutInstructions, PayableOrder, PaymentProviderAdapter, Webhoo
 
 const API_BASE = "https://api.monobank.ua";
 
-/** The fixed 26-byte DER SubjectPublicKeyInfo prefix for a P-256 (prime256v1) EC key — Mono's pubkey endpoint returns only the raw 65-byte point, not a full DER key. */
-const P256_SPKI_PREFIX = Buffer.from("3059301306072a8648ce3d020106082a8648ce3d030107034200", "hex");
-
 /**
  * §51 — Monobank Merchant Acquiring. Unlike WayForPay, Mono has no
  * "sign locally and redirect" mode: creating a checkout genuinely requires a
@@ -76,15 +73,27 @@ export class MonoAdapter implements PaymentProviderAdapter {
     return { orderId: payload.reference, status, providerReference: payload.invoiceId };
   }
 
+  /**
+   * Mono's `/api/merchant/pubkey` returns `key` as base64 of a full PEM-encoded SPKI public key
+   * (confirmed by calling it live), not the raw 65-byte P-256 point the previous implementation
+   * assumed — every webhook verification was failing with "Failed to read asymmetric key" as a
+   * result, silently (webhooks retry, but a payment confirmation this blocked never got a second
+   * chance once Mono gave up retrying).
+   */
   private async getPublicKey(): Promise<KeyObject | null> {
     if (this.cachedPublicKey) return this.cachedPublicKey;
 
     const rawBase64 = this.pubKeyOverride ?? (await this.fetchLivePublicKey());
     if (!rawBase64) return null;
 
-    const der = Buffer.concat([P256_SPKI_PREFIX, Buffer.from(rawBase64, "base64")]);
-    this.cachedPublicKey = createPublicKey({ key: der, format: "der", type: "spki" });
-    return this.cachedPublicKey;
+    try {
+      const pem = Buffer.from(rawBase64, "base64").toString("utf-8");
+      this.cachedPublicKey = createPublicKey(pem);
+      return this.cachedPublicKey;
+    } catch (err) {
+      this.logger.warn(`Could not parse Mono's public key: ${err instanceof Error ? err.message : String(err)}`);
+      return null;
+    }
   }
 
   private async fetchLivePublicKey(): Promise<string | null> {

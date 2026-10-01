@@ -343,26 +343,6 @@ export default function ProfileScreen() {
           </Pressable>
         )}
 
-        {user && ["ADMIN", "SUPER_ADMIN"].includes(user.role) && (
-          <Pressable style={styles.row} onPress={() => router.push("/admin-content")}>
-            <Ionicons name="checkmark-done-circle" size={22} color={colors.accentFrom} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowText}>{t("adminContent.title")}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-          </Pressable>
-        )}
-
-        {user && ["ADMIN", "SUPER_ADMIN"].includes(user.role) && (
-          <Pressable style={styles.row} onPress={() => router.push("/admin-manage")}>
-            <Ionicons name="briefcase" size={22} color={colors.accentFrom} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowText}>{t("admin.nav.dashboard")}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-          </Pressable>
-        )}
-
         <Pressable style={styles.row} onPress={() => router.push("/friends")}>
           <Ionicons name="people" size={22} color={colors.accentFrom} />
           <View style={{ flex: 1 }}>

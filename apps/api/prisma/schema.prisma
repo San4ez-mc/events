@@ -819,6 +819,7 @@ enum ModerationReasonCode {
   ADULT_CONTENT
   USER_REPORTED
   MANUAL_REVIEW
+  PROFANITY
 }
 
 model ModerationCase {

@@ -47,4 +47,22 @@ describe("SensitiveContentService", () => {
       expect(result.decision).toBe("REJECT");
     });
   });
+
+  describe("profanity", () => {
+    it("rejects a Ukrainian/Russian profanity root in the title", () => {
+      const result = service.scan("Хуйова вечірка", null, null);
+      expect(result).toMatchObject({ decision: "REJECT", reasonCode: "PROFANITY" });
+    });
+
+    it("rejects English profanity", () => {
+      const result = service.scan(null, "This fucking event is great", null);
+      expect(result).toMatchObject({ decision: "REJECT", reasonCode: "PROFANITY" });
+    });
+
+    it("does not flag innocent words that merely share a prefix", () => {
+      // "сукня" (dress) and "мудрий" (wise) share letters with profanity roots but aren't profanity.
+      const result = service.scan(null, "Майстер-клас з пошиття сукні. Для мудрих і терплячих.", null);
+      expect(result.decision).toBe("ALLOW");
+    });
+  });
 });
