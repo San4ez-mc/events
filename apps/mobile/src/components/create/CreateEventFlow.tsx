@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { API_URL, getAccessToken, refreshAccessToken } from "../../lib/api-client";
 import { ApiRequestError, useAuth } from "../../lib/auth-context";
+import { reportClientError } from "../../lib/crash-reporter";
 import { useTranslations } from "../../lib/locale-context";
 import { formatPriceLabel, formatShortDateTime } from "../../lib/format";
 import { Button } from "../ui/Button";
@@ -149,16 +150,34 @@ const INITIAL: Form = {
  */
 async function authed<T = unknown>(path: string, init: RequestInit = {}, retried = false): Promise<T> {
   const token = getAccessToken();
-  const res = await fetch(`${API_URL}/api/v1${path}`, {
-    ...init,
-    headers: { Authorization: `Bearer ${token ?? ""}`, ...(init.body && !(init.body instanceof FormData) ? { "Content-Type": "application/json" } : {}), ...init.headers },
-  });
+  const isUpload = init.body instanceof FormData;
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/api/v1${path}`, {
+      ...init,
+      headers: { Authorization: `Bearer ${token ?? ""}`, ...(init.body && !isUpload ? { "Content-Type": "application/json" } : {}), ...init.headers },
+    });
+  } catch (err) {
+    const e = err instanceof Error ? err : new Error(String(err));
+    void reportClientError(`Upload network failure: ${init.method ?? "GET"} ${path} — ${e.message}`, e.stack, isUpload ? "CreateEventFlow upload" : "CreateEventFlow authed");
+    throw e;
+  }
   if (res.status === 401 && !retried) {
     const refreshed = await refreshAccessToken();
     if (refreshed) return authed<T>(path, init, true);
   }
-  const body = await res.json().catch(() => null);
-  if (!res.ok) throw new ApiRequestError(body);
+  const rawText = await res.text();
+  const body = ((): unknown => { try { return JSON.parse(rawText); } catch { return null; } })();
+  if (!res.ok) {
+    if (isUpload || body === null) {
+      void reportClientError(
+        `Upload failed: ${init.method ?? "GET"} ${path} -> ${res.status}\n${rawText.slice(0, 1000)}`,
+        undefined,
+        "CreateEventFlow upload",
+      );
+    }
+    throw new ApiRequestError(body as { error?: { code?: string; message?: string; details?: Record<string, string[]> } } | null);
+  }
   return body as T;
 }
 
@@ -459,7 +478,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
       await authed(`/events/${eventId}/series`, {
         method: "POST",
         body: JSON.stringify({ recurrenceType, count: recurrenceCount ? Number(recurrenceCount) : undefined }),
-      }).catch(() => {});
+      });
       setSeriesCreated(true);
     }
   }

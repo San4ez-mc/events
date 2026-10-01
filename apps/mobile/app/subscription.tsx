@@ -43,18 +43,21 @@ export default function SubscriptionScreen() {
 
   const [tiers, setTiers] = useState<TierInfo[] | null>(null);
   const [mySub, setMySub] = useState<MySubscription | null>(null);
+  const [balance, setBalance] = useState<number | null>(null);
   const [purchasingTier, setPurchasingTier] = useState<Tier | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState(false);
 
   const loadServerState = useCallback(async () => {
     const token = getAccessToken();
-    const [tiersRes, mineRes] = await Promise.all([
+    const [tiersRes, mineRes, balanceRes] = await Promise.all([
       fetch(`${API_URL}/api/v1/platform-subscriptions/tiers`),
       token ? fetch(`${API_URL}/api/v1/platform-subscriptions/mine`, { headers: { Authorization: `Bearer ${token}` } }) : null,
+      token ? fetch(`${API_URL}/api/v1/credits/balance`, { headers: { Authorization: `Bearer ${token}` } }) : null,
     ]);
     if (tiersRes.ok) setTiers((await tiersRes.json()) as TierInfo[]);
     if (mineRes?.ok) setMySub((await mineRes.json()) as MySubscription);
+    if (balanceRes?.ok) setBalance((await balanceRes.json()).balance);
   }, []);
 
   const verifyOnServer = useCallback(async (purchase: Purchase): Promise<boolean> => {
@@ -138,11 +141,27 @@ export default function SubscriptionScreen() {
 
       <Text style={styles.heroTitle}>{t("pricing.heroTitle")}</Text>
       <Text style={styles.heroSubtitle}>{t("pricing.subscriptionSubtitle")}</Text>
+      {balance !== null && (
+        <Text style={styles.muted}>
+          {t("credits.balance")}: <Text style={{ fontWeight: "800", color: colors.foreground }}>{balance}</Text>
+        </Text>
+      )}
 
       {error && <Text style={styles.error}>{t("credits.error")}</Text>}
       {!connected && <Text style={styles.muted}>{t("common.loading")}</Text>}
 
       {tiers === null && <ActivityIndicator color={colors.accentFrom} />}
+
+      {tiers !== null && (
+        <View style={styles.card}>
+          {!mySub?.status && <Text style={styles.badgeFree}>{t("pricing.youAreHere")}</Text>}
+          <Text style={styles.tierName}>{t("pricing.tierName.FREE")}</Text>
+          <Text style={styles.muted}>{t("pricing.tierTagline.FREE")}</Text>
+          <Text style={styles.price}>
+            0 {t("pricing.perMonth")}
+          </Text>
+        </View>
+      )}
 
       {tiers?.map((info) => {
         const isPro = info.tier === "PRO";
@@ -182,7 +201,11 @@ export default function SubscriptionScreen() {
               disabled={busy || !connected}
               onPress={() => subscribe(info.tier)}
             />
-            <Text style={styles.footnote}>{t("pricing.notAutoRenewing")}</Text>
+            {/* Unlike the web checkout (WayForPay/Mono, no recurring API integrated), a Google Play
+                "subs" purchase genuinely auto-renews — Google handles it natively, and our backend
+                just re-syncs status via subscription-recheck.scheduler.ts. Saying otherwise here
+                would be flatly wrong, not just over-cautious. */}
+            <Text style={styles.footnote}>{t("pricing.autoRenewingGooglePlay")}</Text>
           </View>
         );
       })}
@@ -209,6 +232,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm, borderWidth: 1, borderColor: colors.border },
   cardPro: { borderColor: colors.accentFrom, borderWidth: 2 },
   badge: { alignSelf: "flex-start", backgroundColor: colors.accentFrom, color: colors.white, fontSize: 11, fontWeight: "700", paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full },
+  badgeFree: { alignSelf: "flex-start", backgroundColor: colors.surface, color: colors.foreground, fontSize: 11, fontWeight: "700", paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border },
   tierName: { color: colors.foreground, fontSize: 18, fontWeight: "800" },
   price: { color: colors.foreground, fontSize: 24, fontWeight: "800", marginTop: spacing.xs },
   features: { gap: spacing.xs, marginVertical: spacing.sm },

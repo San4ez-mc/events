@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import type { EnvConfig } from "../config/env.validation";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiConsumes, ApiTags } from "@nestjs/swagger";
+import { DEFAULT_MEDIA_LIMITS } from "@kiro/config";
 import { ApiException } from "../common/exceptions/api.exception";
 import type { Request } from "express";
 import { Public } from "../common/decorators/public.decorator";
@@ -41,7 +42,7 @@ export class UsersController {
   @RateLimit(10)
   @Post("me/avatar")
   @ApiConsumes("multipart/form-data")
-  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 5 * 1024 * 1024 } }))
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: DEFAULT_MEDIA_LIMITS.imageMaxBytes } }))
   uploadAvatar(@CurrentUser() user: AuthenticatedUser, @UploadedFile() file: Express.Multer.File | undefined) {
     if (!file) throw new ApiException("VALIDATION_ERROR", "No file uploaded", 400, { file: ["Required"] });
     return this.usersService.uploadAvatar(user.id, file);

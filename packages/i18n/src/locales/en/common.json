@@ -290,6 +290,7 @@
     "renewEarly": "Extend by another month",
     "switchTo": "Switch to this plan",
     "notAutoRenewing": "Not auto-charged — renew manually whenever it suits you.",
+    "autoRenewingGooglePlay": "Renews automatically every month via Google Play. Cancel anytime in Google Play's subscription settings.",
     "signInToSubscribe": "Sign in to subscribe",
     "creditsSectionTitle": "Or one-off credits, no subscription",
     "creditsSectionSubtitle": "Pay only for the publications you plan — no monthly charges."
@@ -589,7 +590,7 @@
     "capacity": "Spots filled"
   },
   "organizerTools": {
-    "duplicate": "Duplicate",
+    "duplicate": "Create a new event based on this one",
     "collaborators": "Collaborators",
     "stats": "Stats",
     "series": "Recurring",
@@ -696,6 +697,7 @@
     "REGISTRATION_CLOSED": "Registration for this event is closed",
     "ALREADY_REGISTERED": "You're already registered for this event",
     "INSUFFICIENT_LISTING_CREDITS": "Not enough listing credits",
+    "SUBSCRIPTION_REQUIRED": "This feature is only available with a Pro subscription",
     "EVENT_REQUIRES_MODERATION": "This event needs moderation before publishing",
     "PAYMENT_REQUIRED": "Payment required",
     "AGE_RESTRICTED": "This event is not available for your age",
@@ -799,6 +801,7 @@
     "pending": "Pending",
     "saved": "Saved",
     "past": "Past",
+    "pastEvent": "Past",
     "organized": "Organized by me",
     "empty": {
       "upcoming": "No confirmed upcoming events. Time to pick something fun!",

@@ -260,6 +260,11 @@ export default function EventDetailScreen() {
             <Ionicons name="repeat" size={20} color={colors.foreground} />
           </Pressable>
         )}
+        {isOwner && (
+          <Pressable style={styles.shareButton} onPress={() => void duplicateEvent()} accessibilityLabel={t("organizerTools.duplicate")}>
+            <Ionicons name="copy-outline" size={20} color={colors.foreground} />
+          </Pressable>
+        )}
         <Pressable style={styles.shareButton} onPress={() => void toggleSave()} accessibilityLabel={saved ? t("events.actions.saved") : t("events.actions.save")}>
           <Ionicons name={saved ? "heart" : "heart-outline"} size={22} color={saved ? colors.accentTo : colors.foreground} />
         </Pressable>
@@ -465,11 +470,6 @@ export default function EventDetailScreen() {
                 <Ionicons name="close" size={22} color={colors.foreground} />
               </Pressable>
             </View>
-            {isOwner && (
-              <Pressable style={styles.reportRow} onPress={() => void duplicateEvent()}>
-                <Text style={styles.reportRowText}>{t("organizerTools.duplicate")}</Text>
-              </Pressable>
-            )}
             {isOwner && (
               <Pressable style={styles.reportRow} onPress={() => { setReportOpen(false); router.push(`/collaborators/${event.id}`); }}>
                 <Text style={styles.reportRowText}>{t("organizerCollaborators.title")}</Text>

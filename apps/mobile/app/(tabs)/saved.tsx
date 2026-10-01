@@ -51,9 +51,14 @@ export default function SavedScreen() {
           <Pressable style={styles.row} onPress={() => router.push(`/event/${item.slug}`)}>
             {item.media[0] ? <Image source={{ uri: item.media[0].thumbnailUrl }} style={styles.thumb} /> : <View style={styles.thumb} />}
             <View style={styles.rowText}>
-              <Text style={styles.title} numberOfLines={2}>
-                {item.title}
-              </Text>
+              <View style={styles.titleRow}>
+                <Text style={styles.title} numberOfLines={2}>
+                  {item.title}
+                </Text>
+                {!!item.startsAt && new Date(item.startsAt).getTime() < Date.now() && (
+                  <Text style={styles.pastBadge}>{t("myEvents.pastEvent")}</Text>
+                )}
+              </View>
               {item.startsAt && <Text style={styles.subtitle}>{formatShortDateTime(item.startsAt)}</Text>}
               <Text style={styles.subtitle} numberOfLines={1}>
                 {[item.city?.nameUk, formatPriceLabel(item, t)].filter(Boolean).join(" · ")}
@@ -74,6 +79,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   row: { flexDirection: "row", gap: spacing.md, paddingVertical: spacing.md, alignItems: "center", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   thumb: { width: 60, height: 80, borderRadius: radius.md, backgroundColor: colors.surface },
   rowText: { flex: 1, gap: 2 },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap" },
   title: { color: colors.foreground, fontSize: 15, fontWeight: "700" },
+  pastBadge: { color: colors.muted, fontSize: 10, fontWeight: "700", borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingHorizontal: 6, paddingVertical: 1 },
   subtitle: { color: colors.muted, fontSize: 12 },
 });
