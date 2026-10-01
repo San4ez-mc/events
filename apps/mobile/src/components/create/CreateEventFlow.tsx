@@ -130,6 +130,13 @@ function isValidDisplayDate(display: string): boolean {
   const d = new Date(year, month - 1, day);
   return d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day;
 }
+/** The backend rejects a URL with no protocol (`@IsUrl`) — most people just type "site.com" meaning
+ * https, so fill that in for them instead of making them retype it after a confusing error. */
+function normalizeUrl(raw: string): string | undefined {
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  return /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
 const isoDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const addDays = (days: number) => {
   const d = new Date();
@@ -211,23 +218,33 @@ async function authed<T = unknown>(path: string, init: RequestInit = {}, retried
  * "check your data" text otherwise shown leaves the organizer guessing which of the 5 wizard
  * steps to go back to.
  */
+const FIELD_LABELS: Record<string, string> = {
+  title: "events.wizard.title",
+  categoryId: "events.wizard.category",
+  startsAt: "create.date",
+  description: "events.wizard.description",
+  cityId: "events.wizard.city",
+  onlineUrl: "events.wizard.onlineUrl",
+  youtubeUrl: "events.wizard.youtubeUrl",
+};
+
 function describePublishError(err: ApiRequestError, t: (key: string) => string): string {
   const details = err.details as Record<string, string[]> | undefined;
   if (!details) return t(`errors.${err.code}`);
 
   if (Array.isArray(details._) && details._.length > 0) {
-    const labels: Record<string, string> = {
-      title: t("events.wizard.title"),
-      categoryId: t("events.wizard.category"),
-      startsAt: t("create.date"),
-      description: t("events.wizard.description"),
-      cityId: t("events.wizard.city"),
-      onlineUrl: t("events.wizard.onlineUrl"),
-    };
-    const names = details._.map((field) => labels[field] ?? field).join(", ");
+    const names = details._.map((field) => (FIELD_LABELS[field] ? t(FIELD_LABELS[field]) : field)).join(", ");
     return `${t("create.missingFields")}: ${names}`;
   }
   if (details.startsAt) return t("create.startsAtPast");
+
+  // Any other field-keyed entry is a format/validity error (e.g. onlineUrl without a protocol) —
+  // not a MISSING field, but still one the generic "check your input" text leaves unidentified.
+  const invalidFields = Object.keys(details).filter((k) => k !== "_" && Array.isArray(details[k]) && details[k].length > 0);
+  if (invalidFields.length > 0) {
+    const names = invalidFields.map((field) => (FIELD_LABELS[field] ? t(FIELD_LABELS[field]) : field)).join(", ");
+    return `${t("create.invalidFields")}: ${names}`;
+  }
 
   return t(`errors.${err.code}`);
 }
@@ -482,12 +499,12 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
               latitude: form.latitude ?? undefined,
               longitude: form.longitude ?? undefined,
             }
-          : { onlineUrl: form.onlineUrl.trim() || undefined }),
+          : { onlineUrl: normalizeUrl(form.onlineUrl) }),
       };
     }
     if (currentStep === 1) {
       return {
-        youtubeUrl: form.youtubeUrl.trim() || undefined,
+        youtubeUrl: normalizeUrl(form.youtubeUrl),
         priceType: form.priceType,
         price: form.priceType === "PAID" && form.price ? Number(form.price) : undefined,
         capacity: form.capacity ? Number(form.capacity) : undefined,
