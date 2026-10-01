@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { File } from "expo-file-system";
 import * as SecureStore from "expo-secure-store";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -536,7 +537,10 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
       for (const asset of result.assets) {
         const data = new FormData();
         const mime = asset.mimeType ?? (asset.type === "video" ? "video/mp4" : "image/jpeg");
-        data.append("file", { uri: asset.uri, name: asset.fileName ?? `upload.${mime.split("/")[1] ?? "jpg"}`, type: mime } as unknown as Blob);
+        // Expo SDK 57's global fetch only accepts a string, Blob, or Blob-like (.bytes()) FormData
+        // part — the classic RN {uri, name, type} object throws "Unsupported FormDataPart
+        // implementation" before the request is even sent. expo-file-system's File implements Blob.
+        data.append("file", new File(asset.uri), asset.fileName ?? `upload.${mime.split("/")[1] ?? "jpg"}`);
         const uploaded = await authed<MediaItem>(`/events/${eventId}/media`, { method: "POST", body: data });
         setMedia((m) => [...m, uploaded]);
       }

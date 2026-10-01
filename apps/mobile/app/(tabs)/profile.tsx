@@ -3,6 +3,7 @@ import { Alert, Image, KeyboardAvoidingView, Linking, Platform, Pressable, Scrol
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
+import { File } from "expo-file-system";
 import { API_URL, WEB_URL, getAccessToken, refreshAccessToken } from "../../src/lib/api-client";
 import { ApiRequestError, useAuth } from "../../src/lib/auth-context";
 import { reportClientError } from "../../src/lib/crash-reporter";
@@ -165,8 +166,10 @@ export default function ProfileScreen() {
     setMessage(null);
     try {
       const data = new FormData();
-      // RN's fetch/FormData accepts this shape for a file part; it is not a real Blob/File.
-      data.append("file", { uri: asset.uri, name: "avatar.jpg", type: "image/jpeg" } as unknown as Blob);
+      // Expo SDK 57's global fetch only accepts a string, Blob, or Blob-like (.bytes()) FormData
+      // part — the classic RN {uri, name, type} object throws "Unsupported FormDataPart
+      // implementation" before the request is even sent. expo-file-system's File implements Blob.
+      data.append("file", new File(asset.uri), "avatar.jpg");
       const body = await authed<{ avatarUrl: string }>("/users/me/avatar", { method: "POST", body: data });
       setAvatarUrl(body.avatarUrl);
     } catch (err) {
