@@ -779,6 +779,7 @@
     "mediaFormatsHint": "Photos: JPEG, PNG, WebP up to 15MB. Video: MP4, MOV up to 200MB.",
     "moreSettings": "More settings",
     "makeRecurring": "Make this a recurring event",
+    "recurringRequiresPro": "Recurring events need a Pro subscription. Switch tiers?",
     "uploading": "Uploading…",
     "next": "Next",
     "back": "Back",

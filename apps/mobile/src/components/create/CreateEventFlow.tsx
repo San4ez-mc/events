@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as SecureStore from "expo-secure-store";
 import { Ionicons } from "@expo/vector-icons";
@@ -234,6 +234,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   const [balance, setBalance] = useState<number | null>(null);
   const [giftOpen, setGiftOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [isPro, setIsPro] = useState<boolean | null>(null);
   const [recurring, setRecurring] = useState(false);
   const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>("WEEKLY");
   const [recurrenceCount, setRecurrenceCount] = useState("");
@@ -388,6 +389,26 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   useEffect(() => {
     void loadBalance();
   }, [loadBalance]);
+
+  // Recurring events are Pro-only (POST /events/:id/series -> 403 SUBSCRIPTION_REQUIRED otherwise).
+  // Checked once up front so the toggle can be disabled before the user ever tries it, instead of
+  // letting them fill it in and only finding out it's blocked when the step fails to save.
+  useEffect(() => {
+    authed<{ tier: "STARTER" | "PRO" | null; status: "ACTIVE" | "GRACE_PERIOD" | null }>("/platform-subscriptions/mine")
+      .then((sub) => setIsPro(sub.tier === "PRO" && (sub.status === "ACTIVE" || sub.status === "GRACE_PERIOD")))
+      .catch(() => setIsPro(false));
+  }, []);
+
+  function toggleRecurring() {
+    if (isPro !== true) {
+      Alert.alert(t("create.recurringRequiresPro"), undefined, [
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("pricing.switchTo"), onPress: () => router.push("/subscription") },
+      ]);
+      return;
+    }
+    setRecurring((v) => !v);
+  }
 
   function dismissGift() {
     setGiftOpen(false);
@@ -908,14 +929,17 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
 
                 {!editEventId && (
                   <Section title={t("organizerSeries.title")}>
-                    <Pressable style={styles.checkboxRow} onPress={() => setRecurring((v) => !v)} accessibilityRole="checkbox" accessibilityState={{ checked: recurring }}>
-                      <Ionicons name={recurring ? "checkbox" : "square-outline"} size={20} color={recurring ? colors.accentFrom : colors.muted} />
+                    <Pressable style={styles.checkboxRow} onPress={toggleRecurring} accessibilityRole="checkbox" accessibilityState={{ checked: recurring, disabled: isPro !== true }}>
+                      <Ionicons name={recurring && isPro ? "checkbox" : "square-outline"} size={20} color={recurring && isPro ? colors.accentFrom : colors.muted} />
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.checkboxLabel}>{t("create.makeRecurring")}</Text>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
+                          <Text style={[styles.checkboxLabel, isPro !== true && { color: colors.muted }]}>{t("create.makeRecurring")}</Text>
+                          {isPro !== true && <Text style={styles.proBadge}>PRO</Text>}
+                        </View>
                         <Text style={styles.hint}>{t("organizerSeries.description")}</Text>
                       </View>
                     </Pressable>
-                    {recurring && (
+                    {recurring && isPro && (
                       <>
                         <Chips
                           value={recurrenceType}
@@ -1033,6 +1057,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   detailsToggle: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, paddingVertical: spacing.sm },
   detailsToggleText: { color: colors.accentFrom, fontSize: 14, fontWeight: "700" },
   checkboxLabel: { color: colors.foreground, fontSize: 14, fontWeight: "600" },
+  proBadge: { color: colors.accentFrom, fontSize: 10, fontWeight: "800", borderWidth: 1, borderColor: colors.accentFrom, borderRadius: radius.full, paddingHorizontal: 6, paddingVertical: 1 },
   addDistrictRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
   addDistrictInput: { flex: 1 },
   addDistrictButton: { backgroundColor: colors.accentFrom, borderRadius: radius.md, paddingHorizontal: spacing.lg, alignItems: "center", justifyContent: "center" },
