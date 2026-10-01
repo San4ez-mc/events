@@ -72,7 +72,12 @@ function clampHour(raw: string, fallback: number): number {
   return Math.min(23, Number(digits));
 }
 
-/** Search box + a short scrollable list. Single- or multi-select (§7 city / district / categories). */
+/**
+ * Search box + a short scrollable list. Single- or multi-select (§7 city / district / categories).
+ * Collapses to a single-row trigger showing the current selection (or `placeholder`) until tapped —
+ * everywhere this is used used to stay permanently expanded, which ate a lot of vertical space for
+ * what's often a one-tap choice.
+ */
 export function SearchPicker({
   options,
   selected,
@@ -89,6 +94,7 @@ export function SearchPicker({
   emptyLabel: string;
 }) {
   const { colors, styles } = useThemedStyles(makeStyles);
+  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -96,8 +102,28 @@ export function SearchPicker({
   }, [options, query]);
 
   function toggle(id: string) {
-    if (multi) onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
-    else onChange(selected.includes(id) ? [] : [id]);
+    if (multi) {
+      onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
+    } else {
+      onChange(selected.includes(id) ? [] : [id]);
+      setOpen(false);
+    }
+  }
+
+  const selectedLabel = options
+    .filter((o) => selected.includes(o.id))
+    .map((o) => o.label)
+    .join(", ");
+
+  if (!open) {
+    return (
+      <Pressable style={styles.pickerTrigger} onPress={() => setOpen(true)}>
+        <Text style={[styles.pickerTriggerText, !selectedLabel && styles.pickerTriggerPlaceholder]} numberOfLines={1}>
+          {selectedLabel || placeholder}
+        </Text>
+        <Ionicons name="chevron-down" size={18} color={colors.muted} />
+      </Pressable>
+    );
   }
 
   return (
@@ -112,6 +138,9 @@ export function SearchPicker({
           style={styles.pickerInput}
           accessibilityLabel={placeholder}
         />
+        <Pressable onPress={() => setOpen(false)} hitSlop={10}>
+          <Ionicons name="chevron-up" size={18} color={colors.muted} />
+        </Pressable>
       </View>
       <ScrollView style={styles.pickerList} nestedScrollEnabled keyboardShouldPersistTaps="handled">
         {filtered.length === 0 && <Text style={styles.pickerEmpty}>{emptyLabel}</Text>}
@@ -416,6 +445,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   chipText: { color: colors.foreground, fontSize: 14, fontWeight: "600" },
   chipTextOn: { color: colors.white },
   picker: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, overflow: "hidden" },
+  pickerTrigger: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: 12 },
+  pickerTriggerText: { color: colors.foreground, fontSize: 14, flexShrink: 1 },
+  pickerTriggerPlaceholder: { color: colors.muted },
   pickerSearch: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   pickerInput: { flex: 1, color: colors.foreground, paddingVertical: 10, fontSize: 14 },
   pickerList: { maxHeight: 176 },

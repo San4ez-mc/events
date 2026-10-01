@@ -45,3 +45,18 @@ export function formatPhoneInput(raw: string): string {
   if (digits.length > 7) out += ` ${digits.slice(7, 9)}`;
   return out;
 }
+
+/**
+ * Input mask for a free-text date question (e.g. a custom "date of birth" registration field) —
+ * DD.MM.YY, matching formatShortDate's display convention everywhere else in the app, never the
+ * raw YYYY-MM-DD a plain text input would otherwise invite. The backend stores this verbatim as
+ * text (no parsing/validation), so there's no ambiguity to resolve — it's just read back as-is.
+ */
+export function formatDateInput(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 6);
+  if (!digits) return "";
+  let out = digits.slice(0, 2);
+  if (digits.length > 2) out += `.${digits.slice(2, 4)}`;
+  if (digits.length > 4) out += `.${digits.slice(4, 6)}`;
+  return out;
+}

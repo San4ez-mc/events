@@ -219,7 +219,6 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   const [slug, setSlug] = useState<string | null>(null);
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [categories, setCategories] = useState<Named[]>([]);
-  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [additionalCategoriesEnabled, setAdditionalCategoriesEnabled] = useState(false);
   const [cities, setCities] = useState<Named[]>([]);
   const [districts, setDistricts] = useState<Named[]>([]);
@@ -670,26 +669,14 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
               <TextInput value={form.title} onChangeText={(v) => set({ title: v })} placeholder={t("events.wizard.titlePlaceholder")} placeholderTextColor={colors.muted} style={styles.input} maxLength={120} />
             </Field>
             <Section title={t("events.wizard.category")}>
-              {categoryPickerOpen ? (
-                <SearchPicker
-                  options={categoryOptions}
-                  selected={form.categoryId ? [form.categoryId] : []}
-                  multi={false}
-                  onChange={(ids) => {
-                    set({ categoryId: ids[0] ?? null });
-                    setCategoryPickerOpen(false);
-                  }}
-                  placeholder={t("filters.search")}
-                  emptyLabel={t("filters.noResults")}
-                />
-              ) : (
-                <Pressable style={styles.categoryTrigger} onPress={() => setCategoryPickerOpen(true)}>
-                  <Text style={[styles.categoryTriggerText, !form.categoryId && styles.categoryTriggerPlaceholder]}>
-                    {categoryOptions.find((o) => o.id === form.categoryId)?.label ?? t("events.wizard.categoryPlaceholder")}
-                  </Text>
-                  <Ionicons name="chevron-down" size={18} color={colors.muted} />
-                </Pressable>
-              )}
+              <SearchPicker
+                options={categoryOptions}
+                selected={form.categoryId ? [form.categoryId] : []}
+                multi={false}
+                onChange={(ids) => set({ categoryId: ids[0] ?? null })}
+                placeholder={t("events.wizard.categoryPlaceholder")}
+                emptyLabel={t("filters.noResults")}
+              />
               <Text style={styles.hint}>{categoryAdded ? t("events.wizard.addCategorySubmitted") : t("events.wizard.addCategory")}</Text>
               <View style={styles.addDistrictRow}>
                 <TextInput
@@ -1050,9 +1037,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   giftBody: { color: colors.muted, fontSize: 14, textAlign: "center" },
   giftDismiss: { color: colors.muted, fontSize: 13, marginTop: spacing.xs },
   costBannerText: { color: colors.foreground, fontSize: 12, flexShrink: 1 },
-  categoryTrigger: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 12 },
-  categoryTriggerText: { color: colors.foreground, fontSize: 15, flexShrink: 1 },
-  categoryTriggerPlaceholder: { color: colors.muted },
   checkboxRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
   detailsToggle: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, paddingVertical: spacing.sm },
   detailsToggleText: { color: colors.accentFrom, fontSize: 14, fontWeight: "700" },
