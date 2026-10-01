@@ -837,9 +837,16 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
                     </View>
                   )}
                   <Pressable style={styles.mediaRemove} onPress={() => void removeMedia(m.id)} hitSlop={8}>
-                    {/* Android adds asymmetric font padding around icon glyphs by default, which visibly
-                        off-centers a small glyph like "×" inside a tightly-sized circular button. */}
-                    <Ionicons name="close" size={16} color={colors.white} style={{ includeFontPadding: false, textAlignVertical: "center" }} />
+                    {/* Android renders a vector-icon glyph as text, with its own font metrics on top of
+                        whatever includeFontPadding/textAlignVertical do — those two alone weren't enough
+                        to center "×" in this 24x24 circle. Forcing lineHeight to match the icon's own
+                        size collapses the glyph's line box onto its visual box instead. */}
+                    <Ionicons
+                      name="close"
+                      size={16}
+                      color={colors.white}
+                      style={{ includeFontPadding: false, textAlignVertical: "center", lineHeight: 16 }}
+                    />
                   </Pressable>
                 </View>
               ))}
