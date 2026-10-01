@@ -140,6 +140,14 @@ export interface InvitationCandidate {
   email: string;
 }
 
+/** Quick-invite source: the organizer's own friends list (no email exposed, unlike past participants). */
+export interface FriendInvitationCandidate {
+  id: string;
+  name: string | null;
+  nickname: string | null;
+  avatarUrl: string | null;
+}
+
 export interface EventInvitation {
   id: string;
   eventId: string;

@@ -1,10 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, Query } from "@nestjs/common";
+import { Body, Controller, Get, Header, Param, Patch, Post, Put, Query, StreamableFile } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user";
+import { RateLimit } from "../common/throttle";
 import { RegistrationsService } from "./registrations.service";
 import { CreateRegistrationDto } from "./dto/create-registration.dto";
 import { ListRegistrationsDto } from "./dto/list-registrations.dto";
+import { MessageParticipantsDto } from "./dto/message-participants.dto";
 import { RejectRegistrationDto } from "./dto/reject-registration.dto";
 import { SetRegistrationFieldsDto } from "./dto/set-registration-fields.dto";
 
@@ -62,6 +64,30 @@ export class EventRegistrationsController {
   @Patch(":id/confirm-payment")
   confirmPayment(@CurrentUser() user: AuthenticatedUser, @Param("eventId") eventId: string, @Param("id") id: string) {
     return this.registrationsService.confirmPayment(eventId, id, user.id);
+  }
+
+  @Patch(":id/check-in")
+  toggleCheckIn(@CurrentUser() user: AuthenticatedUser, @Param("eventId") eventId: string, @Param("id") id: string) {
+    return this.registrationsService.toggleCheckIn(eventId, id, user.id);
+  }
+
+  @Get("export.csv")
+  @Header("Content-Type", "text/csv; charset=utf-8")
+  @Header("Content-Disposition", "attachment; filename=participants.csv")
+  async exportCsv(@CurrentUser() user: AuthenticatedUser, @Param("eventId") eventId: string) {
+    const csv = await this.registrationsService.exportCsv(eventId, user.id);
+    return new StreamableFile(Buffer.from(csv, "utf-8"));
+  }
+
+  @RateLimit(10)
+  @Post("message")
+  async messageParticipants(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("eventId") eventId: string,
+    @Body() dto: MessageParticipantsDto,
+  ) {
+    const recipients = await this.registrationsService.messageParticipants(eventId, user.id, dto);
+    return { recipients };
   }
 
   @Put("fields")

@@ -1041,6 +1041,10 @@ model Registration {
   paymentClickedAt   DateTime?
   paymentConfirmedAt DateTime?
 
+  /// Manual attendance check-in by the organizer (no QR scanner — a plain toggle).
+  /// Independent of `status`, so checking someone in/out never loses their REGISTERED/CONFIRMED state.
+  checkedInAt DateTime?
+
   /// Visible to the organizer only, never the registrant (§83).
   organizerPrivateNote String?
 
@@ -1102,6 +1106,7 @@ enum NotificationType {
   REVIEW_REQUEST
   CATEGORY_MERGED
   DISTRICT_MERGED
+  ORGANIZER_MESSAGE
 }
 
 enum NotificationChannel {

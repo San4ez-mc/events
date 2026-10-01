@@ -20,6 +20,15 @@ export class InvitationsController {
     return this.invitationsService.searchCandidates(eventId, user.id, query);
   }
 
+  @Get("events/:eventId/invitations/friend-candidates")
+  searchFriendCandidates(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("eventId") eventId: string,
+    @Query() query: SearchCandidatesDto,
+  ) {
+    return this.invitationsService.searchFriendCandidates(eventId, user.id, query);
+  }
+
   @Post("events/:eventId/invitations")
   invite(
     @CurrentUser() user: AuthenticatedUser,

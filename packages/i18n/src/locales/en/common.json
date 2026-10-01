@@ -591,7 +591,16 @@
     "reject": "Reject",
     "confirmPayment": "Confirm payment",
     "empty": "No one has registered yet",
-    "capacity": "Spots filled"
+    "capacity": "Spots filled",
+    "exportCsv": "Export to CSV",
+    "message": "Message participants",
+    "messagePlaceholder": "Write a message to everyone registered...",
+    "messageSend": "Send",
+    "messageSent": "Message sent",
+    "messageCancel": "Cancel",
+    "checkedIn": "Checked in",
+    "checkIn": "Mark as checked in",
+    "checkOut": "Undo check-in"
   },
   "organizerTools": {
     "duplicate": "Create a new event based on this one",
@@ -669,12 +678,16 @@
     "removed": "Drafts deleted"
   },
   "organizerInvite": {
-    "title": "Invite past participants",
+    "title": "Invite to event",
     "search": "Search",
     "searchPlaceholder": "Search by name or email",
+    "searchPlaceholderFriends": "Search by name",
     "empty": "No matching past participants",
+    "emptyFriends": "All your friends are already invited, or you have no friends yet",
     "invite": "Invite",
-    "invited": "Invited"
+    "invited": "Invited",
+    "tabPastParticipants": "Past participants",
+    "tabFriends": "Friends"
   },
   "invitations": {
     "title": "My invitations",

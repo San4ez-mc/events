@@ -11,8 +11,15 @@ import { AnalyticsService } from "../analytics/analytics.service";
 import { EventAccessService } from "../organizer/event-access.service";
 import type { CreateRegistrationDto, RegistrationAnswerDto } from "./dto/create-registration.dto";
 import type { ListRegistrationsDto } from "./dto/list-registrations.dto";
+import type { MessageParticipantsDto } from "./dto/message-participants.dto";
 import type { RejectRegistrationDto } from "./dto/reject-registration.dto";
 import type { SetRegistrationFieldsDto } from "./dto/set-registration-fields.dto";
+
+/** RFC 4180: wrap in quotes (doubling any embedded quote) whenever the field contains a comma, quote, or newline. */
+function csvEscape(value: string): string {
+  if (/[",\r\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+  return value;
+}
 
 const REGISTRATION_INCLUDE = {
   answers: { include: { field: true } },
@@ -409,6 +416,69 @@ export class RegistrationsService {
         ),
       );
     });
+  }
+
+  /** Organizer's manual attendance toggle (no QR scanner) — flips `checkedInAt` independently of `status`. */
+  async toggleCheckIn(eventId: string, registrationId: string, organizerId: string) {
+    const registration = await this.getOwnedRegistration(eventId, registrationId, organizerId);
+    return this.prisma.registration.update({
+      where: { id: registrationId },
+      data: { checkedInAt: registration.checkedInAt ? null : new Date() },
+    });
+  }
+
+  /** Organizer-only CSV export of everyone currently registered (active statuses only — not cancelled/rejected). */
+  async exportCsv(eventId: string, organizerId: string): Promise<string> {
+    await this.eventAccess.assertPermission(eventId, organizerId, "MANAGE_REGISTRATIONS");
+
+    const registrations = await this.prisma.registration.findMany({
+      where: { eventId, status: { in: [...ACTIVE_STATUSES] } },
+      orderBy: { createdAt: "asc" },
+      include: { user: { select: { name: true, nickname: true, email: true, phone: true } } },
+    });
+
+    const header = ["Name", "Email", "Phone", "Status", "Registered at", "Checked in"];
+    const rows = registrations.map((r) => [
+      r.user.name ?? r.user.nickname ?? "",
+      r.user.email ?? "",
+      r.user.phone ?? "",
+      r.status,
+      r.registeredAt.toISOString(),
+      r.checkedInAt ? r.checkedInAt.toISOString() : "",
+    ]);
+    return [header, ...rows].map((row) => row.map(csvEscape).join(",")).join("\r\n");
+  }
+
+  /**
+   * Organizer broadcasts a free-text message to everyone with an active registration.
+   * Reuses NotificationsService.create() per recipient — same shape as the admin broadcast,
+   * but scoped to one event's registrants instead of every user.
+   */
+  async messageParticipants(eventId: string, organizerId: string, dto: MessageParticipantsDto): Promise<number> {
+    await this.eventAccess.assertPermission(eventId, organizerId, "SEND_NOTIFICATIONS");
+
+    const event = await this.prisma.event.findUniqueOrThrow({ where: { id: eventId }, select: { title: true } });
+    const registrations = await this.prisma.registration.findMany({
+      where: { eventId, status: { in: [...ACTIVE_STATUSES] } },
+      select: { userId: true },
+      distinct: ["userId"],
+    });
+
+    const PARALLEL = 10;
+    for (let i = 0; i < registrations.length; i += PARALLEL) {
+      await Promise.all(
+        registrations.slice(i, i + PARALLEL).map((r) =>
+          this.notifications.create({
+            userId: r.userId,
+            type: "ORGANIZER_MESSAGE",
+            title: "Message from the organizer",
+            body: `"${event.title}": ${dto.message}`,
+            payloadJson: { eventId },
+          }),
+        ),
+      );
+    }
+    return registrations.length;
   }
 
   private initialStatus(approvalMode: string): (typeof ACTIVE_STATUSES)[number] {

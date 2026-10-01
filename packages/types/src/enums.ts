@@ -291,6 +291,7 @@ export const NotificationType = {
   REVIEW_REQUEST: "REVIEW_REQUEST",
   CATEGORY_MERGED: "CATEGORY_MERGED",
   DISTRICT_MERGED: "DISTRICT_MERGED",
+  ORGANIZER_MESSAGE: "ORGANIZER_MESSAGE",
 } as const;
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType];
 

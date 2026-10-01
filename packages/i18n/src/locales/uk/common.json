@@ -591,7 +591,16 @@
     "reject": "Відхилити",
     "confirmPayment": "Підтвердити оплату",
     "empty": "Ще ніхто не зареєструвався",
-    "capacity": "Місць зайнято"
+    "capacity": "Місць зайнято",
+    "exportCsv": "Експорт у CSV",
+    "message": "Повідомлення учасникам",
+    "messagePlaceholder": "Напишіть повідомлення для всіх зареєстрованих...",
+    "messageSend": "Надіслати",
+    "messageSent": "Повідомлення надіслано",
+    "messageCancel": "Скасувати",
+    "checkedIn": "Присутній",
+    "checkIn": "Відмітити присутність",
+    "checkOut": "Зняти відмітку"
   },
   "organizerTools": {
     "duplicate": "Створити нову подію на основі цієї",
@@ -669,12 +678,16 @@
     "removed": "Видалено чернеток"
   },
   "organizerInvite": {
-    "title": "Запросити минулих учасників",
+    "title": "Запросити на подію",
     "search": "Пошук",
     "searchPlaceholder": "Пошук за іменем або email",
+    "searchPlaceholderFriends": "Пошук за іменем",
     "empty": "Немає відповідних минулих учасників",
+    "emptyFriends": "Усі друзі вже запрошені, або у вас поки немає друзів",
     "invite": "Запросити",
-    "invited": "Запрошено"
+    "invited": "Запрошено",
+    "tabPastParticipants": "Минулі учасники",
+    "tabFriends": "Друзі"
   },
   "invitations": {
     "title": "Мої запрошення",

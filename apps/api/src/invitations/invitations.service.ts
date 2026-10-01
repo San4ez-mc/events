@@ -4,6 +4,7 @@ import { ApiException } from "../common/exceptions/api.exception";
 import { ForbiddenActionException, ResourceNotFoundException } from "../common/exceptions/common-exceptions";
 import { EventAccessService } from "../organizer/event-access.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { FriendsService } from "../friends/friends.service";
 import type { SearchCandidatesDto } from "./dto/search-candidates.dto";
 
 const PAST_PARTICIPANT_STATUSES = ["REGISTERED", "CONFIRMED", "ATTENDED"] as const;
@@ -16,6 +17,7 @@ export class InvitationsService {
     private readonly prisma: PrismaService,
     private readonly eventAccess: EventAccessService,
     private readonly notifications: NotificationsService,
+    private readonly friends: FriendsService,
   ) {}
 
   /** Everyone who's genuinely participated in one of this organizer's events before, minus anyone already on this event. */
@@ -56,6 +58,37 @@ export class InvitationsService {
     });
 
     return registrations.map((r) => r.user);
+  }
+
+  /** Quick-invite from the organizer's own friends list, rather than past participants of their events. */
+  async searchFriendCandidates(eventId: string, organizerId: string, dto: SearchCandidatesDto) {
+    await this.eventAccess.assertPermission(eventId, organizerId, "INVITE_PREVIOUS_PARTICIPANTS");
+
+    const friendIds = await this.friends.getFriendIds(organizerId);
+    if (friendIds.length === 0) return [];
+
+    const alreadyOnEvent = await this.prisma.registration.findMany({ where: { eventId }, select: { userId: true } });
+    const alreadyInvited = await this.prisma.eventInvitation.findMany({
+      where: { eventId, status: "PENDING" },
+      select: { inviteeUserId: true },
+    });
+    const excludeIds = [...alreadyOnEvent.map((r) => r.userId), ...alreadyInvited.map((i) => i.inviteeUserId)];
+
+    return this.prisma.user.findMany({
+      where: {
+        id: { in: friendIds, notIn: excludeIds },
+        ...(dto.q
+          ? {
+              OR: [
+                { name: { contains: dto.q, mode: "insensitive" } },
+                { nickname: { contains: dto.q, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      select: { id: true, name: true, nickname: true, avatarUrl: true },
+      take: CANDIDATE_LIMIT,
+    });
   }
 
   async invite(eventId: string, organizerId: string, inviteeUserId: string) {

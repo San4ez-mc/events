@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useAuth } from "../../src/lib/auth-context";
 import { useTranslations } from "../../src/lib/locale-context";
@@ -10,6 +12,7 @@ import { radius, spacing, type Palette, useThemedStyles } from "../../src/lib/th
 interface Reg {
   id: string;
   status: string;
+  checkedInAt: string | null;
   user: { id: string; name: string | null; nickname: string | null; email: string; phone: string | null };
   answers: { id: string; field: { label: string }; valueJson: unknown }[];
 }
@@ -45,6 +48,10 @@ export default function ManageEventScreen() {
   const [regs, setRegs] = useState<Reg[] | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [messageOpen, setMessageOpen] = useState(false);
+  const [messageText, setMessageText] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   const load = useCallback(async () => {
     const token = getAccessToken();
@@ -67,7 +74,7 @@ export default function ManageEventScreen() {
     void load();
   }, [isLoading, user, load]);
 
-  async function act(regId: string, action: "approve" | "reject" | "confirm-payment") {
+  async function act(regId: string, action: "approve" | "reject" | "confirm-payment" | "check-in") {
     const token = getAccessToken();
     if (!token) return;
     setBusy(regId);
@@ -79,6 +86,49 @@ export default function ManageEventScreen() {
       await load();
     } finally {
       setBusy(null);
+    }
+  }
+
+  async function exportCsv() {
+    const token = getAccessToken();
+    if (!token) return;
+    setExporting(true);
+    try {
+      const file = await File.downloadFileAsync(`${API_URL}/api/v1/events/${id}/registrations/export.csv`, Paths.cache, {
+        idempotent: true,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(file.uri, { mimeType: "text/csv", dialogTitle: t("organizerRegistrations.exportCsv") });
+      } else {
+        Alert.alert(t("common.somethingWentWrong"));
+      }
+    } catch {
+      Alert.alert(t("common.somethingWentWrong"));
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function sendMessage() {
+    const token = getAccessToken();
+    if (!token || !messageText.trim()) return;
+    setSendingMessage(true);
+    try {
+      const res = await fetch(`${API_URL}/api/v1/events/${id}/registrations/message`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ message: messageText.trim() }),
+      });
+      if (res.ok) {
+        setMessageText("");
+        setMessageOpen(false);
+        Alert.alert(t("organizerRegistrations.messageSent"));
+      } else {
+        Alert.alert(t("common.somethingWentWrong"));
+      }
+    } finally {
+      setSendingMessage(false);
     }
   }
 
@@ -103,6 +153,45 @@ export default function ManageEventScreen() {
           </View>
         ))}
       </View>
+
+      <View style={styles.toolbar}>
+        <Button
+          title={t("organizerRegistrations.exportCsv")}
+          variant="secondary"
+          loading={exporting}
+          onPress={() => void exportCsv()}
+          style={styles.small}
+        />
+        <Button
+          title={t("organizerRegistrations.message")}
+          variant="secondary"
+          onPress={() => setMessageOpen((v) => !v)}
+          style={styles.small}
+        />
+      </View>
+
+      {messageOpen && (
+        <View style={styles.card}>
+          <TextInput
+            value={messageText}
+            onChangeText={setMessageText}
+            placeholder={t("organizerRegistrations.messagePlaceholder")}
+            placeholderTextColor={colors.muted}
+            style={styles.messageInput}
+            multiline
+          />
+          <View style={styles.actions}>
+            <Button
+              title={t("organizerRegistrations.messageSend")}
+              disabled={!messageText.trim()}
+              loading={sendingMessage}
+              onPress={() => void sendMessage()}
+              style={styles.small}
+            />
+            <Button title={t("organizerRegistrations.messageCancel")} variant="secondary" onPress={() => setMessageOpen(false)} style={styles.small} />
+          </View>
+        </View>
+      )}
 
       <Text style={styles.section}>{t("organizerRegistrations.title")}</Text>
       {regs.length === 0 && <Text style={styles.muted}>{t("organizerRegistrations.empty")}</Text>}
@@ -130,6 +219,15 @@ export default function ManageEventScreen() {
           {r.status === "PAYMENT_PENDING" && (
             <Button title={t("organizerRegistrations.confirmPayment")} onPress={() => void act(r.id, "confirm-payment")} loading={busy === r.id} style={styles.small} />
           )}
+          {["REGISTERED", "CONFIRMED", "ATTENDED"].includes(r.status) && (
+            <Button
+              title={r.checkedInAt ? t("organizerRegistrations.checkOut") : t("organizerRegistrations.checkIn")}
+              variant={r.checkedInAt ? "secondary" : "primary"}
+              loading={busy === r.id}
+              onPress={() => void act(r.id, "check-in")}
+              style={styles.small}
+            />
+          )}
         </View>
       ))}
     </ScrollView>
@@ -144,6 +242,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   statValue: { color: colors.foreground, fontSize: 22, fontWeight: "800" },
   statLabel: { color: colors.muted, fontSize: 11, textAlign: "center", marginTop: 2 },
   section: { color: colors.foreground, fontSize: 16, fontWeight: "700", marginTop: spacing.md },
+  toolbar: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
+  messageInput: { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, color: colors.foreground, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, fontSize: 14, minHeight: 80, textAlignVertical: "top" },
   muted: { color: colors.muted, fontSize: 12 },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
   cardHead: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
