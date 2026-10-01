@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { router, Stack } from "expo-router";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { API_URL, getAccessToken } from "../src/lib/api-client";
+import { API_URL, getAccessToken, refreshAccessToken } from "../src/lib/api-client";
 import { useAuth } from "../src/lib/auth-context";
 import { useTranslations } from "../src/lib/locale-context";
 import { Button } from "../src/components/ui/Button";
@@ -23,11 +23,19 @@ export default function MyInvitationsScreen() {
   const load = useCallback(async () => {
     const token = getAccessToken();
     if (!token) return;
-    const res = await fetch(`${API_URL}/api/v1/invitations/mine`, { headers: { Authorization: `Bearer ${token}` } });
+    let res = await fetch(`${API_URL}/api/v1/invitations/mine`, { headers: { Authorization: `Bearer ${token}` } });
+    // The access token is short-lived; this screen is often reached a while after login (push
+    // notification, deep link), long enough for it to have expired in the meantime — one silent
+    // refresh-and-retry instead of showing "something went wrong" for what's really just a stale token.
+    if (res.status === 401) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) res = await fetch(`${API_URL}/api/v1/invitations/mine`, { headers: { Authorization: `Bearer ${refreshed}` } });
+    }
     if (!res.ok) {
       setError(true);
       return;
     }
+    setError(false);
     setItems((await res.json()) as EventInvitation[]);
   }, []);
 
