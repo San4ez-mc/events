@@ -69,7 +69,8 @@
       "submit": "Sign up",
       "hasAccount": "Already have an account?",
       "signIn": "Sign in",
-      "nameOrNicknameRequired": "Enter a name or nickname"
+      "nameOrNicknameRequired": "Enter a name or nickname",
+      "passwordHint": "At least 8 characters, with a letter and a digit"
     },
     "password": {
       "required": "Enter a password",

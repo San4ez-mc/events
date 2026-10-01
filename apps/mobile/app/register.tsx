@@ -44,6 +44,7 @@ export default function RegisterScreen() {
         <TextField label={t("auth.register.name")} value={name} onChangeText={setName} />
         <TextField label={t("auth.login.email")} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
         <TextField label={t("auth.login.password")} value={password} onChangeText={setPassword} secureTextEntry />
+        <Text style={styles.hint}>{t("auth.register.passwordHint")}</Text>
 
         {error && <Text style={styles.error}>{error}</Text>}
         {emailTaken && (
@@ -72,6 +73,7 @@ export default function RegisterScreen() {
 const makeStyles = (colors: Palette) => StyleSheet.create({
   title: { color: colors.foreground, fontSize: 30, fontWeight: "800", textAlign: "center" },
   form: { gap: spacing.md },
+  hint: { color: colors.muted, fontSize: 12, marginTop: -spacing.sm },
   error: { color: colors.danger, fontSize: 13, textAlign: "center" },
   takenRow: { flexDirection: "row", justifyContent: "center", gap: spacing.lg },
   takenLink: { color: colors.accentFrom, fontSize: 13, fontWeight: "700", textDecorationLine: "underline" },
