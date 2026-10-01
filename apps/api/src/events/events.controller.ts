@@ -1,6 +1,9 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, Query, Req } from "@nestjs/common";
+import { Body, Controller, Get, Header, Param, Patch, Post, Put, Query, Req, StreamableFile } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { ApiTags } from "@nestjs/swagger";
+import QRCode from "qrcode";
 import type { Request } from "express";
+import type { EnvConfig } from "../config/env.validation";
 import { Public } from "../common/decorators/public.decorator";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user";
@@ -21,6 +24,7 @@ export class EventsController {
   constructor(
     private readonly eventsService: EventsService,
     private readonly tokenService: TokenService,
+    private readonly configService: ConfigService<EnvConfig, true>,
   ) {}
 
   @RateLimit(20)
@@ -82,6 +86,20 @@ export class EventsController {
   @Get(":id/stats")
   getStats(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
     return this.eventsService.getStats(id, user.id);
+  }
+
+  /**
+   * QR for the organizer to print/display — encodes the same public event URL the app already
+   * shares (§24-style, mirroring UsersController.profileQr). Owner-only: `findByIdForOwner` throws
+   * for anyone else, so this can't be used to mint a QR for an event you don't run.
+   */
+  @Get(":id/qr")
+  @Header("Content-Type", "image/png")
+  @Header("Cache-Control", "private, max-age=86400")
+  async eventQr(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    const event = await this.eventsService.findByIdForOwner(id, user.id);
+    const url = `${this.configService.get("APP_URL", { infer: true })}/events/${event.slug}`;
+    return new StreamableFile(await QRCode.toBuffer(url, { type: "png", width: 512, margin: 2 }));
   }
 
   /**

@@ -9,6 +9,7 @@ import { useTranslations } from "../../src/lib/locale-context";
 import { Button } from "../../src/components/ui/Button";
 import { RegistrationFieldInput } from "../../src/components/registration/RegistrationFieldInput";
 import { EventGallery } from "../../src/components/event/EventGallery";
+import { EventQrModal } from "../../src/components/social/EventQrModal";
 import { EventChat } from "../../src/components/event/EventChat";
 import { ReviewsSection } from "../../src/components/event/ReviewsSection";
 import { sourceFromParam, track } from "../../src/lib/analytics";
@@ -40,6 +41,7 @@ export default function EventDetailScreen() {
   const [tierId, setTierId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
 
@@ -471,6 +473,11 @@ export default function EventDetailScreen() {
               </Pressable>
             </View>
             {isOwner && (
+              <Pressable style={styles.reportRow} onPress={() => { setReportOpen(false); setQrOpen(true); }}>
+                <Text style={styles.reportRowText}>{t("events.actions.qr")}</Text>
+              </Pressable>
+            )}
+            {isOwner && (
               <Pressable style={styles.reportRow} onPress={() => { setReportOpen(false); router.push(`/collaborators/${event.id}`); }}>
                 <Text style={styles.reportRowText}>{t("organizerCollaborators.title")}</Text>
               </Pressable>
@@ -492,6 +499,7 @@ export default function EventDetailScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+      {event && <EventQrModal eventId={event.id} title={event.title} visible={qrOpen} onClose={() => setQrOpen(false)} />}
     </>
   );
 

@@ -229,6 +229,8 @@
       "saved": "Saved",
       "share": "Share",
       "report": "Report",
+      "qr": "Event QR code",
+      "qrHint": "Show it at the door or print it — scanning opens the event page",
       "linkCopied": "Link copied",
       "reportSent": "Thanks, your report was received",
       "reasons": {
