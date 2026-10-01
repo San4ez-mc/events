@@ -62,6 +62,11 @@ interface AdminUser {
   status: (typeof USER_STATUSES)[number];
   createdAt: string;
 }
+interface UserDetail {
+  eventsCount: number;
+  registrationsCount: number;
+  lastLoginAt: string | null;
+}
 interface AdminEvent {
   id: string;
   title: string;
@@ -138,6 +143,7 @@ export default function AdminScreen() {
   const [userSearch, setUserSearch] = useState("");
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+  const [userDetails, setUserDetails] = useState<Record<string, UserDetail>>({});
   // Events
   const [eventStatus, setEventStatus] = useState<(typeof EVENT_STATUSES)[number]>("ALL");
   const [events, setEvents] = useState<AdminEvent[] | null>(null);
@@ -193,6 +199,18 @@ export default function AdminScreen() {
     const res = await fetch(`${API_URL}/api/v1/admin/users${qs}`, { headers: headers() });
     setUsers(res.ok ? (await res.json()).items : []);
   }, []);
+
+  async function toggleUserExpanded(id: string) {
+    const next = expandedUserId === id ? null : id;
+    setExpandedUserId(next);
+    if (next && !userDetails[next]) {
+      const res = await fetch(`${API_URL}/api/v1/admin/users/${next}`, { headers: headers() });
+      if (res.ok) {
+        const d = (await res.json()) as UserDetail;
+        setUserDetails((prev) => ({ ...prev, [next]: d }));
+      }
+    }
+  }
 
   const loadEvents = useCallback(async (status: (typeof EVENT_STATUSES)[number]) => {
     const qs = status !== "ALL" ? `?status=${status}` : "";
@@ -491,8 +509,9 @@ export default function AdminScreen() {
             {users?.length === 0 && <Text style={styles.muted}>{t("admin.emptyList")}</Text>}
             {users?.map((u) => {
               const expanded = expandedUserId === u.id;
+              const detail = userDetails[u.id];
               return (
-                <Pressable key={u.id} style={styles.card} onPress={() => setExpandedUserId(expanded ? null : u.id)}>
+                <Pressable key={u.id} style={styles.card} onPress={() => void toggleUserExpanded(u.id)}>
                   <Text style={styles.title}>{u.name ?? u.nickname ?? u.email}</Text>
                   <Text style={styles.muted}>
                     {u.email} · {u.role} · {u.status}
@@ -502,6 +521,17 @@ export default function AdminScreen() {
                   </Text>
                   {expanded && (
                     <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
+                      {!detail && <ActivityIndicator color={colors.accentFrom} />}
+                      {detail && (
+                        <View style={{ gap: spacing.xs }}>
+                          <Text style={styles.muted}>
+                            {t("admin.users.eventsCount")}: {detail.eventsCount} · {t("admin.users.registrationsCount")}: {detail.registrationsCount}
+                          </Text>
+                          <Text style={styles.muted}>
+                            {t("admin.users.lastLogin")}: {detail.lastLoginAt ? formatShortDateTime(detail.lastLoginAt) : t("admin.users.never")}
+                          </Text>
+                        </View>
+                      )}
                       <Text style={styles.label}>{t("admin.users.setStatus")}</Text>
                       <View style={styles.pillRow}>
                         {USER_STATUSES.map((s) => (
