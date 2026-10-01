@@ -68,11 +68,17 @@ export class DiscoveryService {
     });
 
     const inWindow = candidates.filter((event) => this.startsInHourWindow(event.startsAt, query.hourFrom, query.hourTo, event.timezone));
+    // A recurring event's occurrences are separate PUBLISHED rows sharing one seriesId — without this,
+    // every future occurrence would show up as its own card. `inWindow` is still startsAt-ascending
+    // here (inherited from the `candidates` query), so keeping the first row per key keeps the
+    // soonest occurrence. Non-recurring events (seriesId null) key on their own id so they never
+    // collide with each other — Postgres DISTINCT would otherwise treat all those NULLs as equal.
+    const deduped = this.dedupeSeriesOccurrences(inWindow);
     const [signals, proOwnerIds] = await Promise.all([
-      this.loadRankingSignals(inWindow.map((e) => e.id), userId),
-      this.loadProOwnerIds(inWindow.map((e) => e.ownerId)),
+      this.loadRankingSignals(deduped.map((e) => e.id), userId),
+      this.loadProOwnerIds(deduped.map((e) => e.ownerId)),
     ]);
-    const scored = inWindow
+    const scored = deduped
       .filter((event) => !query.availableOnly || event.capacity == null || (signals.get(event.id)?.registered ?? 0) < event.capacity)
       .map((event) => ({ ...event, score: this.scoreEvent(event, preferences, now, signals.get(event.id), proOwnerIds.has(event.ownerId)) }))
       .sort((a, b) => (b.score !== a.score ? b.score - a.score : a.id.localeCompare(b.id)));
@@ -90,6 +96,19 @@ export class DiscoveryService {
       nextCursor: hasMore && last ? encodeScoredCursor(last.score, last.id, now.getTime()) : null,
       hasMore,
     };
+  }
+
+  /** Keeps only the earliest-starting occurrence per `seriesId` (see call site for why). */
+  private dedupeSeriesOccurrences<T extends { id: string; seriesId: string | null }>(events: T[]): T[] {
+    const seen = new Set<string>();
+    const result: T[] = [];
+    for (const event of events) {
+      const key = event.seriesId ?? event.id;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push(event);
+    }
+    return result;
   }
 
   /** §59 — records a swipe-left (PASS) or swipe-right/tap (OPEN). */
