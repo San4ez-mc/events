@@ -75,10 +75,18 @@ export default function EventDetailScreen() {
     const token = getAccessToken();
     if (!token) return;
     (async () => {
-      const res = await fetch(`${API_URL}/api/v1/events/${event.id}/registrations/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) setRegistration((await res.json()).registration);
+      try {
+        const res = await fetch(`${API_URL}/api/v1/events/${event.id}/registrations/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        // A failed or stale-token (401) response must still resolve `registration` out of
+        // `undefined` — otherwise renderRegistration() shows its loading spinner forever (it was
+        // doing exactly that: a dead purple ActivityIndicator stuck above the footer, reported as
+        // "a purple circle that does nothing" on events the viewer hadn't registered for).
+        setRegistration(res.ok ? (await res.json()).registration : null);
+      } catch {
+        setRegistration(null);
+      }
     })();
   }, [authLoading, user, event]);
 
