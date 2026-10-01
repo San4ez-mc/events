@@ -9,7 +9,7 @@ import { API_URL, getAccessToken, refreshAccessToken } from "../../lib/api-clien
 import { ApiRequestError, useAuth } from "../../lib/auth-context";
 import { reportClientError } from "../../lib/crash-reporter";
 import { useTranslations } from "../../lib/locale-context";
-import { formatPriceLabel, formatShortDateTime } from "../../lib/format";
+import { formatDateInput, formatPriceLabel, formatShortDateTime } from "../../lib/format";
 import { Button } from "../ui/Button";
 import { ScreenHeader } from "../ui/ScreenHeader";
 import { Chips, SearchPicker, Section, type Option } from "../discover/FiltersSheet";
@@ -97,35 +97,26 @@ const SHOW_BUY_CREDITS = false;
 const GIFT_SHOWN_KEY = "kiro_create_gift_shown";
 const STEPS = 3;
 const pad = (n: number) => String(n).padStart(2, "0");
-/** form.date stays ISO (YYYY-MM-DD) internally — only the text field shows/accepts DD.MM.YYYY,
- * the format Ukrainian users actually write dates in. Falls back to passthrough while the user
- * is mid-typing (neither shape matches yet), which is harmless since it's just local form state. */
+/** form.date stays ISO (YYYY-MM-DD) internally — only the text field shows/accepts DD.MM.YY,
+ * matching formatShortDate's display convention everywhere else in the app (a 4-digit year here
+ * used to be the one field not using that standard). Always assumes the 2000s — an event's own
+ * start date is never meaningfully in a different century. Falls back to passthrough while the
+ * user is mid-typing (neither shape matches yet), which is harmless since it's just local form state. */
 function isoToDisplayDate(iso: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
-  return m ? `${m[3]}.${m[2]}.${m[1]}` : iso;
+  return m ? `${m[3]}.${m[2]}.${m[1].slice(2)}` : iso;
 }
 function displayToIsoDate(display: string): string {
-  const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(display);
-  return m ? `${m[3]}-${m[2]}-${m[1]}` : display;
-}
-/** Auto-inserts the dots as the user types digits — typing "66092026" with no dots used to pass
- * straight through unvalidated (the regex above only matches an already-dotted string), silently
- * storing a garbage date that only surfaced as a generic error much later, at submit time. */
-function formatEventDateInput(raw: string): string {
-  const digits = raw.replace(/\D/g, "").slice(0, 8);
-  if (!digits) return "";
-  let out = digits.slice(0, 2);
-  if (digits.length > 2) out += `.${digits.slice(2, 4)}`;
-  if (digits.length > 4) out += `.${digits.slice(4, 8)}`;
-  return out;
+  const m = /^(\d{2})\.(\d{2})\.(\d{2})$/.exec(display);
+  return m ? `20${m[3]}-${m[2]}-${m[1]}` : display;
 }
 /** Range-checks day/month and round-trips through Date to catch real calendar validity (Feb 30, day 66, etc). */
 function isValidDisplayDate(display: string): boolean {
-  const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(display);
+  const m = /^(\d{2})\.(\d{2})\.(\d{2})$/.exec(display);
   if (!m) return false;
   const day = Number(m[1]);
   const month = Number(m[2]);
-  const year = Number(m[3]);
+  const year = 2000 + Number(m[3]);
   if (month < 1 || month > 12 || day < 1 || day > 31) return false;
   const d = new Date(year, month - 1, day);
   return d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day;
@@ -279,7 +270,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   // calendar date, so a mid-typo like "66.09.2026" shows as invalid instead of being silently
   // stored and only failing much later, at submit time, with no indication which field was wrong.
   const [dateText, setDateText] = useState(() => isoToDisplayDate(form.date));
-  const dateTextInvalid = dateText.length === 10 && !isValidDisplayDate(dateText);
+  const dateTextInvalid = dateText.length === 8 && !isValidDisplayDate(dateText);
   // Keep in sync when form.date changes from elsewhere (quick-pick chips, the calendar picker, or
   // loading an existing event to edit) — never fires from the user's own typing, since that only
   // calls set({ date }) once the typed text is already a complete, valid date.
@@ -778,7 +769,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
                 <TextInput
                   value={dateText}
                   onChangeText={(v) => {
-                    const masked = formatEventDateInput(v);
+                    const masked = formatDateInput(v);
                     setDateText(masked);
                     if (isValidDisplayDate(masked)) set({ date: displayToIsoDate(masked) });
                   }}
@@ -786,7 +777,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
                   placeholderTextColor={colors.muted}
                   style={[styles.input, { flex: 1 }, dateTextInvalid && styles.inputError]}
                   keyboardType="number-pad"
-                  maxLength={10}
+                  maxLength={8}
                 />
                 <Pressable style={styles.iconToggle} onPress={() => setDatePickerOpen((v) => !v)} accessibilityLabel={t("create.pickDate")}>
                   <Ionicons name="calendar-outline" size={20} color={colors.foreground} />

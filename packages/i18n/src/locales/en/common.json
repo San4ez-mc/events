@@ -789,7 +789,7 @@
     "date": "Date",
     "time": "Start time",
     "timeHint": "HH:MM, e.g. 19:00",
-    "dateHint": "DD.MM.YYYY",
+    "dateHint": "DD.MM.YY",
     "pickDate": "Pick a date from the calendar",
     "pickTime": "Pick a time from the list",
     "missingFields": "Fill in the required fields",
