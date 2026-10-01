@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { useLocalSearchParams, router } from "expo-router";
+import { useLocalSearchParams, router, Stack } from "expo-router";
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
+import { ApiRequestError } from "../../src/lib/auth-context";
 import { useTranslations } from "../../src/lib/locale-context";
 import { Button } from "../../src/components/ui/Button";
 import { Chips } from "../../src/components/discover/FiltersSheet";
@@ -32,6 +33,18 @@ export default function EventSeriesScreen() {
   const [bulk, setBulk] = useState({ title: "", description: "", capacity: "", rules: "" });
   const [bulkNotice, setBulkNotice] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [isPro, setIsPro] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) return;
+    fetch(`${API_URL}/api/v1/platform-subscriptions/mine`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((sub: { tier: "STARTER" | "PRO" | null; status: "ACTIVE" | "GRACE_PERIOD" | null } | null) => {
+        setIsPro(!!sub && sub.tier === "PRO" && (sub.status === "ACTIVE" || sub.status === "GRACE_PERIOD"));
+      })
+      .catch(() => setIsPro(false));
+  }, []);
 
   const loadOccurrences = useCallback(async (seriesId: string) => {
     const token = getAccessToken();
@@ -76,7 +89,9 @@ export default function EventSeriesScreen() {
         }),
       });
       if (!res.ok) {
-        setCreateError(t("common.somethingWentWrong"));
+        const body = await res.json().catch(() => null);
+        const err = new ApiRequestError(body);
+        setCreateError(t(`errors.${err.code}`));
         return;
       }
       const result = (await res.json()) as CreateSeriesResult;
@@ -139,6 +154,7 @@ export default function EventSeriesScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <Stack.Screen options={{ title: t("organizerSeries.title"), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.foreground }} />
       <ScrollView style={styles.flex} contentContainerStyle={styles.content}>
         <ScreenHeader title={t("organizerSeries.title")} subtitle={t("organizerSeries.description")} icon="repeat" />
 
@@ -188,6 +204,11 @@ export default function EventSeriesScreen() {
           </>
         ) : !event.startsAt ? (
           <Text style={styles.notice}>{t("organizerSeries.needsStartDate")}</Text>
+        ) : isPro === false ? (
+          <View style={styles.card}>
+            <Text style={styles.notice}>{t("create.recurringRequiresPro")}</Text>
+            <Button title={t("pricing.switchTo")} onPress={() => router.push("/subscription")} />
+          </View>
         ) : (
           <View style={styles.card}>
             <Text style={styles.label}>{t("organizerSeries.recurrenceType")}</Text>
