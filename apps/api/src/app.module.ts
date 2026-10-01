@@ -46,6 +46,7 @@ import { PaymentsModule } from "./payments/payments.module";
 import { PlatformSubscriptionsModule } from "./platform-subscriptions/platform-subscriptions.module";
 import { AuditModule } from "./audit/audit.module";
 import { ReportsModule } from "./reports/reports.module";
+import { ReferralsModule } from "./referrals/referrals.module";
 import { AdminModule } from "./admin/admin.module";
 
 @Module({
@@ -107,6 +108,7 @@ import { AdminModule } from "./admin/admin.module";
     PlatformSubscriptionsModule,
     AuditModule,
     ReportsModule,
+    ReferralsModule,
     AdminModule,
   ],
   providers: [

@@ -8,6 +8,7 @@ export const SystemSettingKey = {
   REVIEW_WINDOW_DAYS: "reviewWindowDays",
   FEED_PASS_COOLDOWN_DAYS: "feedPassCooldownDays",
   DEFAULT_REMINDER_HOURS: "defaultReminderHours",
+  REFERRAL_BONUS_CREDITS: "referralBonusCredits",
 } as const;
 export type SystemSettingKey = (typeof SystemSettingKey)[keyof typeof SystemSettingKey];
 
@@ -17,6 +18,7 @@ export const SYSTEM_SETTING_DEFAULTS = {
   [SystemSettingKey.REVIEW_WINDOW_DAYS]: 7,
   [SystemSettingKey.FEED_PASS_COOLDOWN_DAYS]: 30,
   [SystemSettingKey.DEFAULT_REMINDER_HOURS]: [24, 1] as number[],
+  [SystemSettingKey.REFERRAL_BONUS_CREDITS]: 3,
 } as const;
 
 /** Runtime feature flags (§95) — stored as `flag.<key>` booleans in `system_settings`. Everything is on unless switched off. */

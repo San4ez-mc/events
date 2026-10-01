@@ -255,6 +255,13 @@ export const ReportTargetType = {
 } as const;
 export type ReportTargetType = (typeof ReportTargetType)[keyof typeof ReportTargetType];
 
+export const ReferralSubmissionStatus = {
+  PENDING: "PENDING",
+  APPROVED: "APPROVED",
+  REJECTED: "REJECTED",
+} as const;
+export type ReferralSubmissionStatus = (typeof ReferralSubmissionStatus)[keyof typeof ReferralSubmissionStatus];
+
 export const ReportStatus = {
   OPEN: "OPEN",
   IN_REVIEW: "IN_REVIEW",

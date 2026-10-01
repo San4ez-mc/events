@@ -9,6 +9,7 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user";
 import { TokenService } from "../auth/token.service";
 import { EventsService } from "./events.service";
+import { ShareImageService } from "./share-image.service";
 import { CreateEventDto } from "./dto/create-event.dto";
 import { UpdateEventDto } from "./dto/update-event.dto";
 import { ListMyEventsDto } from "./dto/list-my-events.dto";
@@ -25,6 +26,7 @@ export class EventsController {
     private readonly eventsService: EventsService,
     private readonly tokenService: TokenService,
     private readonly configService: ConfigService<EnvConfig, true>,
+    private readonly shareImageService: ShareImageService,
   ) {}
 
   @RateLimit(20)
@@ -100,6 +102,20 @@ export class EventsController {
     const event = await this.eventsService.findByIdForOwner(id, user.id);
     const url = `${this.configService.get("APP_URL", { infer: true })}/events/${event.slug}`;
     return new StreamableFile(await QRCode.toBuffer(url, { type: "png", width: 512, margin: 2 }));
+  }
+
+  /**
+   * Marketing §referral — a pre-made, story-format share image for this event (cover photo +
+   * title/date/city in a branded panel). Public, same visibility rule as the slug preview: only
+   * published/completed events, since the whole point is for *any* viewer to share it, not just
+   * the owner.
+   */
+  @Public()
+  @Get(":id/share-image")
+  @Header("Content-Type", "image/jpeg")
+  @Header("Cache-Control", "public, max-age=3600")
+  async shareImage(@Param("id") id: string) {
+    return new StreamableFile(await this.shareImageService.generate(id));
   }
 
   /**

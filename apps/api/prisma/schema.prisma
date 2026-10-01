@@ -135,6 +135,8 @@ model User {
   platformPaymentOrders    PlatformPaymentOrder[]
   reportsFiled             Report[]                 @relation("ReportReporter")
   reportsAssigned          Report[]                 @relation("ReportAssignee")
+  referralSubmissions      ReferralSubmission[]     @relation("ReferralSubmitter")
+  referralSubmissionsReviewed ReferralSubmission[]   @relation("ReferralReviewer")
 
   @@map("users")
 }
@@ -628,6 +630,7 @@ model Event {
   chatMessages       EventChatMessage[]
   analyticsEvents    EventAnalyticsEvent[]
   dailyStats         EventDailyStat[]
+  referralSubmissions ReferralSubmission[]
 
   @@index([ownerId])
   @@index([categoryId])
@@ -877,6 +880,42 @@ model Report {
   @@index([targetType, targetId])
   @@index([status])
   @@map("reports")
+}
+
+enum ReferralSubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Marketing §referral — "share an event, tag @kiro.ukraine, earn credits". Verification is
+/// manual (an admin checks the social post themselves, same posture as `Report`), so this is just
+/// a reviewable claim queue; approval grants credits via the existing `CreditsService.adminAdjust`
+/// manual-grant path rather than a new automatic one.
+model ReferralSubmission {
+  id       String @id @default(uuid()) @db.Uuid
+  userId   String @db.Uuid
+  user     User   @relation("ReferralSubmitter", fields: [userId], references: [id], onDelete: Cascade)
+
+  /// The event the share was about, if any — the share image is generated per-event, but the
+  /// claim itself doesn't strictly require one (a profile/general mention still counts).
+  eventId String? @db.Uuid
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  /// A link to the post/story or an @handle — whatever the user has to point the admin at it with.
+  note String?
+
+  status ReferralSubmissionStatus @default(PENDING)
+
+  reviewedByAdminId String?   @db.Uuid
+  reviewedByAdmin   User?     @relation("ReferralReviewer", fields: [reviewedByAdminId], references: [id], onDelete: SetNull)
+  reviewedAt        DateTime?
+  rejectionReason   String?
+
+  createdAt DateTime @default(now())
+
+  @@index([status])
+  @@map("referral_submissions")
 }
 
 // ---------------------------------------------------------------------------

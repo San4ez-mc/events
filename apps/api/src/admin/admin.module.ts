@@ -6,6 +6,7 @@ import { GeographyModule } from "../geography/geography.module";
 import { CreditsModule } from "../credits/credits.module";
 import { PaymentsModule } from "../payments/payments.module";
 import { ReportsModule } from "../reports/reports.module";
+import { ReferralsModule } from "../referrals/referrals.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { PlatformSubscriptionsModule } from "../platform-subscriptions/platform-subscriptions.module";
 import { AdminUsersController } from "./users/admin-users.controller";
@@ -14,6 +15,7 @@ import { AdminEventsService } from "./events/admin-events.service";
 import { AdminModerationController } from "./moderation/admin-moderation.controller";
 import { AdminModerationService } from "./moderation/admin-moderation.service";
 import { AdminReportsController } from "./reports/admin-reports.controller";
+import { AdminReferralsController } from "./referrals/admin-referrals.controller";
 import { AdminCategoriesController } from "./categories/admin-categories.controller";
 import { AdminDistrictsController } from "./districts/admin-districts.controller";
 import { AdminCreditsController } from "./credits/admin-credits.controller";
@@ -35,6 +37,7 @@ import { AdminSubscriptionsController } from "./subscriptions/admin-subscription
     CreditsModule,
     PaymentsModule,
     ReportsModule,
+    ReferralsModule,
     NotificationsModule,
     PlatformSubscriptionsModule,
   ],
@@ -43,6 +46,7 @@ import { AdminSubscriptionsController } from "./subscriptions/admin-subscription
     AdminEventsController,
     AdminModerationController,
     AdminReportsController,
+    AdminReferralsController,
     AdminCategoriesController,
     AdminDistrictsController,
     AdminCreditsController,
