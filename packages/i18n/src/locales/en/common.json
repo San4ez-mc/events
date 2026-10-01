@@ -768,6 +768,8 @@
     "time": "Start time",
     "timeHint": "HH:MM, e.g. 19:00",
     "dateHint": "DD.MM.YYYY",
+    "pickDate": "Pick a date from the calendar",
+    "pickTime": "Pick a time from the list",
     "missingFields": "Fill in the required fields",
     "giftTitle": "7 free publications, on us!",
     "giftBody": "Create events with no limits until your gifted credits run out.",

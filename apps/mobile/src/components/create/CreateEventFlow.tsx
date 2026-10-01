@@ -12,6 +12,7 @@ import { formatPriceLabel, formatShortDateTime } from "../../lib/format";
 import { Button } from "../ui/Button";
 import { ScreenHeader } from "../ui/ScreenHeader";
 import { Chips, SearchPicker, Section, type Option } from "../discover/FiltersSheet";
+import { CalendarPicker } from "../discover/CalendarPicker";
 import { AddressAutocomplete } from "./AddressAutocomplete";
 import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
@@ -233,6 +234,8 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   const [balance, setBalance] = useState<number | null>(null);
   const [giftOpen, setGiftOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [timePickerOpen, setTimePickerOpen] = useState(false);
   const [isPro, setIsPro] = useState<boolean | null>(null);
   const [recurring, setRecurring] = useState(false);
   const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>("WEEKLY");
@@ -634,6 +637,10 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
     { value: nextWeekday(0), label: t("create.sunday") },
   ];
   const durationChips = ["1", "2", "3", "4", "6"].map((h) => ({ value: h, label: `${h}` }));
+  const timeSlots = Array.from({ length: 36 }, (_, i) => {
+    const totalMinutes = 6 * 60 + i * 30; // 06:00 .. 23:30, half-hour steps
+    return `${pad(Math.floor(totalMinutes / 60))}:${pad(totalMinutes % 60)}`;
+  });
   const summaryCategory = categoryOptions.find((c) => c.id === form.categoryId)?.label;
   const start = startsAt();
 
@@ -713,23 +720,58 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
             </Section>
             <Section title={t("create.date")}>
               <Chips value={form.date} options={dateChips} onChange={(v) => set({ date: v })} />
-              <TextInput
-                value={isoToDisplayDate(form.date)}
-                onChangeText={(v) => set({ date: displayToIsoDate(v) })}
-                placeholder={t("create.dateHint")}
-                placeholderTextColor={colors.muted}
-                style={styles.input}
-                keyboardType="numbers-and-punctuation"
-                maxLength={10}
-              />
-            </Section>
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Field label={t("create.time")}>
-                  <TextInput value={form.time} onChangeText={(v) => set({ time: v })} placeholder={t("create.timeHint")} placeholderTextColor={colors.muted} style={styles.input} keyboardType="numbers-and-punctuation" maxLength={5} />
-                </Field>
+              <View style={styles.row}>
+                <TextInput
+                  value={isoToDisplayDate(form.date)}
+                  onChangeText={(v) => set({ date: displayToIsoDate(v) })}
+                  placeholder={t("create.dateHint")}
+                  placeholderTextColor={colors.muted}
+                  style={[styles.input, { flex: 1 }]}
+                  keyboardType="numbers-and-punctuation"
+                  maxLength={10}
+                />
+                <Pressable style={styles.iconToggle} onPress={() => setDatePickerOpen((v) => !v)} accessibilityLabel={t("create.pickDate")}>
+                  <Ionicons name="calendar-outline" size={20} color={colors.foreground} />
+                </Pressable>
               </View>
-            </View>
+              {datePickerOpen && (
+                <CalendarPicker
+                  mode="date"
+                  from={form.date}
+                  to=""
+                  locale={locale}
+                  onChange={({ from }) => {
+                    set({ date: from });
+                    setDatePickerOpen(false);
+                  }}
+                />
+              )}
+            </Section>
+            <Field label={t("create.time")}>
+              <View style={styles.row}>
+                <TextInput value={form.time} onChangeText={(v) => set({ time: v })} placeholder={t("create.timeHint")} placeholderTextColor={colors.muted} style={[styles.input, { flex: 1 }]} keyboardType="numbers-and-punctuation" maxLength={5} />
+                <Pressable style={styles.iconToggle} onPress={() => setTimePickerOpen((v) => !v)} accessibilityLabel={t("create.pickTime")}>
+                  <Ionicons name="time-outline" size={20} color={colors.foreground} />
+                </Pressable>
+              </View>
+              {timePickerOpen && (
+                <ScrollView style={styles.timeSlotList} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                  {timeSlots.map((slot) => (
+                    <Pressable
+                      key={slot}
+                      style={styles.timeSlotRow}
+                      onPress={() => {
+                        set({ time: slot });
+                        setTimePickerOpen(false);
+                      }}
+                    >
+                      <Text style={[styles.timeSlotText, slot === form.time && styles.timeSlotTextOn]}>{slot}</Text>
+                      {slot === form.time && <Ionicons name="checkmark" size={18} color={colors.accentFrom} />}
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              )}
+            </Field>
             <Section title={t("create.duration")}>
               <Chips value={form.duration} options={durationChips} onChange={(v) => set({ duration: v })} />
             </Section>
@@ -1041,6 +1083,11 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   detailsToggle: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, paddingVertical: spacing.sm },
   detailsToggleText: { color: colors.accentFrom, fontSize: 14, fontWeight: "700" },
   checkboxLabel: { color: colors.foreground, fontSize: 14, fontWeight: "600" },
+  iconToggle: { width: 44, height: 44, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
+  timeSlotList: { maxHeight: 220, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, marginTop: spacing.sm },
+  timeSlotRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingVertical: 11 },
+  timeSlotText: { color: colors.foreground, fontSize: 14 },
+  timeSlotTextOn: { fontWeight: "700", color: colors.accentFrom },
   proBadge: { color: colors.accentFrom, fontSize: 10, fontWeight: "800", borderWidth: 1, borderColor: colors.accentFrom, borderRadius: radius.full, paddingHorizontal: 6, paddingVertical: 1 },
   addDistrictRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
   addDistrictInput: { flex: 1 },
