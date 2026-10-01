@@ -1,6 +1,7 @@
 "use client";
 
 import type { RegistrationField } from "@/lib/event-types";
+import { formatPhoneInput } from "@/lib/format";
 
 /** UX §14 — one input per organizer-defined custom question. */
 export function RegistrationFieldInput({
@@ -36,7 +37,7 @@ export function RegistrationFieldInput({
           id={field.id}
           type={field.type === "EMAIL" ? "email" : field.type === "PHONE" ? "tel" : "text"}
           value={typeof value === "string" ? value : ""}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(field.type === "PHONE" ? formatPhoneInput(e.target.value) : e.target.value)}
           className="rounded-md border border-border bg-background px-3 py-2 text-sm"
         />
       )}

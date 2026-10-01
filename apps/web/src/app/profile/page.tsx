@@ -7,6 +7,7 @@ import { Camera } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
+import { formatPhoneInput } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 
@@ -294,7 +295,7 @@ export default function ProfilePage() {
           label={t("profile.phone")}
           type="tel"
           value={me.phone ?? ""}
-          onChange={(v) => patch({ phone: v })}
+          onChange={(v) => patch({ phone: formatPhoneInput(v) })}
           autoComplete="tel"
         />
         <p className="mt-1 text-xs text-muted">{t("profile.phoneHint")}</p>
