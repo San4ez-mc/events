@@ -366,6 +366,7 @@
     "loadMore": "Show more"
   },
   "registration": {
+    "noShow": "No-show",
     "signInToRegister": "Sign in to register",
     "register": "Register",
     "apply": "Apply",
@@ -721,6 +722,13 @@
     "decline": "Decline"
   },
   "errors": {
+    "FILE_TOO_LARGE": "That file is too large",
+    "INVALID_FILE_TYPE": "Unsupported file type",
+    "MEDIA_LIMIT_REACHED": "You've reached the photo/video limit for this event",
+    "EVENT_NOT_PUBLISHABLE": "This event can't be published yet — check the required fields",
+    "FRIEND_REQUEST_ALREADY_EXISTS": "A friend request was already sent",
+    "USER_BLOCKED": "This action isn't available for a blocked user",
+    "REFRESH_TOKEN_REUSED": "Your session expired — please sign in again",
     "VALIDATION_ERROR": "Please check the fields you entered",
     "AUTH_REQUIRED": "You need to sign in",
     "FORBIDDEN": "You don't have permission to do this",

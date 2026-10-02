@@ -33,6 +33,7 @@ export default function EventDetailScreen() {
   const { t } = useTranslations();
 
   const [event, setEvent] = useState<EventDetail | null | undefined>(undefined);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [registration, setRegistration] = useState<Registration | null | undefined>(undefined);
   const [showForm, setShowForm] = useState(false);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
@@ -49,12 +50,20 @@ export default function EventDetailScreen() {
 
   const loadEvent = useCallback(async () => {
     const token = getAccessToken();
-    const res = await fetch(`${API_URL}/api/v1/events/slug/${slug}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    });
-    const body = res.ok ? await res.json() : null;
-    setEvent(body);
-    if (body) setSaved(Boolean(body.viewerSaved));
+    try {
+      const res = await fetch(`${API_URL}/api/v1/events/slug/${slug}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      // Only a real 404/403 means "no such event" — offline or a 5xx/429 used to read as "not found",
+      // or (offline) spun forever.
+      if (!res.ok && res.status !== 404 && res.status !== 403) throw new Error(String(res.status));
+      const body = res.ok ? await res.json() : null;
+      setLoadFailed(false);
+      setEvent(body);
+      if (body) setSaved(Boolean(body.viewerSaved));
+    } catch {
+      setLoadFailed(true);
+    }
   }, [slug]);
 
   useEffect(() => {
@@ -234,7 +243,21 @@ export default function EventDetailScreen() {
   if (event === undefined) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.accentFrom} />
+        {loadFailed ? (
+          <>
+            <Text style={styles.muted}>{t("common.somethingWentWrong")}</Text>
+            <Button
+              title={t("common.retry")}
+              variant="secondary"
+              onPress={() => {
+                setLoadFailed(false);
+                void loadEvent();
+              }}
+            />
+          </>
+        ) : (
+          <ActivityIndicator color={colors.accentFrom} />
+        )}
       </View>
     );
   }

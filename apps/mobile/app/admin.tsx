@@ -269,8 +269,10 @@ export default function AdminScreen() {
   async function resolveReport(id: string, status: "RESOLVED" | "DISMISSED", hideTarget: boolean) {
     setBusy(id);
     try {
-      await fetch(`${API_URL}/api/v1/admin/reports/${id}/resolve`, { method: "PATCH", headers: headers(), body: JSON.stringify({ status, hideTarget }) });
-      setReports((prev) => (prev ? prev.filter((r) => r.id !== id) : prev));
+      const res = await fetch(`${API_URL}/api/v1/admin/reports/${id}/resolve`, { method: "PATCH", headers: headers(), body: JSON.stringify({ status, hideTarget }) });
+      // The row used to vanish even when the PATCH failed, so a report looked handled while still open.
+      if (res.ok) setReports((prev) => (prev ? prev.filter((r) => r.id !== id) : prev));
+      else Alert.alert(t("common.somethingWentWrong"));
     } finally {
       setBusy(null);
     }

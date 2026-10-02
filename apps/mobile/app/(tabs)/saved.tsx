@@ -24,12 +24,12 @@ export default function SavedScreen() {
       return;
     }
     try {
-      let res = await fetch(`${API_URL}/api/v1/discovery/saved`, { headers: { Authorization: `Bearer ${token}` } });
+      let res = await fetch(`${API_URL}/api/v1/discovery/saved?limit=50`, { headers: { Authorization: `Bearer ${token}` } });
       // A stale access token used to leave this tab permanently blank (no list, no empty state) —
       // refresh and retry, and show an error message instead of nothing if it still fails.
       if (res.status === 401) {
         const refreshed = await refreshAccessToken();
-        if (refreshed) res = await fetch(`${API_URL}/api/v1/discovery/saved`, { headers: { Authorization: `Bearer ${refreshed}` } });
+        if (refreshed) res = await fetch(`${API_URL}/api/v1/discovery/saved?limit=50`, { headers: { Authorization: `Bearer ${refreshed}` } });
       }
       if (!res.ok) {
         setError(true);

@@ -306,8 +306,10 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   useEffect(() => {
     if (editEventId) return;
     void (async () => {
-      const mine = await authed<{ cityId: string | null }[]>("/events/mine").catch(() => null);
-      const lastCityId = mine?.find((e) => e.cityId)?.cityId;
+      // /events/mine is a cursor page ({ items }), not a bare array — treating it as one threw a TypeError
+      // here, so neither the last-used city nor the Kyiv fallback ever applied.
+      const mine = await authed<{ items: { cityId: string | null }[] }>("/events/mine").catch(() => null);
+      const lastCityId = mine?.items?.find((e) => e.cityId)?.cityId;
       if (lastCityId) {
         set({ cityId: lastCityId });
         return;

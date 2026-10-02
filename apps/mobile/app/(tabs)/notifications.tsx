@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { Alert, Animated, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Animated, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useTranslations } from "../../src/lib/locale-context";
@@ -22,9 +22,13 @@ const FRIEND_TYPES = new Set(["FRIEND_REQUEST", "FRIEND_ACCEPTED", "FRIEND_EVENT
 async function authed<T = unknown>(path: string, init: RequestInit = {}): Promise<T | null> {
   const token = getAccessToken();
   if (!token) return null;
-  const res = await fetch(`${API_URL}/api/v1${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, ...init.headers } });
-  if (!res.ok) return null;
-  return res.json().catch(() => null);
+  try {
+    const res = await fetch(`${API_URL}/api/v1${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, ...init.headers } });
+    if (!res.ok) return null;
+    return await res.json().catch(() => null);
+  } catch {
+    return null;
+  }
 }
 
 export default function NotificationsScreen() {
@@ -32,12 +36,18 @@ export default function NotificationsScreen() {
   const { t } = useTranslations();
   const [items, setItems] = useState<NotificationItem[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
   const highlightIds = useRef<Set<string>>(new Set());
   const fade = useRef(new Animated.Value(1)).current;
 
   const load = useCallback(async () => {
     const body = await authed<{ items: NotificationItem[] }>("/notifications");
-    if (!body) return;
+    // A failed load used to leave `items` null forever, and the list renders nothing for null — a blank tab.
+    if (!body) {
+      setError(true);
+      return;
+    }
+    setError(false);
     // Snapshot which ones were unread *before* this view fades their highlight away.
     highlightIds.current = new Set(body.items.filter((n) => !n.readAt).map((n) => n.id));
     setItems(body.items);
@@ -121,7 +131,15 @@ export default function NotificationsScreen() {
             onPress={() => void open(item)}
           />
         )}
-        ListEmptyComponent={items !== null ? <EmptyState icon="notifications-outline" text={t("screens.notificationsEmpty")} /> : null}
+        ListEmptyComponent={
+          items !== null ? (
+            <EmptyState icon="notifications-outline" text={t("screens.notificationsEmpty")} />
+          ) : error ? (
+            <EmptyState icon="alert-circle-outline" text={t("common.somethingWentWrong")} />
+          ) : (
+            <ActivityIndicator color={colors.accentFrom} style={{ marginTop: spacing.xl }} />
+          )
+        }
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={colors.accentFrom} />}
       />
     </View>

@@ -35,6 +35,8 @@ const STATUS_KEYS: Record<string, string> = {
   REJECTED: "registration.rejected",
   CANCELLED: "registration.cancelRegistration",
   WAITLISTED: "registration.waitlisted",
+  ATTENDED: "organizerRegistrations.checkedIn",
+  NO_SHOW: "registration.noShow",
 };
 
 const answerText = (v: unknown) => (Array.isArray(v) ? v.join(", ") : typeof v === "boolean" ? (v ? "✓" : "—") : String(v ?? "—"));
@@ -58,7 +60,7 @@ export default function ManageEventScreen() {
     if (!token) return;
     const headers = { Authorization: `Bearer ${token}` };
     const [r, s] = await Promise.all([
-      fetch(`${API_URL}/api/v1/events/${id}/registrations`, { headers }),
+      fetch(`${API_URL}/api/v1/events/${id}/registrations?limit=50`, { headers }),
       fetch(`${API_URL}/api/v1/events/${id}/stats`, { headers }),
     ]);
     setRegs(r.ok ? (await r.json()).items : []);
@@ -183,7 +185,7 @@ export default function ManageEventScreen() {
           <View style={styles.actions}>
             <Button
               title={t("organizerRegistrations.messageSend")}
-              disabled={!messageText.trim()}
+              disabled={messageText.trim().length < 2}
               loading={sendingMessage}
               onPress={() => void sendMessage()}
               style={styles.small}

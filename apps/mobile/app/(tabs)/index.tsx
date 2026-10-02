@@ -25,6 +25,7 @@ export default function DiscoverScreen() {
   const { t } = useTranslations();
   const insets = useSafeAreaInsets();
   const [cards, setCards] = useState<EventCard[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const cursorRef = useRef<string | null>(null);
   const [filters, setFilters] = useState<DiscoveryFilters>(EMPTY_FILTERS);
@@ -74,13 +75,19 @@ export default function DiscoverScreen() {
   const loadPage = useCallback(async (activeFilters: DiscoveryFilters, afterCursor?: string) => {
     const query = filtersToQuery(activeFilters, afterCursor ?? null);
     const token = getAccessToken();
-    const res = await fetch(`${API_URL}/api/v1/discovery?limit=10${query ? `&${query}` : ""}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    });
-    if (!res.ok) return;
-    const body = (await res.json()) as CursorPage<EventCard>;
-    setCards((prev) => (afterCursor ? [...(prev ?? []), ...body.items] : body.items));
-    cursorRef.current = body.nextCursor;
+    try {
+      const res = await fetch(`${API_URL}/api/v1/discovery?limit=10${query ? `&${query}` : ""}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const body = (await res.json()) as CursorPage<EventCard>;
+      setLoadFailed(false);
+      setCards((prev) => (afterCursor ? [...(prev ?? []), ...body.items] : body.items));
+      cursorRef.current = body.nextCursor;
+    } catch {
+      // A failed first page used to leave `cards` null forever → an endless spinner with no way out.
+      if (!afterCursor) setLoadFailed(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -214,7 +221,22 @@ ${url}`, url, title: event.title }).catch(() => {});
   if (cards === null) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.accentFrom} />
+        {loadFailed ? (
+          <>
+            <Text style={styles.emptyButtonText}>{t("common.somethingWentWrong")}</Text>
+            <Pressable
+              onPress={() => {
+                setLoadFailed(false);
+                void loadPage(filtersRef.current);
+              }}
+              style={[styles.emptyButton, styles.emptyButtonPrimary]}
+            >
+              <Text style={[styles.emptyButtonText, { color: colors.white }]}>{t("common.retry")}</Text>
+            </Pressable>
+          </>
+        ) : (
+          <ActivityIndicator color={colors.accentFrom} />
+        )}
         <FeedTutorial visible={tutorialOpen} onClose={closeTutorial} />
       </View>
     );

@@ -111,7 +111,10 @@ export default function ProfileScreen() {
     if (!token) return;
     void (async () => {
       const res = await fetch(`${API_URL}/api/v1/users/me`, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) return;
+      if (!res.ok) {
+        setLoaded(true);
+        return;
+      }
       const me = (await res.json()) as FullProfile;
       setForm({ name: me.name ?? "", nickname: me.nickname ?? "", bio: me.bio ?? "", phone: me.phone ?? "" });
       setEmail(me.email);

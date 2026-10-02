@@ -32,6 +32,14 @@ export class NotificationsService {
   }): Promise<void> {
     const recipient = await this.prisma.user.findUnique({ where: { id: params.userId }, select: { locale: true } });
     const text = localizeNotification(recipient?.locale, params.title, params.body);
+
+    // Most callers only pass { eventId }; the clients open an event by slug (GET /events/:id is owner-only),
+    // so a tap on those notifications silently did nothing. Resolve the slug once here for every caller.
+    const eventId = params.payloadJson?.eventId;
+    if (typeof eventId === "string" && params.payloadJson?.slug === undefined) {
+      const ev = await this.prisma.event.findUnique({ where: { id: eventId }, select: { slug: true } });
+      if (ev) params = { ...params, payloadJson: { ...params.payloadJson, slug: ev.slug } };
+    }
     const notification = await this.prisma.notification.create({
       data: {
         userId: params.userId,
