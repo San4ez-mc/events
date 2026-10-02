@@ -22,7 +22,9 @@
         "EXPO_PUBLIC_API_URL": "https://kiro.fineko.space",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "257175906055-2o5q0jlm3cavm1tihvscjs8tpg67ec6l.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "257175906055-ae1pea6dav87793tbpsub09j7u5tkn6q.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "257175906055-1ilil830b193tedlqqdeu11e7o0or3mu.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "257175906055-1ilil830b193tedlqqdeu11e7o0or3mu.apps.googleusercontent.com",
+        "EXPO_PUBLIC_POSTHOG_KEY": "phc_pJs4cZfJvk4C4KHCBMxPab8UVQQZeXjag6bvfLvzLNbf",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://eu.i.posthog.com"
       }
     }
   }
