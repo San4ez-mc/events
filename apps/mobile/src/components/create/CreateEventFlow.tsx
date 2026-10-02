@@ -104,7 +104,7 @@ const pad = (n: number) => String(n).padStart(2, "0");
  * user is mid-typing (neither shape matches yet), which is harmless since it's just local form state. */
 function isoToDisplayDate(iso: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
-  return m ? `${m[3]}.${m[2]}.${m[1].slice(2)}` : iso;
+  return m ? `${m[3]}.${m[2]}.${(m[1] ?? "").slice(2)}` : iso;
 }
 function displayToIsoDate(display: string): string {
   const m = /^(\d{2})\.(\d{2})\.(\d{2})$/.exec(display);

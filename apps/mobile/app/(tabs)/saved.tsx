@@ -1,8 +1,8 @@
 import { useCallback, useState } from "react";
-import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { API_URL, getAccessToken } from "../../src/lib/api-client";
+import { API_URL, getAccessToken, refreshAccessToken } from "../../src/lib/api-client";
 import { useTranslations } from "../../src/lib/locale-context";
 import { formatPriceLabel, formatShortDateTime } from "../../src/lib/format";
 import type { CursorPage, EventCard } from "../../src/lib/event-types";
@@ -15,14 +15,32 @@ export default function SavedScreen() {
   const { t } = useTranslations();
   const [saved, setSaved] = useState<EventCard[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
     const token = getAccessToken();
-    if (!token) return;
-    const res = await fetch(`${API_URL}/api/v1/discovery/saved`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) return;
-    const body = await res.json();
-    setSaved(Array.isArray(body) ? body : ((body as CursorPage<EventCard>).items ?? []));
+    if (!token) {
+      setError(true);
+      return;
+    }
+    try {
+      let res = await fetch(`${API_URL}/api/v1/discovery/saved`, { headers: { Authorization: `Bearer ${token}` } });
+      // A stale access token used to leave this tab permanently blank (no list, no empty state) —
+      // refresh and retry, and show an error message instead of nothing if it still fails.
+      if (res.status === 401) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed) res = await fetch(`${API_URL}/api/v1/discovery/saved`, { headers: { Authorization: `Bearer ${refreshed}` } });
+      }
+      if (!res.ok) {
+        setError(true);
+        return;
+      }
+      setError(false);
+      const body = await res.json();
+      setSaved(Array.isArray(body) ? body : ((body as CursorPage<EventCard>).items ?? []));
+    } catch {
+      setError(true);
+    }
   }, []);
 
   // A bottom-tab screen stays mounted in the background — a mount-only effect never re-ran when
@@ -71,7 +89,15 @@ export default function SavedScreen() {
             <Ionicons name="chevron-forward" size={18} color={colors.muted} />
           </Pressable>
         )}
-        ListEmptyComponent={saved !== null ? <EmptyState icon="heart-outline" text={t("myEvents.empty.saved")} /> : null}
+        ListEmptyComponent={
+          saved !== null ? (
+            <EmptyState icon="heart-outline" text={t("myEvents.empty.saved")} />
+          ) : error ? (
+            <EmptyState icon="alert-circle-outline" text={t("common.somethingWentWrong")} />
+          ) : (
+            <ActivityIndicator color={colors.accentFrom} style={{ marginTop: spacing.xl }} />
+          )
+        }
       />
     </View>
   );
