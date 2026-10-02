@@ -69,3 +69,7 @@ FOP.txt
 
 # Firebase config (not a secret by itself, but keep out of the public repo)
 apps/mobile/google-services.json
+
+# Firebase/Google service-account private keys must never be committed
+*firebase-adminsdk*.json
+*service-account*.json
