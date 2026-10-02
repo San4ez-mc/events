@@ -29,7 +29,7 @@ export function BottomNav() {
 
   return (
     <nav
-      aria-label="Main"
+      aria-label={t("a11y.mainNav")}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
     >
       <ul className="mx-auto flex max-w-md items-end justify-around px-2 py-1.5">

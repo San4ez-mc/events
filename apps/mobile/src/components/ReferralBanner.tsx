@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { captureEvent } from "../lib/product-analytics";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { API_URL, getAccessToken } from "../lib/api-client";
 import { useTranslations } from "../lib/locale-context";
@@ -34,6 +35,7 @@ export function ReferralBanner() {
         setNote("");
         setOpen(false);
         setSubmitted(true);
+        captureEvent("referral_submitted", { from: "banner" });
       }
     } finally {
       setSubmitting(false);

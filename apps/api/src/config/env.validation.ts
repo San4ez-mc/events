@@ -24,6 +24,11 @@ const envSchema = z.object({
   /** Comma-separated OAuth client IDs (web, Android, iOS) accepted as the audience of Google ID tokens (§9, §96). */
   GOOGLE_CLIENT_IDS: z.string().optional(),
 
+  /** Admin traffic dashboard (PostHog Query API). All three must be set, otherwise the dashboard shows a setup hint. */
+  POSTHOG_HOST: z.string().url().default("https://eu.posthog.com"),
+  POSTHOG_PROJECT_ID: z.string().optional(),
+  POSTHOG_PERSONAL_API_KEY: z.string().optional(),
+
   S3_ENDPOINT: z.string().optional(),
   S3_ACCESS_KEY: z.string().optional(),
   S3_SECRET_KEY: z.string().optional(),

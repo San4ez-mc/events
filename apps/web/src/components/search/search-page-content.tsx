@@ -1,5 +1,6 @@
 "use client";
 
+import { captureEvent } from "@/lib/product-analytics";
 import { useEffect, useState } from "react";
 import { useTranslations } from "@/lib/locale-context";
 import type { CursorPage, EventCard } from "@/lib/event-types";
@@ -41,6 +42,7 @@ export function SearchPageContent() {
       setCursor(body.nextCursor);
       setHasMore(body.hasMore);
       setResultsForQuery(q);
+      if (reset) captureEvent("search", { query: q.trim().toLowerCase().slice(0, 80), results_count: body.items.length });
     } finally {
       setLoading(false);
     }

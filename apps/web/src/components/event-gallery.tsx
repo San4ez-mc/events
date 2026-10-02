@@ -3,12 +3,14 @@
 import { useRef, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import type { EventMedia } from "@/lib/event-types";
+import { useTranslations } from "@/lib/locale-context";
 
 /**
  * UX §10 — gallery of up to 10 photos and videos. Native scroll-snap so it
  * swipes on phones and scrolls with the mouse; arrows + counter for desktop.
  */
 export function EventGallery({ media }: { media: EventMedia[] }) {
+  const { t } = useTranslations();
   const scroller = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
 
@@ -73,7 +75,7 @@ export function EventGallery({ media }: { media: EventMedia[] }) {
             type="button"
             onClick={() => go(-1)}
             disabled={index === 0}
-            aria-label="Previous"
+            aria-label={t("a11y.previous")}
             className="absolute left-2 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur disabled:opacity-30 sm:flex"
           >
             <ChevronLeft className="h-5 w-5" />
@@ -82,7 +84,7 @@ export function EventGallery({ media }: { media: EventMedia[] }) {
             type="button"
             onClick={() => go(1)}
             disabled={index === media.length - 1}
-            aria-label="Next"
+            aria-label={t("a11y.next")}
             className="absolute right-2 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur disabled:opacity-30 sm:flex"
           >
             <ChevronRight className="h-5 w-5" />

@@ -1,4 +1,5 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { captureEvent } from "../../src/lib/product-analytics";
 import { FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
@@ -13,6 +14,7 @@ export default function SearchScreen() {
   const { t } = useTranslations();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<EventCard[] | null>(null);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const search = useCallback(async (q: string) => {
     if (!q.trim()) {
@@ -23,7 +25,13 @@ export default function SearchScreen() {
     const res = await fetch(`${API_URL}/api/v1/search?q=${encodeURIComponent(q)}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     });
-    if (res.ok) setResults((await res.json() as CursorPage<EventCard>).items);
+    if (res.ok) {
+      const items = (await res.json() as CursorPage<EventCard>).items;
+      setResults(items);
+      // One event per finished search (not per keystroke): wait for the typing to settle.
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+      searchTimer.current = setTimeout(() => captureEvent("search", { query: q.trim().toLowerCase().slice(0, 80), results_count: items.length }), 1200);
+    }
   }, []);
 
   return (

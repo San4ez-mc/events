@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
+import { formatDateTime } from "@/lib/format";
 import { getAccessToken } from "@/lib/api-client";
 import type {
   CreateSeriesResult,
@@ -26,7 +27,7 @@ const RECURRENCE_TYPES = [
 export default function EventSeriesPage() {
   const { id } = useParams<{ id: string }>();
   const { user, isLoading: authLoading } = useAuth();
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const router = useRouter();
 
   const [event, setEvent] = useState<EventDetail | null>(null);
@@ -337,7 +338,7 @@ export default function EventSeriesPage() {
                     <span>{occurrence.title}</span>
                     <span className="text-muted">
                       {occurrence.startsAt
-                        ? new Date(occurrence.startsAt).toLocaleString()
+                        ? formatDateTime(occurrence.startsAt, locale)
                         : "—"}
                     </span>
                   </li>

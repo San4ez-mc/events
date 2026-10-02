@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "@/lib/locale-context";
+import { tEnum } from "@/lib/format";
 import { getAccessToken } from "@/lib/api-client";
 import type { CursorPage, Report } from "@/lib/admin-types";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,7 @@ export default function AdminReportsPage() {
           {reports.map((report) => (
             <li key={report.id} className="rounded-lg border border-border p-4">
               <p className="mb-1 text-sm font-medium">
-                {t("admin.reports.target")}: {report.targetType} ({report.targetId})
+                {t("admin.reports.target")}: {tEnum(t, "target", report.targetType)} ({report.targetId})
               </p>
               <p className="mb-1 text-sm">{report.reason}</p>
               {report.description && <p className="mb-2 text-sm text-muted">{report.description}</p>}

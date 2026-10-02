@@ -179,6 +179,9 @@ export function DiscoverFeed() {
           headers: { Authorization: `Bearer ${token}` },
         }).catch(() => {});
       }
+      // The card index stays parked past the end of the old list — without resetting it the reloaded events
+      // were fetched but never shown, so "Look again" appeared to do nothing.
+      setIndex(0);
       await fetchPage(filters, null, true);
     } finally {
       setRestarting(false);

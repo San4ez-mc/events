@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { captureEvent } from "../../lib/product-analytics";
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
@@ -555,6 +556,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
     setBusy(true);
     try {
       await saveDraft(step);
+      captureEvent("create_step", { step: step + 1, editing: Boolean(editEventId) });
       setStep((s) => Math.min(STEPS - 1, s + 1));
     } catch (err) {
       setError(err instanceof ApiRequestError ? describePublishError(err, t) : err instanceof Error ? err.message : t("common.somethingWentWrong"));
@@ -622,7 +624,9 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
       });
       setSlug(published.slug ?? slug);
       setOutcome(published.status);
+      captureEvent("event_published", { outcome: published.status });
     } catch (err) {
+      captureEvent("event_publish_failed", { code: err instanceof ApiRequestError ? err.code : "UNKNOWN" });
       setError(err instanceof ApiRequestError ? describePublishError(err, t) : t("common.somethingWentWrong"));
     } finally {
       setBusy(false);

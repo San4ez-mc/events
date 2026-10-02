@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { router, Stack } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { API_URL, getAccessToken } from "../src/lib/api-client";
 import { useAuth } from "../src/lib/auth-context";
@@ -7,6 +8,8 @@ import { useTranslations } from "../src/lib/locale-context";
 import { Button } from "../src/components/ui/Button";
 import { TextField } from "../src/components/ui/TextField";
 import { formatShortDate, formatShortDateTime } from "../src/lib/format";
+import { TrafficPanel } from "../src/components/admin/TrafficPanel";
+import { InsightsPanel } from "../src/components/admin/InsightsPanel";
 import { radius, spacing, type Palette, useThemedStyles } from "../src/lib/theme";
 
 interface ModerationCase {
@@ -96,7 +99,7 @@ interface AuditEntry {
 }
 
 const MODERATOR_TABS = ["moderation", "reviews", "reports"] as const;
-const ADMIN_TABS = ["categories", "districts", "users", "events", "payments", "credits", "audit", "broadcast"] as const;
+const ADMIN_TABS = ["analytics", "categories", "districts", "users", "events", "payments", "credits", "audit", "broadcast"] as const;
 type Tab = (typeof MODERATOR_TABS)[number] | (typeof ADMIN_TABS)[number];
 
 const USER_STATUSES = ["ACTIVE", "SUSPENDED", "BLOCKED", "DELETED"] as const;
@@ -143,6 +146,8 @@ export default function AdminScreen() {
   // Users
   const [userSearch, setUserSearch] = useState("");
   const [users, setUsers] = useState<AdminUser[] | null>(null);
+  const [usersTotal, setUsersTotal] = useState<number | null>(null);
+  const [usersCursor, setUsersCursor] = useState<string | null>(null);
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [userDetails, setUserDetails] = useState<Record<string, UserDetail>>({});
   // Events
@@ -195,10 +200,19 @@ export default function AdminScreen() {
     }
   }, []);
 
-  const loadUsers = useCallback(async (search: string) => {
-    const qs = search ? `?search=${encodeURIComponent(search)}` : "";
-    const res = await fetch(`${API_URL}/api/v1/admin/users${qs}`, { headers: headers() });
-    setUsers(res.ok ? (await res.json()).items : []);
+  const loadUsers = useCallback(async (search: string, cursor?: string) => {
+    const params = new URLSearchParams({ limit: "50" });
+    if (search) params.set("search", search);
+    if (cursor) params.set("cursor", cursor);
+    const res = await fetch(`${API_URL}/api/v1/admin/users?${params}`, { headers: headers() });
+    if (!res.ok) {
+      if (!cursor) setUsers([]);
+      return;
+    }
+    const body = (await res.json()) as { items: AdminUser[]; nextCursor: string | null; total: number };
+    setUsers((prev) => (cursor ? [...(prev ?? []), ...body.items] : body.items));
+    setUsersTotal(body.total);
+    setUsersCursor(body.nextCursor);
   }, []);
 
   async function toggleUserExpanded(id: string) {
@@ -407,7 +421,7 @@ export default function AdminScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: t("nav.admin"), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.foreground }} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsRow}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hScroll} contentContainerStyle={styles.tabsRow}>
         {tabs.map((key) => (
           <Pressable key={key} onPress={() => setTab(key)} style={[styles.tab, tab === key && styles.tabOn]}>
             <Text style={[styles.tabText, tab === key && { color: colors.white }]}>{t(`admin.nav.${key}`)}</Text>
@@ -518,6 +532,11 @@ export default function AdminScreen() {
           <>
             <TextField label={t("admin.users.search")} value={userSearch} onChangeText={setUserSearch} placeholder={t("admin.users.search")} />
             <Button title={t("admin.users.search")} variant="secondary" onPress={() => void loadUsers(userSearch)} style={styles.small} />
+            {usersTotal !== null && (
+              <Text style={styles.label}>
+                {t("admin.users.total")}: {usersTotal}
+              </Text>
+            )}
             {users === null && <ActivityIndicator color={colors.accentFrom} />}
             {users?.length === 0 && <Text style={styles.muted}>{t("admin.emptyList")}</Text>}
             {users?.map((u) => {
@@ -525,9 +544,16 @@ export default function AdminScreen() {
               const detail = userDetails[u.id];
               return (
                 <Pressable key={u.id} style={styles.card} onPress={() => void toggleUserExpanded(u.id)}>
-                  <Text style={styles.title}>{u.name ?? u.nickname ?? u.email}</Text>
+                  <View style={styles.cardHeadRow}>
+                    <Text style={[styles.title, { flex: 1 }]} numberOfLines={1}>
+                      {u.name ?? u.nickname ?? u.email}
+                    </Text>
+                    <Pressable onPress={() => router.push(`/users/${u.id}`)} hitSlop={10} accessibilityLabel={t("admin.users.openProfile")}>
+                      <Ionicons name="person-circle-outline" size={26} color={colors.accentFrom} />
+                    </Pressable>
+                  </View>
                   <Text style={styles.muted}>
-                    {u.email} · {u.role} · {u.status}
+                    {u.email} · {t(`enums.role.${u.role}`)} · {t(`enums.status.${u.status}`)}
                   </Text>
                   <Text style={styles.muted}>
                     {t("admin.users.memberSince")} {formatShortDate(u.createdAt)}
@@ -554,7 +580,7 @@ export default function AdminScreen() {
                             onPress={() => void setUserStatus(u.id, s)}
                             style={[styles.pill, u.status === s && styles.pillOn]}
                           >
-                            <Text style={[styles.pillText, u.status === s && { color: colors.white }]}>{s}</Text>
+                            <Text style={[styles.pillText, u.status === s && { color: colors.white }]}>{t(`enums.status.${s}`)}</Text>
                           </Pressable>
                         ))}
                       </View>
@@ -569,7 +595,7 @@ export default function AdminScreen() {
                                 onPress={() => void setUserRole(u.id, r)}
                                 style={[styles.pill, u.role === r && styles.pillOn]}
                               >
-                                <Text style={[styles.pillText, u.role === r && { color: colors.white }]}>{r}</Text>
+                                <Text style={[styles.pillText, u.role === r && { color: colors.white }]}>{t(`enums.role.${r}`)}</Text>
                               </Pressable>
                             ))}
                           </View>
@@ -580,12 +606,15 @@ export default function AdminScreen() {
                 </Pressable>
               );
             })}
+            {usersCursor && (
+              <Button title={t("admin.users.loadMore")} variant="secondary" onPress={() => void loadUsers(userSearch, usersCursor)} style={styles.small} />
+            )}
           </>
         )}
 
         {tab === "events" && (
           <>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillRow}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hScroll} contentContainerStyle={styles.pillRow}>
               {EVENT_STATUSES.map((s) => (
                 <Pressable
                   key={s}
@@ -687,6 +716,13 @@ export default function AdminScreen() {
           </>
         )}
 
+        {tab === "analytics" && (
+          <>
+            <TrafficPanel />
+            <InsightsPanel />
+          </>
+        )}
+
         {tab === "broadcast" && (
           <View style={{ gap: spacing.md }}>
             <Text style={styles.muted}>{t("admin.broadcast.hint")}</Text>
@@ -705,6 +741,8 @@ export default function AdminScreen() {
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  // A horizontal ScrollView in a column grows to fill all free height unless told not to — the tabs became screen-tall pills.
+  hScroll: { flexGrow: 0 },
   tabsRow: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   tab: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border },
   tabOn: { backgroundColor: colors.accentFrom, borderColor: "transparent" },

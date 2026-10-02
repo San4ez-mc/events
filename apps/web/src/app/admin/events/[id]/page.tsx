@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTranslations } from "@/lib/locale-context";
+import { tEnum } from "@/lib/format";
 import { getAccessToken } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
@@ -82,7 +83,7 @@ export default function AdminEventDetailPage() {
         </Link>
       </div>
       <p className="mb-6 text-sm text-muted">
-        {event.status} · {event.owner.name ?? event.owner.nickname ?? event.owner.email}
+        {tEnum(t, "status", event.status)} · {event.owner.name ?? event.owner.nickname ?? event.owner.email}
       </p>
 
       <section className="mb-6 rounded-lg border border-border p-4">

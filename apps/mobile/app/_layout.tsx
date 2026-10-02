@@ -1,18 +1,26 @@
 import "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
-import { Stack } from "expo-router";
+import { Stack, useSegments } from "expo-router";
+import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "../src/lib/auth-context";
 import { LocaleProvider } from "../src/lib/locale-context";
 import { ThemeProvider, useTheme } from "../src/lib/theme";
 import { installCrashReporter } from "../src/lib/crash-reporter";
+import { captureScreen } from "../src/lib/product-analytics";
 
 installCrashReporter();
 
 /** The navigator lives below ThemeProvider so its header/background and the status-bar icons follow the chosen theme. */
 function ThemedStack() {
   const { colors, scheme } = useTheme();
+  // Route pattern ("/event/[slug]"), not the concrete URL, so every event page groups under one screen.
+  const segments = useSegments();
+  const screen = `/${segments.filter((s) => !s.startsWith("(")).join("/")}`;
+  useEffect(() => {
+    captureScreen(screen === "/" ? "/discover" : screen);
+  }, [screen]);
   return (
     <>
       {/* "light" = light icons, for the dark theme's dark background (and vice versa). */}

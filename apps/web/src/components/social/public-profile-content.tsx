@@ -6,6 +6,7 @@ import Link from "next/link";
 import { BadgeCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
+import { pluralForm } from "@/lib/format";
 import { getAccessToken } from "@/lib/api-client";
 import type { PublicProfile } from "@/lib/social-types";
 import { EventResultRow } from "@/components/search/event-result-row";
@@ -119,7 +120,7 @@ export function PublicProfileContent() {
               {profile.ratingAverage != null ? (
                 <>
                   ⭐ <strong className="text-foreground">{profile.ratingAverage.toFixed(1)}</strong> (
-                  {profile.reviewsCount} {profile.reviewsCount === 1 ? t("profile.reviewsCountOne") : t("profile.reviewsCountMany")})
+                  {profile.reviewsCount} {pluralForm(profile.reviewsCount, locale, { one: t("profile.reviewsCountOne"), few: t("profile.reviewsCountFew"), many: t("profile.reviewsCountMany") })})
                 </>
               ) : (
                 t("profile.noRating")
@@ -138,7 +139,7 @@ export function PublicProfileContent() {
             <div className="mb-8 flex flex-wrap gap-3 text-sm">
               {profile.socialLinks.map((link) => (
                 <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="text-muted underline">
-                  {link.type}
+                  {t(`profile.socialTypes.${link.type}`)}
                 </a>
               ))}
             </div>

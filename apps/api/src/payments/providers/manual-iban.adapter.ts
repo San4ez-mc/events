@@ -18,7 +18,8 @@ export class ManualIbanAdapter implements PaymentProviderAdapter {
     const iban = this.configService.get("MANUAL_IBAN", { infer: true });
     const recipient = this.configService.get("MANUAL_IBAN_RECIPIENT", { infer: true });
     return {
-      instructions: `Transfer ${order.amount} ${order.currency} to ${recipient}, IBAN ${iban}. Payment reference: ${order.id}.`,
+      // Shown verbatim in the app/site, whose audience is Ukrainian — currency written the way people read it ("грн").
+      instructions: `Перекажіть ${order.amount} ${order.currency === "UAH" ? "грн" : order.currency} отримувачу ${recipient}, IBAN ${iban}. Призначення платежу: ${order.id}.`,
     };
   }
 

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Check, Search, X } from "lucide-react";
 import { useTranslations } from "@/lib/locale-context";
+import { formatCurrency } from "@/lib/format";
 import { api } from "@/lib/api-client";
 import type { Category, City, District } from "@/lib/geo-types";
 import { Button } from "@/components/ui/button";
@@ -403,7 +404,7 @@ export function DiscoverFilters({
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between text-sm font-semibold">
                   <span>
-                    {t("filters.priceMin")} {min} ₴
+                    {t("filters.priceMin")} {min} {formatCurrency("UAH")}
                   </span>
                   <span>
                     {t("filters.priceMax")}{" "}

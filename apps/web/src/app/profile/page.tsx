@@ -346,7 +346,7 @@ export default function ProfilePage() {
             >
               {SOCIAL_TYPES.map((type) => (
                 <option key={type} value={type}>
-                  {type}
+                  {t(`profile.socialTypes.${type}`)}
                 </option>
               ))}
             </select>

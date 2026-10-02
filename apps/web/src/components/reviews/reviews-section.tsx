@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
+import { pluralForm } from "@/lib/format";
 import { getAccessToken } from "@/lib/api-client";
 import type { EventReview } from "@/lib/event-types";
 import { Button } from "@/components/ui/button";
@@ -89,7 +90,7 @@ export function ReviewsSection({
           <>
             <span className="text-lg">⭐ {reviewSummary.average.toFixed(1)}</span>
             <span className="text-muted">
-              ({reviewSummary.count} {reviewSummary.count === 1 ? t("profile.reviewsCountOne") : t("profile.reviewsCountMany")})
+              ({reviewSummary.count} {pluralForm(reviewSummary.count, locale, { one: t("profile.reviewsCountOne"), few: t("profile.reviewsCountFew"), many: t("profile.reviewsCountMany") })})
             </span>
           </>
         ) : (
@@ -100,7 +101,7 @@ export function ReviewsSection({
       {canReview && !myReview && (
         <div className="mb-6 rounded-lg border border-border p-4">
           <p className="mb-2 text-sm font-medium">{t("reviews.leaveReview")}</p>
-          <StarPicker value={rating} onChange={setRating} />
+          <StarPicker value={rating} onChange={setRating} label={t("a11y.rating")} />
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -150,9 +151,9 @@ export function ReviewsSection({
   );
 }
 
-function StarPicker({ value, onChange }: { value: number; onChange: (rating: number) => void }) {
+function StarPicker({ value, onChange, label }: { value: number; onChange: (rating: number) => void; label: string }) {
   return (
-    <div className="flex gap-1" role="radiogroup" aria-label="Rating">
+    <div className="flex gap-1" role="radiogroup" aria-label={label}>
       {[1, 2, 3, 4, 5].map((star) => (
         <button
           key={star}

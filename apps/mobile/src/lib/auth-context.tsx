@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { UserRole } from "@kiro/types";
 import { API_URL, getAccessToken, refreshAccessToken, setAccessToken } from "./api-client";
+import { captureEvent, identifyUser } from "./product-analytics";
 import { setStoredRefreshToken } from "./token-storage";
 
 export interface SessionUser {
@@ -26,6 +27,9 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
+  useEffect(() => {
+    identifyUser(user?.id ?? null);
+  }, [user?.id]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Same silent-restore idea as web's AuthProvider, just from SecureStore instead of an httpOnly cookie.
@@ -60,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Without "remember me" the refresh token is not kept on the device: the session ends when the app is closed.
     await setStoredRefreshToken(rememberMe ? body.refreshToken : null);
     setUser(body.user);
+    captureEvent("login", { method: "email" });
   }, []);
 
   const loginWithGoogle = useCallback(async (idToken: string) => {
@@ -73,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAccessToken(body.accessToken);
     await setStoredRefreshToken(body.refreshToken);
     setUser(body.user);
+    captureEvent("login", { method: "google" });
   }, []);
 
   const register = useCallback(
@@ -87,6 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAccessToken(body.accessToken);
       await setStoredRefreshToken(body.refreshToken);
       setUser(body.user);
+      captureEvent("sign_up", { method: "email" });
     },
     [],
   );

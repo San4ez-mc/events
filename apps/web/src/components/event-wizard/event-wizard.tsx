@@ -1,5 +1,6 @@
 "use client";
 
+import { captureEvent } from "@/lib/product-analytics";
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "@/lib/locale-context";
@@ -294,6 +295,7 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
 
   async function goNext() {
     const ok = await persist();
+    if (ok) captureEvent("create_step", { step: stepIndex + 1 });
     if (ok && stepIndex < STEPS.length - 1) setStepIndex((i) => i + 1);
   }
 

@@ -93,7 +93,7 @@ export function StepMedia({ eventId, media, onMediaChange }: StepMediaProps) {
                 type="button"
                 onClick={() => handleDelete(item.id)}
                 className="absolute right-1 top-1 hidden h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs text-white group-hover:flex"
-                aria-label="Remove"
+                aria-label={t("a11y.remove")}
               >
                 ✕
               </button>

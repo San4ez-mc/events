@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "@/lib/locale-context";
+import { tEnum } from "@/lib/format";
 import { getAccessToken } from "@/lib/api-client";
 import type { ModerationCase } from "@/lib/admin-types";
 import { Button } from "@/components/ui/button";
@@ -49,7 +50,7 @@ export default function AdminModerationPage() {
           {cases.map((c) => (
             <li key={c.id} className="rounded-lg border border-border p-4">
               <p className="mb-1 text-sm font-medium">
-                {c.targetType} · {c.reasonCode}
+                {tEnum(t, "target", c.targetType)} · {c.reasonCode}
               </p>
               {c.details && <p className="mb-2 text-sm text-muted">{c.details}</p>}
               <p className="mb-3 text-xs text-muted">{new Date(c.createdAt).toLocaleString(locale === "uk" ? "uk-UA" : "en-US")}</p>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "@/lib/locale-context";
+import { tEnum } from "@/lib/format";
 import { getAccessToken } from "@/lib/api-client";
 import type { AdminUserSummary, CursorPage } from "@/lib/admin-types";
 import { TextField } from "@/components/ui/text-field";
@@ -54,8 +55,8 @@ export default function AdminUsersPage() {
                   <p className="text-xs text-muted">{user.email}</p>
                 </div>
                 <div className="text-right text-xs text-muted">
-                  <p>{user.role}</p>
-                  <p>{user.status}</p>
+                  <p>{tEnum(t, "role", user.role)}</p>
+                  <p>{tEnum(t, "status", user.status)}</p>
                 </div>
               </Link>
             </li>

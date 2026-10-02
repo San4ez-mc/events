@@ -24,6 +24,8 @@ import { AdminAuditController } from "./audit/admin-audit.controller";
 import { AdminAnalyticsController } from "./analytics/admin-analytics.controller";
 import { AdminReviewsController } from "./reviews/admin-reviews.controller";
 import { AdminAnalyticsService } from "./analytics/admin-analytics.service";
+import { TrafficService } from "./analytics/traffic.service";
+import { InsightsService } from "./analytics/insights.service";
 import { AdminNotificationsController } from "./notifications/admin-notifications.controller";
 import { AdminSubscriptionsController } from "./subscriptions/admin-subscriptions.controller";
 
@@ -57,6 +59,6 @@ import { AdminSubscriptionsController } from "./subscriptions/admin-subscription
     AdminNotificationsController,
     AdminSubscriptionsController,
   ],
-  providers: [AdminEventsService, AdminModerationService, AdminAnalyticsService],
+  providers: [AdminEventsService, AdminModerationService, AdminAnalyticsService, TrafficService, InsightsService],
 })
 export class AdminModule {}

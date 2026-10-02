@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Star } from "lucide-react";
 import { useTranslations } from "@/lib/locale-context";
+import { formatDateTime, tEnum } from "@/lib/format";
 import { getAccessToken } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 
@@ -20,7 +21,7 @@ const FILTERS = ["ALL", "PUBLISHED", "HIDDEN", "REMOVED"] as const;
 
 /** §37/§72 — moderate reviews: hide (reversible) or remove. */
 export default function AdminReviewsPage() {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("PUBLISHED");
   const [items, setItems] = useState<AdminReview[] | null>(null);
   const [error, setError] = useState(false);
@@ -102,7 +103,7 @@ export default function AdminReviewsPage() {
             </div>
             <p className="mb-1 text-xs text-muted">
               {r.author.name ?? r.author.nickname} ·{" "}
-              {new Date(r.createdAt).toLocaleDateString()} · {r.status}
+              {formatDateTime(r.createdAt, locale)} · {tEnum(t, "status", r.status)}
             </p>
             {r.text && <p className="mb-3 whitespace-pre-wrap">{r.text}</p>}
             <div className="flex gap-2">

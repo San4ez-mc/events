@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
+import { formatDateTime } from "@/lib/format";
 import { getAccessToken } from "@/lib/api-client";
 import type { EventInvitation } from "@/lib/event-types";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import { Button } from "@/components/ui/button";
 /** §71 — the invitee's side: pending invitations to events organizers think they'd enjoy. */
 export default function MyInvitationsPage() {
   const { user, isLoading: authLoading } = useAuth();
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const router = useRouter();
 
   const [items, setItems] = useState<EventInvitation[] | null>(null);
@@ -78,7 +79,7 @@ export default function MyInvitationsPage() {
                   {invitation.event.title}
                 </Link>
                 {invitation.event.startsAt && (
-                  <p className="text-xs text-muted">{new Date(invitation.event.startsAt).toLocaleString()}</p>
+                  <p className="text-xs text-muted">{formatDateTime(invitation.event.startsAt, locale)}</p>
                 )}
               </div>
               <div className="flex gap-2">

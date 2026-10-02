@@ -25,3 +25,31 @@ export function formatPhoneInput(raw: string): string {
   if (digits.length > 7) out += ` ${digits.slice(7, 9)}`;
   return out;
 }
+
+/** Plural form for `n` ("1 кредит", "2 кредити", "5 кредитів"). `forms.few` is only used by Ukrainian. */
+export function pluralForm(n: number, locale: string, forms: { one: string; few?: string; many: string }): string {
+  const rule = new Intl.PluralRules(locale === "uk" ? "uk" : "en").select(n);
+  if (rule === "one") return forms.one;
+  if (rule === "few") return forms.few ?? forms.many;
+  return forms.many;
+}
+
+/** `t()` returns the key itself when it is missing; for enum-like backend values, fall back to the raw value instead. */
+export function tEnum(t: (key: string) => string, group: string, value: string | null | undefined): string {
+  if (!value) return "";
+  const key = `enums.${group}.${value}`;
+  const out = t(key);
+  return out === key ? value : out;
+}
+
+/** DB package names were seeded in English ("1 publication"); render them from the credit count instead. */
+export function creditPackageName(pkg: { name: string; credits: number }, t: (key: string) => string): string {
+  const key = `credits.package.${pkg.credits}`;
+  const out = t(key);
+  return out === key ? pkg.name : out;
+}
+
+/** Locale-aware date+time ("01.10.2026, 00:48"), never the browser's own locale. */
+export function formatDateTime(value: string | Date, locale: string): string {
+  return new Date(value).toLocaleString(locale === "uk" ? "uk-UA" : "en-GB", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}

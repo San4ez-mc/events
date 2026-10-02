@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { captureEvent } from "../../src/lib/product-analytics";
 import { ActivityIndicator, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { EMPTY_FILTERS, countActiveFilters, filtersToQuery, type DiscoveryFilters } from "@kiro/types";
@@ -143,7 +144,7 @@ export default function DiscoverScreen() {
 
   async function shareEvent(event: EventCard) {
     track(event.id, "SHARE");
-    const url = `${API_URL}/events/${event.slug}`;
+    const url = `${API_URL}/events/${event.slug}?utm_source=app_share&utm_medium=share`;
     await Share.share({ message: `${event.title}
 ${url}`, url, title: event.title }).catch(() => {});
   }
@@ -169,12 +170,14 @@ ${url}`, url, title: event.title }).catch(() => {});
   }
 
   function pass(event: EventCard) {
+    captureEvent("swipe", { direction: "left", event_id: event.id, category: event.category?.nameUk, city: event.city?.nameUk });
     void recordInteraction(event.id, "PASS");
     advance(event);
     notify("close-circle", "#f43f5e", t("discover.feedback.passed"), t("discover.undo"), undo);
   }
 
   function open(event: EventCard) {
+    captureEvent("swipe", { direction: "right", event_id: event.id, category: event.category?.nameUk, city: event.city?.nameUk });
     void recordInteraction(event.id, "OPEN");
     router.push(`/event/${event.slug}?src=swipe`);
     advance(event);
@@ -195,6 +198,7 @@ ${url}`, url, title: event.title }).catch(() => {});
       return;
     }
     const wasSaved = saved.has(event.id);
+    captureEvent(wasSaved ? "event_unsave" : "event_save", { event_id: event.id, category: event.category?.nameUk, city: event.city?.nameUk, from: "feed" });
     notify(wasSaved ? "heart-outline" : "heart", "#ec4899", wasSaved ? t("discover.feedback.unsaved") : t("discover.feedback.saved"));
     setSaved((prev) => {
       const next = new Set(prev);

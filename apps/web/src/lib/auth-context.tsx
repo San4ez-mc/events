@@ -1,5 +1,6 @@
 "use client";
 
+import { captureEvent } from "@/lib/product-analytics";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { UserRole } from "@kiro/types";
 import { api, refreshAccessToken, setAccessToken } from "./api-client";
@@ -66,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!res.ok) throw new ApiRequestError(body);
     setAccessToken(body.accessToken);
     setUser(body.user);
+    captureEvent("login", { method: "email" });
   }, []);
 
   const loginWithGoogle = useCallback(async (idToken: string) => {
@@ -79,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!res.ok) throw new ApiRequestError(body);
     setAccessToken(body.accessToken);
     setUser(body.user);
+    captureEvent("login", { method: "google" });
   }, []);
 
   const register = useCallback(
@@ -93,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok) throw new ApiRequestError(body);
       setAccessToken(body.accessToken);
       setUser(body.user);
+      captureEvent("sign_up", { method: "email" });
     },
     [],
   );

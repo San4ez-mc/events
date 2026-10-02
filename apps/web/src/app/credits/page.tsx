@@ -1,5 +1,6 @@
 "use client";
 
+import { captureEvent } from "@/lib/product-analytics";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
@@ -8,6 +9,7 @@ import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
 import type { CreateOrderResult, CreditPackage, PlatformPaymentOrder } from "@/lib/payment-types";
 import { Button } from "@/components/ui/button";
+import { creditPackageName, formatCurrency, formatDateTime, pluralForm } from "@/lib/format";
 
 const CREDIT_PROVIDERS = ["WAYFORPAY", "MONO", "MANUAL_IBAN"] as const;
 /** Buying credits directly is hidden for now — only the subscription is user-facing; flip this back on to restore it. */
@@ -73,6 +75,7 @@ export default function CreditsPage() {
       router.push("/login?next=/credits");
       return;
     }
+    captureEvent("checkout_started", { kind: key.startsWith("sub") ? "subscription" : "credits", provider: body.provider });
     setBuyingKey(key);
     setError(false);
     setInstructions(null);
@@ -101,7 +104,7 @@ export default function CreditsPage() {
   }
 
   function featuresFor(tier: Tier, monthlyCredits: number): string[] {
-    const features = [`${monthlyCredits} ${t("pricing.feature.monthlyCredits")}`];
+    const features = [`${monthlyCredits} ${pluralForm(monthlyCredits, locale, { one: t("credits.unit.one"), few: t("credits.unit.few"), many: t("credits.unit.many") })} ${t("pricing.feature.monthlySuffix")}`];
     if (tier === "PRO") {
       features.push(
         t("pricing.feature.coOrganizers"),
@@ -186,7 +189,7 @@ export default function CreditsPage() {
                   <p className="mb-5">
                     <span className="text-3xl font-extrabold">{info.price}</span>{" "}
                     <span className="text-sm text-muted">
-                      {info.currency} {t("pricing.perMonth")}
+                      {formatCurrency(info.currency)} {t("pricing.perMonth")}
                     </span>
                   </p>
 
@@ -248,13 +251,13 @@ export default function CreditsPage() {
               <div key={pkg.id} className="rounded-lg border border-border p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <div>
-                    <p className="font-medium">{pkg.name}</p>
+                    <p className="font-medium">{creditPackageName(pkg, t)}</p>
                     <p className="text-xs text-muted">
-                      {pkg.credits} {t("credits.creditsUnit")}
+                      {pkg.credits} {pluralForm(pkg.credits, locale, { one: t("credits.unit.one"), few: t("credits.unit.few"), many: t("credits.unit.many") })}
                     </p>
                   </div>
                   <p className="text-lg font-bold">
-                    {pkg.price} {pkg.currency}
+                    {pkg.price} {formatCurrency(pkg.currency)}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -292,14 +295,14 @@ export default function CreditsPage() {
               {orders.map((order) => (
                 <li key={order.id} className="flex items-center justify-between rounded-lg border border-border p-3 text-sm">
                   <div>
-                    <p>{order.package?.name ?? `${t(`pricing.tierName.${order.subscriptionTier}`)} — ${t("pricing.subscriptionTitle")}`}</p>
+                    <p>{(order.package ? creditPackageName(order.package, t) : null) ?? `${t(`pricing.tierName.${order.subscriptionTier}`)} — ${t("pricing.subscriptionTitle")}`}</p>
                     <p className="text-xs text-muted">
-                      {new Date(order.createdAt).toLocaleString(locale === "uk" ? "uk-UA" : "en-US")}
+                      {formatDateTime(order.createdAt, locale)}
                     </p>
                   </div>
                   <div className="text-right">
                     <p>
-                      {order.amount} {order.currency}
+                      {order.amount} {formatCurrency(order.currency)}
                     </p>
                     <p className="text-xs text-muted">{t(`credits.status.${order.status}`)}</p>
                   </div>

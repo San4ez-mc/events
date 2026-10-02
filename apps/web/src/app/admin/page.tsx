@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "@/lib/locale-context";
+import { formatCurrency, tEnum } from "@/lib/format";
 import { getAccessToken } from "@/lib/api-client";
 import type { AdminAnalyticsSummary } from "@/lib/admin-types";
+import { AdminTraffic } from "@/components/admin-traffic";
+import { AdminInsights } from "@/components/admin-insights";
 
 export default function AdminDashboardPage() {
   const { t } = useTranslations();
@@ -22,6 +25,9 @@ export default function AdminDashboardPage() {
     <div className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="mb-6 text-2xl font-bold">{t("admin.dashboard.title")}</h1>
 
+      <AdminTraffic />
+      <AdminInsights />
+
       {summary === null && <p className="text-muted">{t("common.loading")}</p>}
 
       {summary !== null && (
@@ -30,7 +36,7 @@ export default function AdminDashboardPage() {
             <Stat label={t("admin.dashboard.totalUsers")} value={summary.totalUsers} />
             <Stat label={t("admin.dashboard.totalOrganizers")} value={summary.totalOrganizers} />
             <Stat label={t("admin.dashboard.totalRegistrations")} value={summary.totalRegistrations} />
-            <Stat label={t("admin.dashboard.totalRevenue")} value={`${summary.totalRevenue} UAH`} />
+            <Stat label={t("admin.dashboard.totalRevenue")} value={`${summary.totalRevenue} ${formatCurrency("UAH")}`} />
             <Stat label={t("admin.dashboard.openReports")} value={summary.openReports} />
             <Stat label={t("admin.dashboard.pendingModeration")} value={summary.pendingModeration} />
           </div>
@@ -64,7 +70,7 @@ export default function AdminDashboardPage() {
           <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
             {Object.entries(summary.eventsByStatus).map(([status, count]) => (
               <div key={status} className="rounded-lg border border-border p-3">
-                <dt className="text-xs text-muted">{status}</dt>
+                <dt className="text-xs text-muted">{tEnum(t, "status", status)}</dt>
                 <dd className="text-lg font-bold">{count}</dd>
               </div>
             ))}

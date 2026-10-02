@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { captureEvent } from "../../src/lib/product-analytics";
 import { router, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -114,6 +115,7 @@ export default function EventDetailScreen() {
     }
     const next = !saved;
     setSaved(next);
+    captureEvent(next ? "event_save" : "event_unsave", { event_id: event.id, category: event.category?.nameUk, city: event.city?.nameUk, from: "event_page" });
     const method = next ? "POST" : "DELETE";
     const headers = { Authorization: `Bearer ${token}` };
     const [saveRes] = await Promise.all([
@@ -200,6 +202,7 @@ export default function EventDetailScreen() {
       if (!res.ok) throw new ApiRequestError(body);
       setRegistration(body);
       setShowForm(false);
+      captureEvent("registration_completed", { event_id: event.id, category: event.category?.nameUk, city: event.city?.nameUk, paid: event.priceType === "PAID", status: body.status });
       void loadEvent(); // the exact address is only sent to registered users (§10)
     } catch (err) {
       if (err instanceof ApiRequestError && err.code === "EVENT_CAPACITY_REACHED") setJoinWaitlist(true);
@@ -332,7 +335,7 @@ export default function EventDetailScreen() {
         )}
         <Pressable
           style={styles.shareButton}
-          onPress={() => { track(event.id, "SHARE"); void Share.share({ message: `${event.title}\n${API_URL}/events/${event.slug}`, url: `${API_URL}/events/${event.slug}` }).catch(() => {}); }}
+          onPress={() => { track(event.id, "SHARE"); void Share.share({ message: `${event.title}\n${API_URL}/events/${event.slug}?utm_source=app_share&utm_medium=share`, url: `${API_URL}/events/${event.slug}?utm_source=app_share&utm_medium=share` }).catch(() => {}); }}
           accessibilityLabel={t("discover.share")}
         >
           <Ionicons name="share-social-outline" size={22} color={colors.foreground} />
@@ -480,7 +483,7 @@ export default function EventDetailScreen() {
           <Text style={styles.sectionTitle}>
             {t("events.page.participants")} · {social?.registeredCount ?? event.participants.length}
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ gap: spacing.md }}>
             {event.participants.map((p) => (
               <Pressable key={p.id} style={styles.participant} onPress={() => router.push(`/users/${p.id}`)}>
                 {p.avatarUrl ? (

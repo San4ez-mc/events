@@ -247,6 +247,12 @@
       "follow": "Follow this event"
     }
   },
+  "consent": {
+    "text": "We use analytics cookies to understand how the site is used and to improve it.",
+    "more": "Learn more",
+    "decline": "Decline",
+    "accept": "Accept"
+  },
   "credits": {
     "title": "Buy listing credits",
     "balance": "Your balance",
@@ -271,7 +277,17 @@
     "error": "Couldn't start this payment",
     "referralBannerTitle": "Share and earn credits",
     "referralBannerBody": "Post a story or post about an event and tag @kiro.ukraine to earn free listing credits.",
-    "referralBannerCta": "Submit a claim"
+    "referralBannerCta": "Submit a claim",
+    "unit": {
+      "one": "credit",
+      "few": "credits",
+      "many": "credits"
+    },
+    "package": {
+      "1": "1 publication",
+      "5": "5 publications",
+      "10": "10 publications"
+    }
   },
   "referral": {
     "title": "Share for credits",
@@ -298,14 +314,23 @@
     "perMonth": "/mo",
     "mostPopular": "Most popular",
     "youAreHere": "You are here",
-    "tierName": { "FREE": "Free", "STARTER": "Starter", "PRO": "Pro" },
-    "tierTagline": { "FREE": "Basic features at no cost", "STARTER": "Try it risk-free", "PRO": "For serious organizers" },
+    "tierName": {
+      "FREE": "Free",
+      "STARTER": "Starter",
+      "PRO": "Pro"
+    },
+    "tierTagline": {
+      "FREE": "Basic features at no cost",
+      "STARTER": "Try it risk-free",
+      "PRO": "For serious organizers"
+    },
     "feature": {
       "monthlyCredits": "credits every month",
       "coOrganizers": "Co-organizers",
       "recurring": "Recurring events",
       "priority": "Feed priority",
-      "badge": "\"Verified organizer\" badge"
+      "badge": "\"Verified organizer\" badge",
+      "monthlySuffix": "per month"
     },
     "subscribeWith": {
       "WAYFORPAY": "WayForPay",
@@ -466,9 +491,38 @@
     "theme": "Theme",
     "themeSystem": "System",
     "themeLight": "Light",
-    "themeDark": "Dark"
+    "themeDark": "Dark",
+    "reviewsCountFew": "reviews",
+    "socialTypes": {
+      "INSTAGRAM": "Instagram",
+      "TELEGRAM": "Telegram",
+      "FACEBOOK": "Facebook",
+      "TIKTOK": "TikTok",
+      "WEBSITE": "Website",
+      "OTHER": "Other"
+    }
   },
   "admin": {
+    "traffic": {
+      "title": "Traffic",
+      "period": "last {days} days",
+      "visitors": "Unique visitors",
+      "views": "Page / screen views",
+      "sessions": "Sessions",
+      "daily": "By day",
+      "topPages": "Top pages and screens",
+      "platforms": "Platforms",
+      "sources": "Where visitors come from",
+      "direct": "Direct",
+      "notConfigured": "Analytics isn't connected yet. Set POSTHOG_PROJECT_ID and POSTHOG_PERSONAL_API_KEY on the server, and the PostHog project key in the site and app.",
+      "unavailable": "Couldn't load data from PostHog. Try again later.",
+      "empty": "No data yet",
+      "avgSession": "Avg. session time",
+      "topPagesHint": "views · visitors · avg. time on page",
+      "platformsHint": "visitors · avg. session time",
+      "webOs": "Website visitors by OS",
+      "webOsHint": "how many are on iPhone (iOS) — a guide for the App Store decision"
+    },
     "accessDenied": "You don't have access to the admin panel",
     "nav": {
       "dashboard": "Dashboard",
@@ -482,7 +536,8 @@
       "credits": "Credits",
       "audit": "Audit log",
       "reviews": "Reviews",
-      "broadcast": "Broadcast"
+      "broadcast": "Broadcast",
+      "analytics": "Traffic"
     },
     "dashboard": {
       "title": "Admin",
@@ -521,7 +576,10 @@
       "registrationsCount": "Registrations",
       "memberSince": "Member since",
       "lastLogin": "Last login",
-      "never": "Never"
+      "never": "Never",
+      "total": "Total users",
+      "openProfile": "Open profile",
+      "loadMore": "Show more"
     },
     "events": {
       "title": "Events",
@@ -587,6 +645,46 @@
       "send": "Send to everyone",
       "sent": "Sent to users",
       "confirm": "Send this message to ALL active users? It can't be recalled."
+    },
+    "insights": {
+      "title": "Analytics: funnels & behavior",
+      "needPosthog": "Funnels, activation, retention and search appear once PostHog is connected.",
+      "posthogError": "Couldn't load PostHog data; showing database figures only.",
+      "eventFunnel": "Event funnel (unique people)",
+      "viewed": "Viewed an event",
+      "started": "Started registration",
+      "registered": "Registered",
+      "creationFunnel": "Event creation funnel (unique people)",
+      "step1": "Step 1 “Basics”",
+      "step2": "Step 2 “Photos & details”",
+      "step3": "Step 3 “Publish”",
+      "published": "Published",
+      "activation": "New-user activation",
+      "signups": "New accounts",
+      "activated": "Did a first action within 24h",
+      "avgFirstAction": "Avg. time to first action",
+      "minutes": "min",
+      "retention": "Retention",
+      "cohort": "Cohort (first seen 7+ days ago)",
+      "d1": "Came back on day 1",
+      "d7": "Came back on day 7",
+      "swipes": "Feed swipes",
+      "swipeRight": "Right (opened)",
+      "swipeLeft": "Left (passed)",
+      "searchTop": "What people search for",
+      "searchNone": "Searches with no results",
+      "supplyCategory": "Supply & demand by category",
+      "supplyCity": "Supply & demand by city",
+      "supplyHint": "events · views · saves · registrations",
+      "payments": "Payments by provider",
+      "paymentsRow": "created {created} · paid {paid}",
+      "referrals": "Referral claims",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "notifications": "Notification delivery",
+      "notificationsHint": "If PUSH is almost all FAILED, the FCM key isn't configured",
+      "empty": "No data yet"
     }
   },
   "reviews": {
@@ -752,7 +850,12 @@
     "PAYMENT_REQUIRED": "Payment required",
     "AGE_RESTRICTED": "This event is not available for your age",
     "BIRTHDATE_REQUIRED": "Add your date of birth in your profile to register for an 18+ event",
-    "FEATURE_DISABLED": "This feature is temporarily disabled"
+    "FEATURE_DISABLED": "This feature is temporarily disabled",
+    "IDEMPOTENCY_CONFLICT": "This request is already being processed",
+    "EVENT_ALREADY_CANCELLED": "This event is already cancelled",
+    "FREE_CREDITS_ALREADY_CLAIMED": "Free credits were already claimed",
+    "REVIEW_NOT_ELIGIBLE": "You can leave a review only after attending the event",
+    "REVIEW_ALREADY_EXISTS": "You already left a review"
   },
   "filters": {
     "title": "Filters",
@@ -939,5 +1042,72 @@
     "reject": "Reject",
     "resolved": "Resolved",
     "dismiss": "Dismiss"
+  },
+  "a11y": {
+    "changeLanguage": "Change language",
+    "changeTheme": "Change theme",
+    "mainNav": "Main navigation",
+    "previous": "Previous",
+    "next": "Next",
+    "rating": "Rating",
+    "remove": "Remove",
+    "close": "Close"
+  },
+  "enums": {
+    "status": {
+      "ACTIVE": "Active",
+      "SUSPENDED": "Suspended",
+      "BLOCKED": "Blocked",
+      "DELETED": "Deleted",
+      "DRAFT": "Draft",
+      "PENDING_MODERATION": "In moderation",
+      "PUBLISHED": "Published",
+      "REJECTED": "Rejected",
+      "CANCELLED": "Cancelled",
+      "COMPLETED": "Completed",
+      "ARCHIVED": "Archived",
+      "PENDING": "Pending",
+      "PAID": "Paid",
+      "FAILED": "Failed",
+      "REFUNDED": "Refunded",
+      "HIDDEN": "Hidden",
+      "REMOVED": "Removed",
+      "OPEN": "Open",
+      "RESOLVED": "Resolved",
+      "DISMISSED": "Dismissed",
+      "REGISTERED": "Registered",
+      "CONFIRMED": "Confirmed",
+      "PAYMENT_PENDING": "Payment pending",
+      "ATTENDED": "Attended",
+      "NO_SHOW": "No-show",
+      "WAITLISTED": "Waitlisted"
+    },
+    "role": {
+      "USER": "User",
+      "MODERATOR": "Moderator",
+      "ADMIN": "Admin",
+      "SUPER_ADMIN": "Super admin"
+    },
+    "provider": {
+      "WAYFORPAY": "WayForPay",
+      "MONO": "Mono",
+      "MANUAL_IBAN": "Bank transfer",
+      "GOOGLE_PLAY": "Google Play"
+    },
+    "target": {
+      "EVENT": "Event",
+      "USER": "User",
+      "REVIEW": "Review",
+      "MESSAGE": "Message",
+      "CHAT_MESSAGE": "Chat message",
+      "CATEGORY": "Category",
+      "DISTRICT": "District"
+    }
+  },
+  "pwa": {
+    "title": "Kiro as an app",
+    "iosSteps": "Tap “Share” at the bottom of Safari, then “Add to Home Screen” — Kiro will open like an app.",
+    "androidText": "Install Kiro on your phone to open events in one tap.",
+    "install": "Install"
   }
 }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
+import { tEnum } from "@/lib/format";
 import { getAccessToken } from "@/lib/api-client";
 import type { AdminUserDetail } from "@/lib/admin-types";
 import { Button } from "@/components/ui/button";
@@ -101,7 +102,7 @@ export default function AdminUserDetailPage() {
               disabled={busy}
               onClick={() => void setStatus(status)}
             >
-              {status}
+              {tEnum(t, "status", status)}
             </Button>
           ))}
         </div>
@@ -118,7 +119,7 @@ export default function AdminUserDetailPage() {
                 disabled={busy}
                 onClick={() => void setRole(role)}
               >
-                {role}
+                {tEnum(t, "role", role)}
               </Button>
             ))}
           </div>

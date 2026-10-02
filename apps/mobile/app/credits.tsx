@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { captureEvent } from "../src/lib/product-analytics";
 import { AppState, ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, Stack } from "expo-router";
 import { API_URL, getAccessToken } from "../src/lib/api-client";
@@ -84,6 +85,7 @@ export default function CreditsScreen() {
   async function buy(packageId: string, provider: Provider) {
     const token = getAccessToken();
     if (!token) return;
+    captureEvent("checkout_started", { kind: "credits", provider });
     setBuyingKey(`${packageId}:${provider}`);
     setError(false);
     setInstructions(null);

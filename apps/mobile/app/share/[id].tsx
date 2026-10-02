@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { captureEvent } from "../../src/lib/product-analytics";
 import { router, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import { File, Paths } from "expo-file-system";
@@ -90,6 +91,7 @@ export default function ShareForCreditsScreen() {
       });
       if (res.ok) {
         setNote("");
+        captureEvent("referral_submitted", { from: "share_screen", event_id: id });
         await loadMine();
         Alert.alert(t("referral.submitted"));
       } else {

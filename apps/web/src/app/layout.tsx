@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import { Suspense } from "react";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import "./globals.css";
@@ -10,6 +11,8 @@ import { AuthProvider } from "@/lib/auth-context";
 import { SiteHeader } from "@/components/site-header";
 import { BottomNav } from "@/components/bottom-nav";
 import { SiteFooter } from "@/components/site-footer";
+import { AnalyticsProvider } from "@/components/analytics-provider";
+import { PwaInstallHint } from "@/components/pwa-install-hint";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,7 +24,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#8b5cf6",
+};
+
 export const metadata: Metadata = {
+  applicationName: "Кіро",
+  appleWebApp: { capable: true, title: "Кіро", statusBarStyle: "default" },
   title: "Кіро",
   description: "Платформа пошуку подій та розваг — гортай, обирай, записуйся.",
   openGraph: {
@@ -53,6 +62,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <main className="flex-1">{children}</main>
               <SiteFooter />
               <BottomNav />
+              {/* useSearchParams() needs a Suspense boundary or it de-opts the whole tree to client rendering. */}
+              <Suspense fallback={null}>
+                <AnalyticsProvider />
+              </Suspense>
+              <PwaInstallHint />
             </AuthProvider>
           </LocaleProvider>
         </ThemeProvider>

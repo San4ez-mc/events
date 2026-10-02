@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "@/lib/locale-context";
+import { tEnum } from "@/lib/format";
 import { getAccessToken } from "@/lib/api-client";
 import type { AdminEventListItem, CursorPage } from "@/lib/admin-types";
 
@@ -63,7 +64,7 @@ export default function AdminEventsPage() {
                     {event.owner.name ?? event.owner.nickname ?? event.owner.email}
                   </p>
                 </div>
-                <span className="shrink-0 text-xs text-muted">{event.status}</span>
+                <span className="shrink-0 text-xs text-muted">{tEnum(t, "status", event.status)}</span>
               </Link>
             </li>
           ))}

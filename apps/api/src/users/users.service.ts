@@ -341,22 +341,24 @@ export class UsersService {
   }
 
   /** Phase 10's `/admin/users` — search by name/nickname/email, filter by role/status. */
-  async adminList(query: AdminListUsersDto): Promise<CursorPage<unknown>> {
+  async adminList(query: AdminListUsersDto): Promise<CursorPage<unknown> & { total: number }> {
     const limit = Math.min(query.limit ?? PAGINATION.defaultLimit, PAGINATION.maxLimit);
+    const where = {
+      role: query.role,
+      status: query.status,
+      ...(query.search
+        ? {
+            OR: [
+              { name: { contains: query.search, mode: "insensitive" as const } },
+              { nickname: { contains: query.search, mode: "insensitive" as const } },
+              { email: { contains: query.search, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
+    };
+    const total = await this.prisma.user.count({ where });
     const users = await this.prisma.user.findMany({
-      where: {
-        role: query.role,
-        status: query.status,
-        ...(query.search
-          ? {
-              OR: [
-                { name: { contains: query.search, mode: "insensitive" } },
-                { nickname: { contains: query.search, mode: "insensitive" } },
-                { email: { contains: query.search, mode: "insensitive" } },
-              ],
-            }
-          : {}),
-      },
+      where,
       orderBy: { createdAt: "desc" },
       take: limit + 1,
       ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
@@ -375,7 +377,7 @@ export class UsersService {
 
     const hasMore = users.length > limit;
     const items = hasMore ? users.slice(0, limit) : users;
-    return { items, nextCursor: hasMore ? (items[items.length - 1] as { id: string }).id : null, hasMore };
+    return { items, nextCursor: hasMore ? (items[items.length - 1] as { id: string }).id : null, hasMore, total };
   }
 
   async adminGetOne(userId: string) {

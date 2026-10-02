@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { captureEvent } from "../src/lib/product-analytics";
 import { ActivityIndicator, AppState, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, router } from "expo-router";
@@ -128,6 +129,7 @@ export default function SubscriptionScreen() {
     }
     setError(false);
     setPurchasingTier(tier);
+    captureEvent("checkout_started", { kind: "subscription", tier, provider: "GOOGLE_PLAY" });
     void requestPurchase({
       type: "subs",
       request: { google: { skus: [productId], subscriptionOffers: [{ sku: productId, offerToken }] } },

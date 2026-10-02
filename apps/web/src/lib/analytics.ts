@@ -1,3 +1,4 @@
+import { captureEvent } from "@/lib/product-analytics";
 /** §45 — fire-and-forget event analytics. Never throws and never blocks the UI. */
 
 export type TrackedAction =
@@ -28,6 +29,8 @@ export function track(
   action: TrackedAction,
   source?: TrafficSource,
 ): void {
+  // Impressions fire for every card shown — far too noisy for product analytics; the first-party funnel keeps them.
+  if (action !== "IMPRESSION") captureEvent(`event_${action.toLowerCase()}`, { event_id: eventId, source });
   try {
     void fetch("/api/v1/analytics/events", {
       method: "POST",

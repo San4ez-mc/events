@@ -54,7 +54,7 @@ export function SiteHeader() {
             type="button"
             onClick={() => setLocale(locale === "uk" ? "en" : "uk")}
             className="flex h-9 items-center gap-1.5 rounded-full border border-border px-3 text-xs font-semibold uppercase hover:bg-surface"
-            aria-label="Change language"
+            aria-label={t("a11y.changeLanguage")}
           >
             <Globe className="h-4 w-4" aria-hidden="true" />
             {locale}
@@ -72,8 +72,8 @@ export function SiteHeader() {
               )
             }
             className="flex h-9 w-9 items-center justify-center rounded-full border border-border hover:bg-surface"
-            aria-label="Change theme"
-            title={`Theme: ${theme}`}
+            aria-label={t("a11y.changeTheme")}
+            title={t("a11y.changeTheme")}
           >
             {theme === "dark" ? (
               <Moon className="h-4 w-4" />

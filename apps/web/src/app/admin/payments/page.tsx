@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "@/lib/locale-context";
+import { formatCurrency, tEnum } from "@/lib/format";
 import { getAccessToken } from "@/lib/api-client";
 import type { PlatformPaymentOrder } from "@/lib/payment-types";
 import { Button } from "@/components/ui/button";
@@ -54,13 +55,13 @@ export default function AdminPaymentsPage() {
               <div className="min-w-0">
                 <p className="truncate font-medium">{order.user.name ?? order.user.nickname ?? order.user.email}</p>
                 <p className="text-xs text-muted">
-                  {order.package?.name ?? `${t("admin.payments.subscriptionLabel")} ${order.subscriptionTier}`} · {order.provider} ·{" "}
+                  {order.package?.name ?? `${t("admin.payments.subscriptionLabel")} ${order.subscriptionTier}`} · {tEnum(t, "provider", order.provider)} ·{" "}
                   {new Date(order.createdAt).toLocaleString(locale === "uk" ? "uk-UA" : "en-US")}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <span className="text-xs text-muted">
-                  {order.amount} {order.currency} · {order.status}
+                  {order.amount} {formatCurrency(order.currency)} · {tEnum(t, "status", order.status)}
                 </span>
                 {order.provider === "MANUAL_IBAN" && order.status === "PENDING" && (
                   <Button className="!min-h-0 px-3 py-1.5 text-xs" loading={busyId === order.id} onClick={() => void confirm(order.id)}>

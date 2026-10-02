@@ -1,5 +1,6 @@
 "use client";
 
+import { captureEvent } from "@/lib/product-analytics";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "@/lib/locale-context";
@@ -49,7 +50,9 @@ export function StepPreview({
       const body = await res.json();
       if (!res.ok) throw new ApiRequestError(body);
       onStatusChange(body.status);
+      captureEvent("event_published", { outcome: body.status });
     } catch (err) {
+      captureEvent("event_publish_failed", { code: err instanceof ApiRequestError ? err.code : "UNKNOWN" });
       if (err instanceof ApiRequestError) {
         setError({ code: err.code, message: t(`errors.${err.code}`) });
       } else {
