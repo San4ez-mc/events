@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { LOCALE_COOKIE, resolveLocale } from "@/lib/locale";
 import { getT } from "@/lib/i18n-server";
-import { CONTACT_EMAIL } from "@/lib/legal-content";
+import { CONTACT_EMAIL, THREADS_URL } from "@/lib/legal-content";
 
 /** Legal links + contact. Bottom margin leaves room for the fixed mobile bottom nav. */
 export async function SiteFooter() {
@@ -28,6 +28,9 @@ export async function SiteFooter() {
           <Link href="/contacts" className="hover:underline">
             {t("legal.contacts")}
           </Link>
+          <a href={THREADS_URL} target="_blank" rel="noopener noreferrer" className="hover:underline">
+            {t("social.threads")}
+          </a>
           <a href={`mailto:${CONTACT_EMAIL}`} className="hover:underline">
             {CONTACT_EMAIL}
           </a>

@@ -18,6 +18,7 @@ export interface LegalDoc {
 }
 
 export const CONTACT_EMAIL = "kiro@fineko.space";
+export const THREADS_URL = "https://www.threads.com/@kiro.ukraine";
 export const LEGAL_UPDATED = "2026-09-27";
 
 export const COMPANY_NAME_UK = "ФОП Мацук Олександр Романович";
@@ -615,7 +616,7 @@ const contactsUk: LegalDoc = {
     },
     {
       heading: "Служба підтримки",
-      items: [`Email: ${CONTACT_EMAIL}`, `Телефон: ${COMPANY_PHONE}`, "Графік роботи: пн–пт, 10:00–18:00 (Київ)"],
+      items: [`Email: ${CONTACT_EMAIL}`, `Телефон: ${COMPANY_PHONE}`, `Threads: ${THREADS_URL}`, "Графік роботи: пн–пт, 10:00–18:00 (Київ)"],
     },
   ],
 };
@@ -636,7 +637,7 @@ const contactsEn: LegalDoc = {
     },
     {
       heading: "Support",
-      items: [`Email: ${CONTACT_EMAIL}`, `Phone: ${COMPANY_PHONE}`, "Hours: Mon–Fri, 10:00–18:00 (Kyiv time)"],
+      items: [`Email: ${CONTACT_EMAIL}`, `Phone: ${COMPANY_PHONE}`, `Threads: ${THREADS_URL}`, "Hours: Mon–Fri, 10:00–18:00 (Kyiv time)"],
     },
   ],
 };

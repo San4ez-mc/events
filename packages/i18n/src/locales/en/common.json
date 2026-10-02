@@ -1109,5 +1109,8 @@
     "iosSteps": "Tap “Share” at the bottom of Safari, then “Add to Home Screen” — Kiro will open like an app.",
     "androidText": "Install Kiro on your phone to open events in one tap.",
     "install": "Install"
+  },
+  "social": {
+    "threads": "Follow us on Threads"
   }
 }

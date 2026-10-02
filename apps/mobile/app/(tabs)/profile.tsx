@@ -440,6 +440,10 @@ export default function ProfileScreen() {
           <Ionicons name="document-text-outline" size={22} color={colors.muted} />
           <Text style={styles.rowText}>{t("legal.contacts")}</Text>
         </Pressable>
+        <Pressable style={styles.row} onPress={() => void Linking.openURL("https://www.threads.com/@kiro.ukraine")}>
+          <Ionicons name="chatbubbles-outline" size={22} color={colors.muted} />
+          <Text style={styles.rowText}>{t("social.threads")}</Text>
+        </Pressable>
 
         <Pressable style={styles.row} onPress={confirmLogout}>
           <Ionicons name="log-out-outline" size={22} color={colors.danger} />
