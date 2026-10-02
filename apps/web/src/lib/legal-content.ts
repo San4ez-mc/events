@@ -30,7 +30,7 @@ export const COMPANY_PHONE = "+380966358365";
 
 const privacyUk: LegalDoc = {
   title: "Політика конфіденційності",
-  updated: "Останнє оновлення: 27 вересня 2026",
+  updated: "Останнє оновлення: 3 жовтня 2026",
   intro:
     "Кіро (kiro.fineko.space та мобільний додаток) допомагає знаходити події поруч і записуватися на них. Ця політика пояснює, які дані ми збираємо, навіщо, кому їх передаємо і як ви можете ними керувати.",
   sections: [
@@ -43,6 +43,7 @@ const privacyUk: LegalDoc = {
         "Ваша активність: реєстрації на події та ваші відповіді на питання організатора, збережені події, відгуки, повідомлення в чаті події, запити в друзі, підписки на організаторів, пропущені події у стрічці.",
         "Події, які ви створюєте: опис, дата, адреса, фото та відео, ціна, кількість місць.",
         "Технічні дані: push-токен пристрою для сповіщень, дані про перегляди й поширення подій (з випадковим ідентифікатором сесії), IP-адреса та тип пристрою в журналах сервера.",
+        "Аналітика використання: які сторінки й екрани ви відкриваєте, скільки часу на них проводите, пошукові запити в застосунку, ключові дії (збереження, реєстрація, створення події), тип пристрою та ОС, випадковий ідентифікатор пристрою; після входу — ваш внутрішній ідентифікатор користувача (без email та імені).",
       ],
     },
     {
@@ -67,14 +68,14 @@ const privacyUk: LegalDoc = {
       items: [
         "Інші користувачі: ваше ім'я/нікнейм, фото та опис профілю, ваші відгуки й повідомлення в чаті подій. Ваше ім'я в списку учасників події показується лише якщо ви це дозволили під час реєстрації.",
         "Організатор події, на яку ви записалися: ваше ім'я, контакти, вказані в профілі, та відповіді на його питання.",
-        "Постачальники, що допомагають працювати сервісу: Google (вхід через Google і підказки адрес Google Places, запити до яких проходять через наш сервер), Expo (доставка push-сповіщень), постачальник хостингу й поштового сервісу, платіжні провайдери (WayForPay, Mono) під час оплати.",
+        "Постачальники, що допомагають працювати сервісу: Google (вхід через Google і підказки адрес Google Places, запити до яких проходять через наш сервер), Expo (доставка push-сповіщень), PostHog (аналітика використання, сервери в ЄС), Google Analytics (аналітика сайту, лише за вашою згодою), постачальник хостингу й поштового сервісу, платіжні провайдери (WayForPay, Mono) під час оплати.",
         "Ми не продаємо ваші дані й не передаємо їх рекламним мережам.",
       ],
     },
     {
       heading: "5. Cookie та локальне сховище",
       paragraphs: [
-        "На сайті ми використовуємо технічний cookie для підтримання сесії входу (термін залежить від того, чи ви обрали «Запам'ятати мене») та локальне сховище браузера для мови, теми та збережених фільтрів. Рекламних і відстежувальних cookie сторонніх сервісів ми не використовуємо.",
+        "На сайті ми використовуємо технічний cookie для підтримання сесії входу (термін залежить від того, чи ви обрали «Запам'ятати мене») та локальне сховище браузера для мови, теми та збережених фільтрів. Аналітичні cookie (PostHog, Google Analytics) вмикаються лише після вашої згоди в банері на сайті; якщо ви натиснули «Відхилити», аналітика працює без збереження даних у вашому браузері, а Google Analytics не завантажується. Рекламних cookie ми не використовуємо. У застосунку аналітика використовує випадковий ідентифікатор пристрою; ми не використовуємо його для реклами й не відстежуємо вас в інших застосунках.",
       ],
     },
     {
@@ -115,7 +116,7 @@ const privacyUk: LegalDoc = {
 
 const privacyEn: LegalDoc = {
   title: "Privacy Policy",
-  updated: "Last updated: 27 September 2026",
+  updated: "Last updated: 3 October 2026",
   intro:
     "Kiro (kiro.fineko.space and the mobile app) helps you find events nearby and register for them. This policy explains what data we collect, why, who receives it and how you can control it.",
   sections: [
@@ -128,6 +129,7 @@ const privacyEn: LegalDoc = {
         "Your activity: event registrations and your answers to organizers' questions, saved events, reviews, event chat messages, friend requests, organizer subscriptions, events you skipped in the feed.",
         "Events you create: description, date, address, photos and videos, price, capacity.",
         "Technical data: device push token for notifications, view/share counts for events (with a random session id), IP address and device type in server logs.",
+        "Usage analytics: which pages and screens you open and for how long, in-app search queries, key actions (saving, registering, creating an event), device type and OS, a random device identifier; once signed in, your internal user id (never your email or name).",
       ],
     },
     {
@@ -152,14 +154,14 @@ const privacyEn: LegalDoc = {
       items: [
         "Other users: your name/nickname, photo and bio, your reviews and event chat messages. Your name appears in an event's participant list only if you allowed it when registering.",
         "The organizer of an event you register for: your name, the contact details in your profile and your answers to their questions.",
-        "Service providers that help us operate: Google (Sign-In and Google Places address suggestions, routed through our server), Expo (push delivery), hosting and email providers, payment providers (WayForPay, Mono) when you pay.",
+        "Service providers that help us operate: Google (Sign-In and Google Places address suggestions, routed through our server), Expo (push delivery), PostHog (usage analytics, EU servers), Google Analytics (website analytics, only with your consent), hosting and email providers, payment providers (WayForPay, Mono) when you pay.",
         "We do not sell your data and do not share it with ad networks.",
       ],
     },
     {
       heading: "5. Cookies and local storage",
       paragraphs: [
-        "On the website we use a technical cookie to keep you signed in (its lifetime depends on whether you chose “Remember me”) and browser local storage for language, theme and saved filters. We use no advertising or third-party tracking cookies.",
+        "On the website we use a technical cookie to keep you signed in (its lifetime depends on whether you chose “Remember me”) and browser local storage for language, theme and saved filters. Analytics cookies (PostHog, Google Analytics) are turned on only after you accept the banner on the website; if you choose “Decline”, analytics runs without storing anything in your browser and Google Analytics is not loaded. We use no advertising cookies. In the app, analytics uses a random device identifier; we do not use it for advertising and do not track you across other apps.",
       ],
     },
     {
