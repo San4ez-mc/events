@@ -29,7 +29,7 @@ function formatDuration(totalSeconds: number): string {
 }
 
 /** Site + app visitors from PostHog, via the API's /admin/analytics/traffic (the personal API key stays on the server). */
-export function TrafficPanel() {
+export function TrafficPanel({ refreshKey = 0 }: { refreshKey?: number }) {
   const { styles } = useThemedStyles(makeStyles);
   const { t } = useTranslations();
   const [report, setReport] = useState<TrafficReport | null>(null);
@@ -43,7 +43,7 @@ export function TrafficPanel() {
         setReport({ configured: true, days: DAYS, error: "TRAFFIC_UNAVAILABLE" });
       }
     })();
-  }, []);
+  }, [refreshKey]);
 
   if (report === null) return <AdminLoader />;
   if (!report.configured) return <Text style={styles.muted}>{t("admin.traffic.notConfigured")}</Text>;

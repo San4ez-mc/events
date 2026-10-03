@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { API_URL, getAccessToken } from "../src/lib/api-client";
 import { useAuth } from "../src/lib/auth-context";
 import { useTranslations } from "../src/lib/locale-context";
 import { Button } from "../src/components/ui/Button";
 import { TextField } from "../src/components/ui/TextField";
-import { formatShortDate, formatShortDateTime } from "../src/lib/format";
+import { formatShortDateTime } from "../src/lib/format";
 import { TrafficPanel } from "../src/components/admin/TrafficPanel";
 import { InsightsPanel } from "../src/components/admin/InsightsPanel";
 import { AdminLoader } from "../src/components/admin/AdminLoader";
@@ -148,6 +148,13 @@ export default function AdminScreen() {
     if (wanted && tabs.includes(wanted)) setTab(wanted);
   }, [params.tab]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [replyTo, setReplyTo] = useState<AdminReport | null>(null);
+  const [replyHide, setReplyHide] = useState(false);
+  const [replySuspend, setReplySuspend] = useState(false);
+  const [replyWarn, setReplyWarn] = useState("");
+  const [replyNote, setReplyNote] = useState("");
 
   const headers = () => ({ Authorization: `Bearer ${getAccessToken() ?? ""}`, "Content-Type": "application/json" });
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
@@ -279,6 +286,31 @@ export default function AdminScreen() {
     }
   }, [authLoading, user, loadModeration, loadReports, loadContent, loadUsers, loadEvents, loadOrders, loadAudit]);
 
+  function openReply(r: AdminReport) {
+    setReplyHide(false);
+    setReplySuspend(false);
+    setReplyWarn("");
+    setReplyNote("");
+    setReplyTo(r);
+  }
+
+  /** Pull-to-refresh: reloads whatever the current tab shows. */
+  async function onRefresh() {
+    setRefreshing(true);
+    try {
+      setRefreshKey((k) => k + 1);
+      if (tab === "moderation" || tab === "reviews") await loadModeration();
+      else if (tab === "reports") await loadReports();
+      else if (tab === "categories" || tab === "districts") await loadContent();
+      else if (tab === "users") await loadUsers(userSearch);
+      else if (tab === "events") await loadEvents(eventStatus);
+      else if (tab === "payments") await loadOrders();
+      else if (tab === "audit") await loadAudit();
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   async function decide(id: string, action: "approve" | "reject") {
     setBusy(id);
     try {
@@ -299,13 +331,15 @@ export default function AdminScreen() {
     }
   }
 
-  async function resolveReport(id: string, status: "RESOLVED" | "DISMISSED", hideTarget: boolean) {
+  async function resolveReport(id: string, status: "RESOLVED" | "DISMISSED", extra: { hideTarget?: boolean; suspendOwner?: boolean; warnMessage?: string; note?: string } = {}) {
     setBusy(id);
     try {
-      const res = await fetch(`${API_URL}/api/v1/admin/reports/${id}/resolve`, { method: "PATCH", headers: headers(), body: JSON.stringify({ status, hideTarget }) });
+      const res = await fetch(`${API_URL}/api/v1/admin/reports/${id}/resolve`, { method: "PATCH", headers: headers(), body: JSON.stringify({ status, ...extra }) });
       // The row used to vanish even when the PATCH failed, so a report looked handled while still open.
-      if (res.ok) setReports((prev) => (prev ? prev.filter((r) => r.id !== id) : prev));
-      else Alert.alert(t("common.somethingWentWrong"));
+      if (res.ok) {
+        setReports((prev) => (prev ? prev.filter((r) => r.id !== id) : prev));
+        setReplyTo(null);
+      } else Alert.alert(t("common.somethingWentWrong"));
     } finally {
       setBusy(null);
     }
@@ -475,7 +509,10 @@ export default function AdminScreen() {
         ))}
       </ScrollView>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={colors.accentFrom} colors={[colors.accentFrom]} />}
+      >
         {tab === "moderation" && (
           <>
             <Text style={styles.muted}>{t("admin.moderation.hint")}</Text>
@@ -544,9 +581,9 @@ export default function AdminScreen() {
                   {t("admin.reports.from")}: {r.reporter.name ?? r.reporter.nickname ?? r.reporter.email} · {formatShortDateTime(r.createdAt)}
                 </Text>
                 <View style={styles.actions}>
-                  <Button title={`${t("admin.reports.resolve")} + ${t("admin.reports.hideTarget")}`} onPress={() => void resolveReport(r.id, "RESOLVED", true)} loading={busy === r.id} style={styles.small} />
-                  <Button title={t("admin.reports.resolve")} variant="secondary" onPress={() => void resolveReport(r.id, "RESOLVED", false)} loading={busy === r.id} style={styles.small} />
-                  <Button title={t("admin.reports.dismiss")} variant="secondary" onPress={() => void resolveReport(r.id, "DISMISSED", false)} loading={busy === r.id} style={styles.small} />
+                  <Button title={t("admin.reports.reply")} onPress={() => openReply(r)} style={styles.small} />
+                  <Button title={t("admin.reports.resolve")} variant="secondary" onPress={() => void resolveReport(r.id, "RESOLVED")} loading={busy === r.id} style={styles.small} />
+                  <Button title={t("admin.reports.dismiss")} variant="secondary" onPress={() => void resolveReport(r.id, "DISMISSED")} loading={busy === r.id} style={styles.small} />
                 </View>
               </View>
             ))}
@@ -794,8 +831,8 @@ export default function AdminScreen() {
 
         {tab === "analytics" && (
           <>
-            <TrafficPanel />
-            <InsightsPanel />
+            <TrafficPanel refreshKey={refreshKey} />
+            <InsightsPanel refreshKey={refreshKey} />
           </>
         )}
 
@@ -811,11 +848,79 @@ export default function AdminScreen() {
           </View>
         )}
       </ScrollView>
+
+      <Modal visible={replyTo !== null} transparent animationType="slide" onRequestClose={() => setReplyTo(null)}>
+        <View style={styles.replyBackdrop}>
+          <ScrollView style={styles.replySheet} contentContainerStyle={{ gap: spacing.md, padding: spacing.lg }} keyboardShouldPersistTaps="handled">
+            <Text style={styles.title}>{t("admin.reports.replyTitle")}</Text>
+            {replyTo && (
+              <Text style={styles.muted}>
+                {replyTo.target ? `«${replyTo.target.label}»` : t(`enums.target.${replyTo.targetType}`)} · {replyTo.reason}
+                {replyTo.description ? ` — ${replyTo.description}` : ""}
+              </Text>
+            )}
+
+            {replyTo && (replyTo.targetType.toUpperCase() === "EVENT" || replyTo.targetType.toUpperCase() === "REVIEW") && (
+              <Pressable style={styles.replyToggle} onPress={() => setReplyHide((v) => !v)}>
+                <Ionicons name={replyHide ? "checkbox" : "square-outline"} size={22} color={replyHide ? colors.accentFrom : colors.muted} />
+                <Text style={styles.body}>{replyTo.targetType.toUpperCase() === "EVENT" ? t("admin.reports.actHideEvent") : t("admin.reports.actHideReview")}</Text>
+              </Pressable>
+            )}
+            <Pressable style={styles.replyToggle} onPress={() => setReplySuspend((v) => !v)}>
+              <Ionicons name={replySuspend ? "checkbox" : "square-outline"} size={22} color={replySuspend ? colors.accentFrom : colors.muted} />
+              <Text style={styles.body}>{t("admin.reports.actSuspend")}</Text>
+            </Pressable>
+
+            <Text style={styles.label}>{t("admin.reports.warnLabel")}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hScroll} contentContainerStyle={styles.pillRow}>
+              {["warn1", "warn2", "warn3"].map((k) => (
+                <Pressable key={k} style={styles.pill} onPress={() => setReplyWarn(t(`admin.reports.${k}`))}>
+                  <Text style={styles.pillText}>{t(`admin.reports.${k}Short`)}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+            <TextField label="" value={replyWarn} onChangeText={setReplyWarn} multiline placeholder={t("admin.reports.warnPlaceholder")} />
+
+            <Text style={styles.label}>{t("admin.reports.noteLabel")}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hScroll} contentContainerStyle={styles.pillRow}>
+              {["note1", "note2", "note3"].map((k) => (
+                <Pressable key={k} style={styles.pill} onPress={() => setReplyNote(t(`admin.reports.${k}`))}>
+                  <Text style={styles.pillText}>{t(`admin.reports.${k}Short`)}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+            <TextField label="" value={replyNote} onChangeText={setReplyNote} multiline placeholder={t("admin.reports.notePlaceholder")} />
+
+            <Button
+              title={t("admin.reports.sendResolve")}
+              loading={replyTo !== null && busy === replyTo.id}
+              onPress={() =>
+                replyTo &&
+                void resolveReport(replyTo.id, "RESOLVED", {
+                  hideTarget: replyHide || undefined,
+                  suspendOwner: replySuspend || undefined,
+                  warnMessage: replyWarn.trim() || undefined,
+                  note: replyNote.trim() || undefined,
+                })
+              }
+            />
+            <Button
+              title={t("admin.reports.sendDismiss")}
+              variant="secondary"
+              onPress={() => replyTo && void resolveReport(replyTo.id, "DISMISSED", { note: replyNote.trim() || undefined })}
+            />
+            <Button title={t("common.cancel")} variant="secondary" onPress={() => setReplyTo(null)} />
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
+  replyBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" },
+  replySheet: { maxHeight: "88%", backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg },
+  replyToggle: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingVertical: spacing.xs },
   container: { flex: 1, backgroundColor: colors.background },
   // A horizontal ScrollView in a column grows to fill all free height unless told not to — the tabs became screen-tall pills.
   hScroll: { flexGrow: 0 },

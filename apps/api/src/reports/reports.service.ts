@@ -58,15 +58,64 @@ export class ReportsService {
     return { items, nextCursor: hasMore ? items[items.length - 1]!.id : null, hasMore };
   }
 
+  /** Who answers for the reported thing: the event's organizer, the reported user, or the review's author. */
+  private async ownerOf(report: { targetType: string; targetId: string }): Promise<{ id: string; role: string; status: string } | null> {
+    const select = { id: true, role: true, status: true } as const;
+    const type = report.targetType.toUpperCase();
+    if (type === "USER") return this.prisma.user.findUnique({ where: { id: report.targetId }, select });
+    if (type === "EVENT") {
+      const event = await this.prisma.event.findUnique({ where: { id: report.targetId }, select: { owner: { select } } });
+      return event?.owner ?? null;
+    }
+    if (type === "REVIEW") {
+      const review = await this.prisma.eventReview.findUnique({ where: { id: report.targetId }, select: { author: { select } } });
+      return review?.author ?? null;
+    }
+    return null;
+  }
+
   async resolve(adminId: string, reportId: string, dto: ResolveReportDto) {
     const report = await this.prisma.report.findUnique({ where: { id: reportId } });
     if (!report) throw new ResourceNotFoundException("Report not found");
 
-    if (dto.hideTarget && report.targetType === "REVIEW") {
-      await this.prisma.eventReview.updateMany({
-        where: { id: report.targetId },
-        data: { status: "HIDDEN" },
-      });
+    const type = report.targetType.toUpperCase();
+    const owner = await this.ownerOf(report);
+    const done: string[] = [];
+
+    if (dto.hideTarget) {
+      if (type === "REVIEW") {
+        await this.prisma.eventReview.updateMany({ where: { id: report.targetId }, data: { status: "HIDDEN" } });
+        done.push("review_hidden");
+      } else if (type === "EVENT") {
+        const hidden = await this.prisma.event.updateMany({
+          where: { id: report.targetId, status: { in: ["PUBLISHED", "PENDING_MODERATION"] } },
+          data: { status: "REJECTED" },
+        });
+        if (hidden.count > 0) done.push("event_hidden");
+      }
+    }
+
+    // Never suspend staff from a report — role changes and staff discipline go through the Users screen.
+    if (dto.suspendOwner && owner && owner.id !== adminId && owner.role === "USER" && owner.status === "ACTIVE") {
+      await this.prisma.user.update({ where: { id: owner.id }, data: { status: "SUSPENDED" } });
+      await this.auditLog.record({ actorUserId: adminId, action: "USER_STATUS_CHANGE", entityType: "User", entityId: owner.id, before: { status: owner.status }, after: { status: "SUSPENDED", viaReport: reportId } });
+      await this.notifications
+        .create({
+          userId: owner.id,
+          type: "MODERATION_UPDATE",
+          title: "Account update",
+          body: "Your account was suspended by a moderator. Contact support: kiro@fineko.space.",
+        })
+        .catch(() => undefined);
+      done.push("owner_suspended");
+    }
+
+    const warn = dto.warnMessage?.trim();
+    if (warn && owner && owner.id !== adminId) {
+      await this.notifications
+        .create({ userId: owner.id, type: "MODERATION_UPDATE", title: "Message from moderation", body: warn })
+        .catch(() => undefined);
+      done.push("owner_warned");
     }
 
     const updated = await this.prisma.report.update({
@@ -80,15 +129,16 @@ export class ReportsService {
       entityType: "Report",
       entityId: reportId,
       before: { status: report.status },
-      after: { status: dto.status, hideTarget: dto.hideTarget ?? false },
+      after: { status: dto.status, actions: done, answered: Boolean(dto.note?.trim()) },
     });
 
+    const note = dto.note?.trim();
     await this.notifications
       .create({
         userId: report.reporterId,
         type: "MODERATION_UPDATE",
         title: "Report reviewed",
-        body: dto.status === "RESOLVED" ? "Thanks — we reviewed your report and took action." : "We reviewed your report and found no violation.",
+        body: note ? note : dto.status === "RESOLVED" ? "Thanks — we reviewed your report and took action." : "We reviewed your report and found no violation.",
       })
       .catch(() => undefined);
 

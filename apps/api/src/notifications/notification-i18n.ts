@@ -48,6 +48,7 @@ const RULES: Rule[] = [
   { title: "District not approved", ukTitle: "Район не схвалено", body: /^Your suggested district "(.*)" wasn't approved\.$/s, ukBody: (m) => `Ваш район «${q(m)}» не схвалено.` },
   { title: "Account update", ukTitle: "Оновлення акаунта", body: /^Your account was suspended by a moderator\. Contact support: (.*)\.$/s, ukBody: (m) => `Ваш акаунт призупинено модератором. Зверніться в підтримку: ${q(m)}.` },
   { title: "Account update", ukTitle: "Оновлення акаунта", body: /^Your account was blocked\. Contact support: (.*)\.$/s, ukBody: (m) => `Ваш акаунт заблоковано. Зверніться в підтримку: ${q(m)}.` },
+  { title: "Message from moderation", ukTitle: "Повідомлення від модерації" },
   { title: "Account update", ukTitle: "Оновлення акаунта", body: /^Your account is active again\.$/s, ukBody: () => "Ваш акаунт знову активний." },
   { title: "Credits updated", ukTitle: "Кредити оновлено", body: /^You received (\d+) listing credits? from the Kiro team\.$/s, ukBody: (m) => `Вам нараховано кредитів на публікацію: ${q(m)}.` },
   { title: "Credits updated", ukTitle: "Кредити оновлено", body: /^(\d+) listing credits? (?:was|were) deducted from your balance\.$/s, ukBody: (m) => `З вашого балансу списано кредитів: ${q(m)}.` },
@@ -56,6 +57,8 @@ const RULES: Rule[] = [
   { title: "Review hidden", ukTitle: "Відгук приховано", body: /^Your review of "(.*)" was hidden by a moderator\.$/s, ukBody: (m) => `Ваш відгук про «${q(m)}» приховано модератором.` },
   { title: "Report reviewed", ukTitle: "Скаргу розглянуто", body: /^Thanks — we reviewed your report and took action\.$/s, ukBody: () => "Дякуємо — ми розглянули вашу скаргу й вжили заходів." },
   { title: "Report reviewed", ukTitle: "Скаргу розглянуто", body: /^We reviewed your report and found no violation\.$/s, ukBody: () => "Ми розглянули вашу скаргу й не знайшли порушення." },
+  // A moderator's own answer to a reporter (free text) — keep the text, localize the title.
+  { title: "Report reviewed", ukTitle: "Скаргу розглянуто" },
   // --- Heads-ups for staff ---
   { title: "New report", ukTitle: "Нова скарга", body: /^Report on "(.*)": (.*)$/s, ukBody: (m) => `Скарга на «${q(m)}»: ${q(m, 2)}` },
   { title: "New category to approve", ukTitle: "Нова категорія на схвалення", body: /^"(.*)" is waiting for approval\.$/s, ukBody: (m) => `«${q(m)}» чекає на схвалення.` },

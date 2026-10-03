@@ -52,21 +52,31 @@ export function buildPublicEventWhere(query: PublicEventFilterParams, now: Date)
     });
   }
 
+  if (!query.dateFrom) {
+    // Still "on" today: not yet started, still running (multi-day shows/exhibitions), or started earlier today with no
+    // end time — an event must not vanish from the feed at its start minute.
+    and.push({ OR: [{ startsAt: { gte: now } }, { endsAt: { gte: now } }, { endsAt: null, startsAt: { gte: startOfKyivDay(now) } }] });
+    if (query.dateTo) and.push({ startsAt: { lte: new Date(query.dateTo) } });
+  }
+
   return {
     AND: and,
     status: "PUBLISHED",
     visibility: "PUBLIC",
-    // An event whose organizer account was removed (demo/test users included) is never shown publicly.
-    owner: { status: { not: "DELETED" } },
     registrationMode: query.hideExternal ? "INTERNAL" : undefined,
     cityId: query.cityIds?.length ? { in: query.cityIds } : undefined,
     districtId: query.districtIds?.length ? { in: query.districtIds } : undefined,
     format: query.format,
     priceType: query.freeOnly ? { in: ["FREE", "DONATION"] } : undefined,
     ageRestriction: query.adultsOnly ? { gte: 18 } : undefined,
-    startsAt: {
-      gte: query.dateFrom ? new Date(query.dateFrom) : now,
-      lte: query.dateTo ? new Date(query.dateTo) : undefined,
-    },
+    ...(query.dateFrom ? { startsAt: { gte: new Date(query.dateFrom), lte: query.dateTo ? new Date(query.dateTo) : undefined } } : {}),
   };
+}
+
+/** 00:00 of the current day in Kyiv (UTC+2 / UTC+3 in summer) as an instant. */
+function startOfKyivDay(now: Date): Date {
+  const kyiv = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Kyiv" }));
+  const offsetMs = kyiv.getTime() - new Date(now.toLocaleString("en-US", { timeZone: "UTC" })).getTime();
+  kyiv.setHours(0, 0, 0, 0);
+  return new Date(kyiv.getTime() - offsetMs);
 }

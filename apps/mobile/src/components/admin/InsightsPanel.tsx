@@ -37,7 +37,7 @@ const DAYS = 30;
 const pct = (part: number, whole: number) => (whole > 0 ? ` (${Math.round((part / whole) * 100)}%)` : "");
 
 /** Funnels, activation, retention, search terms (PostHog) and supply/demand, payments, referrals, delivery (our DB) — mobile twin of the web admin block. */
-export function InsightsPanel() {
+export function InsightsPanel({ refreshKey = 0 }: { refreshKey?: number }) {
   const { styles } = useThemedStyles(makeStyles);
   const { t } = useTranslations();
   const [data, setData] = useState<Insights | null>(null);
@@ -53,7 +53,7 @@ export function InsightsPanel() {
         setFailed(true);
       }
     })();
-  }, []);
+  }, [refreshKey]);
 
   if (failed) return <Text style={styles.error}>{t("common.somethingWentWrong")}</Text>;
   if (!data) return null;
