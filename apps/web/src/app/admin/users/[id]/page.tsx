@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
-import { tEnum } from "@/lib/format";
+import { formatDateTime, tEnum } from "@/lib/format";
 import { getAccessToken } from "@/lib/api-client";
 import type { AdminUserDetail } from "@/lib/admin-types";
 import { Button } from "@/components/ui/button";
@@ -81,7 +81,7 @@ export default function AdminUserDetailPage() {
           <p className="text-xs text-muted">{t("admin.users.registrationsCount")}</p>
         </div>
         <div className="rounded-lg border border-border p-3 text-center">
-          <p className="text-xs font-medium">{new Date(detail.createdAt).toLocaleDateString(locale === "uk" ? "uk-UA" : "en-US")}</p>
+          <p className="text-xs font-medium">{formatDateTime(detail.createdAt, locale)}</p>
           <p className="text-xs text-muted">{t("admin.users.memberSince")}</p>
         </div>
         <div className="rounded-lg border border-border p-3 text-center">

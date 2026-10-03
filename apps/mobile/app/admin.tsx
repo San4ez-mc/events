@@ -625,7 +625,7 @@ export default function AdminScreen() {
                         {t(`enums.role.${u.role}`)} · {t(`enums.status.${u.status}`)}
                       </Text>
                       <Text style={styles.muted}>
-                        {t("admin.users.memberSince")} {formatShortDate(u.createdAt)}
+                        {t("admin.users.memberSince")} {formatShortDateTime(u.createdAt)}
                       </Text>
                     </View>
                     <Pressable onPress={() => void toggleUserExpanded(u.id)} hitSlop={12} accessibilityLabel={t("admin.users.manage")}>
