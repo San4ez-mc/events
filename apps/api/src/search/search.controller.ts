@@ -17,7 +17,8 @@ export class SearchController {
   @RateLimit(60)
   @Get()
   search(@Query() query: SearchQueryDto, @Req() req: Request) {
-    if (isLegacyNativeClient(req)) Object.assign(query, { hideExternal: true }); // not a DTO field: set server-side only
+    const legacy = isLegacyNativeClient(req);
+    Object.assign(query, legacy ? { hideExternal: true } : { hideTest: true });
     return this.searchService.search(query);
   }
 }

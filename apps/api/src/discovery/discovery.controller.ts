@@ -27,7 +27,9 @@ export class DiscoveryController {
   @Public()
   @Get()
   getFeed(@Query() query: DiscoveryQueryDto, @Req() req: Request) {
-    if (isLegacyNativeClient(req)) Object.assign(query, { hideExternal: true }); // not a DTO field: set server-side only
+    // Not DTO fields: set server-side only. Old app builds see no external-registration events but still see the demo ones.
+    const legacy = isLegacyNativeClient(req);
+    Object.assign(query, legacy ? { hideExternal: true } : { hideTest: true });
     return this.discoveryService.getFeed(this.tryExtractUserId(req), query);
   }
 
