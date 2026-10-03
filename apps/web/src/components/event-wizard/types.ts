@@ -32,6 +32,7 @@ export interface WizardData {
   onlineUrl: string;
   priceType: EventPriceType;
   price: string;
+  priceMax: string;
   capacity: string;
   presetParticipants: string;
   minParticipants: string;
@@ -66,6 +67,7 @@ export const EMPTY_WIZARD_DATA: WizardData = {
   onlineUrl: "",
   priceType: "FREE",
   price: "",
+  priceMax: "",
   capacity: "",
   presetParticipants: "",
   minParticipants: "",

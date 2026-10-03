@@ -232,7 +232,8 @@
       "regInternal": "In Kiro",
       "regExternal": "On the organizer's site",
       "externalUrl": "Registration / tickets link",
-      "externalHint": "People tap “Register” and are sent to this link. Capacity is unlimited — Kiro shows ∞."
+      "externalHint": "People tap “Register” and are sent to this link. Capacity is unlimited — Kiro shows ∞.",
+      "priceMax": "Price up to (optional, for a range)"
     },
     "actions": {
       "save": "Save",

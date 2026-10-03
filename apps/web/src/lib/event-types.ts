@@ -90,6 +90,7 @@ export interface EventDetail extends EventSummary {
   capacity: number | null;
   minParticipants: number | null;
   presetParticipants?: number;
+  priceMax?: string | null;
   registrationMode?: "INTERNAL" | "EXTERNAL";
   externalRegistrationUrl?: string | null;
   registrationDeadline: string | null;
@@ -182,6 +183,7 @@ export interface EventCard extends EventSummary {
   description?: string | null;
   capacity?: number | null;
   registrationMode?: "INTERNAL" | "EXTERNAL";
+  priceMax?: string | null;
   social?: SocialProof;
   category: { id: string; nameUk: string; nameEn: string } | null;
   additionalCategories?: { category: { id: string; nameUk: string; nameEn: string } }[];

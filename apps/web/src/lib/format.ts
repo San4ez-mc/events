@@ -53,3 +53,9 @@ export function creditPackageName(pkg: { name: string; credits: number }, t: (ke
 export function formatDateTime(value: string | Date, locale: string): string {
   return new Date(value).toLocaleString(locale === "uk" ? "uk-UA" : "en-GB", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
+
+/** "350" or, for a price range, "300–2700" (price is the lowest price, priceMax the highest). */
+export function formatPriceAmount(price: string | null | undefined, priceMax?: string | null): string {
+  if (price && priceMax && Number(priceMax) > Number(price)) return `${Number(price)}–${Number(priceMax)}`;
+  return price ?? "?";
+}

@@ -554,6 +554,7 @@ export class EventsService {
           rules: source.rules,
           priceType: source.priceType,
           price: source.price,
+          priceMax: source.priceMax,
           currency: source.currency,
           paymentUrl: source.paymentUrl,
           // Explicitly DRAFT with no publishedAt/cancelledAt/seriesId — a duplicate starts clean (§70).

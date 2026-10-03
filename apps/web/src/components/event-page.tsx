@@ -3,7 +3,7 @@ import { CalendarDays, MapPin, Star, Tag, Users, Video } from "lucide-react";
 import type { SupportedLocale } from "@kiro/i18n";
 import { getT } from "@/lib/i18n-server";
 import type { EventDetail } from "@/lib/event-types";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatPriceAmount } from "@/lib/format";
 import { RegistrationWidget } from "@/components/registration/registration-widget";
 import { FollowButton } from "@/components/social/follow-button";
 import { ReviewsSection } from "@/components/reviews/reviews-section";
@@ -117,7 +117,7 @@ export function EventPage({
               ? t("common.free")
               : event.priceType === "DONATION"
                 ? t("common.donation")
-                : `${event.price ?? "?"} ${formatCurrency(event.currency)}`}
+                : `${formatPriceAmount(event.price, event.priceMax)} ${formatCurrency(event.currency)}`}
           </strong>
           {categoryName && <span>· {categoryName}</span>}
         </span>

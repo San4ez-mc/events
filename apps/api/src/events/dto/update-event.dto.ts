@@ -201,6 +201,13 @@ export class UpdateEventDto {
   @Min(0)
   price?: number;
 
+  @ApiPropertyOptional({ description: "Upper end of a price range (price is the lowest)." })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  priceMax?: number;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsUrl()

@@ -1,8 +1,9 @@
 /** The price line shown on cards and the event page: "Безкоштовно", "Донат" or "350 грн". */
-export function formatPriceLabel(e: { priceType: string; price: string | null; currency: string }, t: (key: string) => string): string {
+export function formatPriceLabel(e: { priceType: string; price: string | null; priceMax?: string | null; currency: string }, t: (key: string) => string): string {
   if (e.priceType === "FREE") return t("common.free");
   if (e.priceType === "DONATION") return t("common.donation");
-  return `${e.price ?? "?"} ${formatCurrency(e.currency)}`;
+  const range = e.priceMax && e.price && Number(e.priceMax) > Number(e.price) ? `${Number(e.price)}–${Number(e.priceMax)}` : `${e.price ?? "?"}`;
+  return `${range} ${formatCurrency(e.currency)}`;
 }
 
 /** Currency codes as stored/returned by the API, shown the way people actually read money in Ukraine. */

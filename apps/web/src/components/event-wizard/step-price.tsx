@@ -52,6 +52,18 @@ export function StepPrice({ data, onChange }: StepProps) {
             onChange={(e) => onChange({ price: e.target.value })}
             className="rounded-md border border-border bg-background px-3 py-2 text-sm"
           />
+          <label htmlFor="priceMax" className="mt-2 text-sm font-medium">
+            {t("events.wizard.priceMax")}
+          </label>
+          <input
+            id="priceMax"
+            type="number"
+            min={0}
+            step="0.01"
+            value={data.priceMax}
+            onChange={(e) => onChange({ priceMax: e.target.value })}
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+          />
         </div>
       )}
 

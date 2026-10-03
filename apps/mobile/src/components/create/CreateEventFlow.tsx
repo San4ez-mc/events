@@ -52,6 +52,7 @@ interface EventDetail {
   youtubeUrl: string | null;
   priceType: "FREE" | "PAID";
   price: number | string | null;
+  priceMax?: number | string | null;
   capacity: number | string | null;
   presetParticipants?: number | null;
   minParticipants: number | string | null;
@@ -84,6 +85,7 @@ interface Form {
   youtubeUrl: string;
   priceType: "FREE" | "PAID" | "DONATION";
   price: string;
+  priceMax: string;
   capacity: string;
   presetParticipants: string;
   minParticipants: string;
@@ -165,6 +167,7 @@ const INITIAL: Form = {
   youtubeUrl: "",
   priceType: "FREE",
   price: "",
+  priceMax: "",
   capacity: "",
   presetParticipants: "",
   minParticipants: "",
@@ -367,6 +370,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
           youtubeUrl: e.youtubeUrl ?? "",
           priceType: e.priceType,
           price: e.price ? String(Number(e.price)) : "",
+          priceMax: e.priceMax ? String(Number(e.priceMax)) : "",
           capacity: e.capacity?.toString() ?? "",
           presetParticipants: e.presetParticipants ? String(e.presetParticipants) : "",
           minParticipants: e.minParticipants?.toString() ?? "",
@@ -518,6 +522,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
         youtubeUrl: normalizeUrl(form.youtubeUrl),
         priceType: form.priceType,
         price: form.priceType === "PAID" && form.price ? Number(form.price) : undefined,
+        priceMax: form.priceType === "PAID" && form.price && form.priceMax && Number(form.priceMax) > Number(form.price) ? Number(form.priceMax) : undefined,
         capacity: form.registrationMode === "EXTERNAL" ? undefined : form.capacity ? Number(form.capacity) : undefined,
         presetParticipants: form.registrationMode === "EXTERNAL" ? 0 : Number(form.presetParticipants || 0),
         minParticipants: form.registrationMode === "EXTERNAL" ? undefined : form.minParticipants ? Number(form.minParticipants) : undefined,
@@ -1003,6 +1008,11 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
                     {form.priceType === "PAID" && (
                       <Field label={t("events.wizard.priceAmount")}>
                         <TextInput value={form.price} onChangeText={(v) => set({ price: v.replace(/[^0-9.]/g, "") })} style={styles.input} keyboardType="decimal-pad" placeholder="350" placeholderTextColor={colors.muted} />
+                      </Field>
+                    )}
+                    {form.priceType === "PAID" && (
+                      <Field label={t("events.wizard.priceMax")}>
+                        <TextInput value={form.priceMax} onChangeText={(v) => set({ priceMax: v.replace(/[^0-9.]/g, "") })} style={styles.input} keyboardType="decimal-pad" placeholder="2700" placeholderTextColor={colors.muted} />
                       </Field>
                     )}
                     <Field label={t("events.wizard.paymentUrl")}>

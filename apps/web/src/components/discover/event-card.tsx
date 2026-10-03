@@ -11,7 +11,7 @@ import {
 import { AttendeeStack } from "./attendee-stack";
 import type { SupportedLocale } from "@kiro/i18n";
 import type { EventCard as EventCardData } from "@/lib/event-types";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatPriceAmount } from "@/lib/format";
 
 /**
  * The single Tinder-style card (UX §3): cover photo, title, date, district,
@@ -97,7 +97,7 @@ export function EventCard({
             ? event.priceType === "DONATION"
               ? t("common.donation")
               : t("common.free")
-            : `${event.price ?? "?"} ${formatCurrency(event.currency)}`}
+            : `${formatPriceAmount(event.price, event.priceMax)} ${formatCurrency(event.currency)}`}
         </span>
       </div>
 

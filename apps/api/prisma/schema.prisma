@@ -617,6 +617,8 @@ model Event {
   /// requirement for a price/free state.
   priceType EventPriceType @default(FREE)
   price     Decimal?       @db.Decimal(10, 2)
+  /// Upper end of a price range ("300–2700 грн"); `price` stays the lowest price. Null = single price.
+  priceMax  Decimal?       @db.Decimal(10, 2)
   currency  Currency       @default(UAH)
 
   /// External payment link/instruction (§21) — Kiro is not a party to this payment.

@@ -34,6 +34,7 @@ function toWizardData(event: EventDetail): WizardData {
     onlineUrl: event.onlineUrl ?? "",
     priceType: event.priceType,
     price: event.price ?? "",
+    priceMax: event.priceMax ?? "",
     capacity: event.capacity?.toString() ?? "",
     presetParticipants: event.presetParticipants ? String(event.presetParticipants) : "",
     minParticipants: event.minParticipants?.toString() ?? "",
@@ -113,8 +114,13 @@ function toUpdatePayload(data: WizardData): Record<string, unknown> {
   } else {
     payload.onlineUrl = data.onlineUrl || undefined;
   }
-  if (data.priceType === "PAID" && data.price)
+  if (data.priceType === "PAID" && data.price) {
     payload.price = Number(data.price);
+    payload.priceMax =
+      data.priceMax && Number(data.priceMax) > Number(data.price)
+        ? Number(data.priceMax)
+        : 0;
+  }
   if (data.registrationMode === "INTERNAL") {
     if (data.capacity) payload.capacity = Number(data.capacity);
     payload.presetParticipants = Number(data.presetParticipants || 0);

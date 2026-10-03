@@ -22,6 +22,7 @@ export interface EventCard {
   capacity?: number | null;
   registrationMode?: "INTERNAL" | "EXTERNAL";
   externalRegistrationUrl?: string | null;
+  priceMax?: string | null;
   social?: SocialProof;
   id: string;
   slug: string;
