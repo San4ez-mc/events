@@ -347,7 +347,8 @@ export class UsersService {
     const limit = Math.min(query.limit ?? PAGINATION.defaultLimit, PAGINATION.maxLimit);
     const where = {
       role: query.role,
-      status: query.status,
+      // Removed accounts (incl. the old demo/test users) stay out of the admin list unless explicitly filtered for.
+      status: query.status ?? { not: "DELETED" as const },
       ...(query.search
         ? {
             OR: [

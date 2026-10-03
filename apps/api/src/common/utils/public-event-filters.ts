@@ -56,6 +56,8 @@ export function buildPublicEventWhere(query: PublicEventFilterParams, now: Date)
     AND: and,
     status: "PUBLISHED",
     visibility: "PUBLIC",
+    // An event whose organizer account was removed (demo/test users included) is never shown publicly.
+    owner: { status: { not: "DELETED" } },
     registrationMode: query.hideExternal ? "INTERNAL" : undefined,
     cityId: query.cityIds?.length ? { in: query.cityIds } : undefined,
     districtId: query.districtIds?.length ? { in: query.districtIds } : undefined,
