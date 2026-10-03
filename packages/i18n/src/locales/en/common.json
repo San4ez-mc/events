@@ -532,9 +532,15 @@
       "empty": "No data yet",
       "avgSession": "Avg. session time",
       "topPagesHint": "views · visitors · avg. time on page",
-      "platformsHint": "visitors · avg. session time",
+      "platformsHint": "visitors · avg session time",
       "webOs": "Website visitors by OS",
-      "webOsHint": "how many are on iPhone (iOS) — a guide for the App Store decision"
+      "webOsHint": "how many are on iPhone (iOS) — a guide for the App Store decision",
+      "platformNames": {
+        "web": "Website",
+        "android": "Android app",
+        "ios": "iOS app",
+        "unknown": "Unknown"
+      }
     },
     "accessDenied": "You don't have access to the admin panel",
     "nav": {

@@ -534,7 +534,13 @@
       "topPagesHint": "перегляди · відвідувачі · сер. час на сторінці",
       "platformsHint": "відвідувачі · сер. час сесії",
       "webOs": "Відвідувачі сайту за ОС",
-      "webOsHint": "скільки з них на iPhone (iOS) — орієнтир для рішення про App Store"
+      "webOsHint": "скільки з них на iPhone (iOS) — орієнтир для рішення про App Store",
+      "platformNames": {
+        "web": "Сайт",
+        "android": "Додаток Android",
+        "ios": "Додаток iOS",
+        "unknown": "Не визначено"
+      }
     },
     "accessDenied": "У вас немає доступу до адмін-панелі",
     "nav": {

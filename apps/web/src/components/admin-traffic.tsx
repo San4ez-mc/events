@@ -83,7 +83,7 @@ export function AdminTraffic() {
           <div className="grid gap-6 sm:grid-cols-2">
             <List title={t("admin.traffic.topPages")} hint={t("admin.traffic.topPagesHint")} empty={t("admin.traffic.empty")} rows={(report.topPages ?? []).map((p) => ({ key: p.page, label: p.page, value: `${p.views} · ${p.visitors}${p.avgSeconds !== null ? ` · ${formatDuration(p.avgSeconds)}` : ""}` }))} />
             <div className="flex flex-col gap-6">
-              <List title={t("admin.traffic.platforms")} hint={t("admin.traffic.platformsHint")} empty={t("admin.traffic.empty")} rows={(report.platforms ?? []).map((p) => ({ key: p.platform, label: p.platform, value: `${p.visitors}${p.avgSessionSeconds !== null ? ` · ${formatDuration(p.avgSessionSeconds)}` : ""}` }))} />
+              <List title={t("admin.traffic.platforms")} hint={t("admin.traffic.platformsHint")} empty={t("admin.traffic.empty")} rows={(report.platforms ?? []).map((p) => ({ key: p.platform, label: t(`admin.traffic.platformNames.${p.platform}`) === `admin.traffic.platformNames.${p.platform}` ? p.platform : t(`admin.traffic.platformNames.${p.platform}`), value: `${p.visitors}${p.avgSessionSeconds !== null ? ` · ${formatDuration(p.avgSessionSeconds)}` : ""}` }))} />
               <List title={t("admin.traffic.webOs")} hint={t("admin.traffic.webOsHint")} empty={t("admin.traffic.empty")} rows={(report.webOs ?? []).map((o) => ({ key: o.os, label: o.os, value: String(o.visitors) }))} />
               <List
                 title={t("admin.traffic.sources")}

@@ -82,7 +82,7 @@ export function TrafficPanel({ refreshKey = 0 }: { refreshKey?: number }) {
         title={t("admin.traffic.platforms")}
         hint={t("admin.traffic.platformsHint")}
         empty={t("admin.traffic.empty")}
-        rows={(report.platforms ?? []).map((p) => ({ key: p.platform, label: p.platform, value: `${p.visitors}${p.avgSessionSeconds !== null ? ` · ${formatDuration(p.avgSessionSeconds)}` : ""}` }))}
+        rows={(report.platforms ?? []).map((p) => ({ key: p.platform, label: t(`admin.traffic.platformNames.${p.platform}`) === `admin.traffic.platformNames.${p.platform}` ? p.platform : t(`admin.traffic.platformNames.${p.platform}`), value: `${p.visitors}${p.avgSessionSeconds !== null ? ` · ${formatDuration(p.avgSessionSeconds)}` : ""}` }))}
       />
       <Section
         title={t("admin.traffic.webOs")}

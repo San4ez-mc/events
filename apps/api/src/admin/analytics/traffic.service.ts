@@ -75,7 +75,7 @@ export class TrafficService {
         totals: { visitors: Number(totals[0]?.[0] ?? 0), views: Number(totals[0]?.[1] ?? 0), sessions: Number(totals[0]?.[2] ?? 0), avgSessionSeconds: Math.round(Number(avgSession[0]?.[0] ?? 0)) },
         daily: daily.map((r) => ({ date: String(r[0]), visitors: Number(r[1]), views: Number(r[2]) })),
         topPages: pages.map((r) => ({ page: String(r[0]), views: Number(r[1]), visitors: Number(r[2]), avgSeconds: timeByPage.has(String(r[0])) ? Math.round(timeByPage.get(String(r[0]))!) : null })),
-        platforms: platforms.map((r) => ({ platform: String(r[0]), visitors: Number(r[1]), avgSessionSeconds: sessionByPlatform.has(String(r[0])) ? Math.round(sessionByPlatform.get(String(r[0]))!) : null })),
+        platforms: this.withAllPlatforms(platforms.map((r) => ({ platform: String(r[0]), visitors: Number(r[1]), avgSessionSeconds: sessionByPlatform.has(String(r[0])) ? Math.round(sessionByPlatform.get(String(r[0]))!) : null }))),
         webOs: webOs.map((r) => ({ os: String(r[0]), visitors: Number(r[1]) })),
         referrers: referrers.map((r) => ({ source: String(r[0]), visitors: Number(r[1]) })),
       };
@@ -85,5 +85,15 @@ export class TrafficService {
       this.logger.warn(`Traffic report failed: ${err instanceof Error ? err.message : String(err)}`);
       return { configured: true, days, error: "TRAFFIC_UNAVAILABLE" };
     }
+  }
+
+  /** Web, Android and iOS are always listed (iOS stays 0 until the iPhone app exists); anything else follows. */
+  private withAllPlatforms(rows: { platform: string; visitors: number; avgSessionSeconds: number | null }[]) {
+    const known = ["web", "android", "ios"];
+    const byName = new Map(rows.map((r) => [r.platform, r]));
+    return [
+      ...known.map((p) => byName.get(p) ?? { platform: p, visitors: 0, avgSessionSeconds: null }),
+      ...rows.filter((r) => !known.includes(r.platform)),
+    ];
   }
 }
