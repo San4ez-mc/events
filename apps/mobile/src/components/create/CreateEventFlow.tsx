@@ -53,6 +53,7 @@ interface EventDetail {
   priceType: "FREE" | "PAID";
   price: number | string | null;
   capacity: number | string | null;
+  presetParticipants?: number | null;
   minParticipants: number | string | null;
   approvalMode: "AUTO" | "ORGANIZER_APPROVAL";
   visibility: "PUBLIC" | "PRIVATE";
@@ -81,6 +82,7 @@ interface Form {
   priceType: "FREE" | "PAID" | "DONATION";
   price: string;
   capacity: string;
+  presetParticipants: string;
   minParticipants: string;
   approvalMode: "AUTO" | "ORGANIZER_APPROVAL";
   visibility: "PUBLIC" | "PRIVATE";
@@ -158,6 +160,7 @@ const INITIAL: Form = {
   priceType: "FREE",
   price: "",
   capacity: "",
+  presetParticipants: "",
   minParticipants: "",
   approvalMode: "AUTO",
   visibility: "PUBLIC",
@@ -355,6 +358,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
           priceType: e.priceType,
           price: e.price ? String(Number(e.price)) : "",
           capacity: e.capacity?.toString() ?? "",
+          presetParticipants: e.presetParticipants ? String(e.presetParticipants) : "",
           minParticipants: e.minParticipants?.toString() ?? "",
           approvalMode: e.approvalMode,
           visibility: e.visibility,
@@ -502,6 +506,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
         priceType: form.priceType,
         price: form.priceType === "PAID" && form.price ? Number(form.price) : undefined,
         capacity: form.capacity ? Number(form.capacity) : undefined,
+        presetParticipants: Number(form.presetParticipants || 0),
         minParticipants: form.minParticipants ? Number(form.minParticipants) : undefined,
         approvalMode: form.approvalMode,
         visibility: form.visibility,
@@ -994,6 +999,10 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
                     </Field>
                   </View>
                 </View>
+                <Field label={t("create.presetParticipants")}>
+                  <TextInput value={form.presetParticipants} onChangeText={(v) => set({ presetParticipants: v.replace(/\D/g, "") })} style={styles.input} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.muted} />
+                </Field>
+                <Text style={{ color: colors.muted, fontSize: 12 }}>{t("create.presetParticipantsHint")}</Text>
                 <Section title={t("events.wizard.approvalMode")}>
                   <Chips
                     value={form.approvalMode}

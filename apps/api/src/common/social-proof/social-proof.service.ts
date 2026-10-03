@@ -36,12 +36,13 @@ export class SocialProofService {
     const eventIds = events.map((e) => e.id);
     const ownerIds = [...new Set(events.map((e) => e.ownerId))];
 
-    const [counts, previewRows, friendIds, ownerRating] = await Promise.all([
+    const [counts, presets, previewRows, friendIds, ownerRating] = await Promise.all([
       this.prisma.registration.groupBy({
         by: ["eventId"],
         where: { eventId: { in: eventIds }, status: { in: ACTIVE_STATUSES } },
         _count: { _all: true },
       }),
+      this.prisma.event.findMany({ where: { id: { in: eventIds }, presetParticipants: { gt: 0 } }, select: { id: true, presetParticipants: true } }),
       this.prisma.registration.findMany({
         where: { eventId: { in: eventIds }, status: { in: ACTIVE_STATUSES }, showAsParticipant: true },
         orderBy: { registeredAt: "asc" },
@@ -52,6 +53,8 @@ export class SocialProofService {
     ]);
 
     const countByEvent = new Map(counts.map((c) => [c.eventId, c._count._all]));
+    // Organizer-declared outside participants count as going ("є 5 з 8").
+    for (const p of presets) countByEvent.set(p.id, (countByEvent.get(p.id) ?? 0) + p.presetParticipants);
 
     const previewsByEvent = new Map<string, AttendeePreview[]>();
     for (const row of previewRows) {

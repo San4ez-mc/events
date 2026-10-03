@@ -546,6 +546,7 @@ export class EventsService {
           onlineUrl: source.onlineUrl,
           capacity: source.capacity,
           minParticipants: source.minParticipants,
+          presetParticipants: source.presetParticipants,
           approvalMode: source.approvalMode,
           ageRestriction: source.ageRestriction,
           rules: source.rules,

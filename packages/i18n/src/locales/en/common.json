@@ -225,7 +225,9 @@
       "addCategoryPlaceholder": "Category name",
       "addCategorySubmitted": "Added. It will appear in the list for others after review.",
       "priceDonation": "Donation (any amount)",
-      "donationHint": "Entry is free. Attendees can optionally support you through the link below — any amount they choose."
+      "donationHint": "Entry is free. Attendees can optionally support you through the link below — any amount they choose.",
+      "presetParticipants": "Participants you already have (optional)",
+      "presetParticipantsHint": "If you already gathered people outside Kiro, enter the number — it counts toward registrations and reduces the free spots."
     },
     "actions": {
       "save": "Save",
@@ -999,7 +1001,9 @@
     "sunday": "Sunday",
     "minPeople": "Minimum participants",
     "maxPeople": "Maximum participants",
-    "optional": "optional"
+    "optional": "optional",
+    "presetParticipants": "Participants you already have (optional)",
+    "presetParticipantsHint": "If you already gathered people outside Kiro, enter the number — it counts toward registrations and reduces the free spots."
   },
   "myEvents": {
     "upcoming": "Upcoming",

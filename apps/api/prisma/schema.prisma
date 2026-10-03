@@ -587,6 +587,8 @@ model Event {
 
   capacity        Int?
   minParticipants Int?
+  /// Participants the organizer already has outside Kiro ("вже є 5 з 8") — counted with real registrations toward capacity.
+  presetParticipants Int @default(0)
 
   registrationDeadline DateTime?
 

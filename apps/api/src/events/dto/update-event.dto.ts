@@ -140,6 +140,13 @@ export class UpdateEventDto {
   @Min(1)
   capacity?: number;
 
+  @ApiPropertyOptional({ description: "Participants the organizer already has outside Kiro; counted toward capacity." })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  presetParticipants?: number;
+
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Number)

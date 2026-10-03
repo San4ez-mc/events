@@ -33,6 +33,7 @@ export interface WizardData {
   priceType: EventPriceType;
   price: string;
   capacity: string;
+  presetParticipants: string;
   minParticipants: string;
   approvalMode: ApprovalMode;
   visibility: EventVisibility;
@@ -64,6 +65,7 @@ export const EMPTY_WIZARD_DATA: WizardData = {
   priceType: "FREE",
   price: "",
   capacity: "",
+  presetParticipants: "",
   minParticipants: "",
   approvalMode: "AUTO",
   visibility: "PUBLIC",

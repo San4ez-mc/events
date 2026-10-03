@@ -82,6 +82,22 @@ export function StepPrice({ data, onChange }: StepProps) {
             className="rounded-md border border-border bg-background px-3 py-2 text-sm"
           />
         </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="presetParticipants" className="text-sm font-medium">
+            {t("events.wizard.presetParticipants")}
+          </label>
+          <input
+            id="presetParticipants"
+            type="number"
+            min={0}
+            value={data.presetParticipants}
+            onChange={(e) => onChange({ presetParticipants: e.target.value })}
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+          />
+          <p className="text-xs text-muted-foreground">
+            {t("events.wizard.presetParticipantsHint")}
+          </p>
+        </div>
       </div>
 
       <div className="flex flex-col gap-1.5">

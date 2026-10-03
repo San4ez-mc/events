@@ -35,6 +35,7 @@ function toWizardData(event: EventDetail): WizardData {
     priceType: event.priceType,
     price: event.price ?? "",
     capacity: event.capacity?.toString() ?? "",
+    presetParticipants: event.presetParticipants ? String(event.presetParticipants) : "",
     minParticipants: event.minParticipants?.toString() ?? "",
     approvalMode: event.approvalMode,
     visibility: event.visibility,
@@ -108,6 +109,7 @@ function toUpdatePayload(data: WizardData): Record<string, unknown> {
   if (data.priceType === "PAID" && data.price)
     payload.price = Number(data.price);
   if (data.capacity) payload.capacity = Number(data.capacity);
+  payload.presetParticipants = Number(data.presetParticipants || 0);
   if (data.minParticipants)
     payload.minParticipants = Number(data.minParticipants);
   return payload;

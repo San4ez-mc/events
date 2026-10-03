@@ -279,6 +279,12 @@ export class DiscoveryService {
       _count: { _all: true },
     });
     for (const row of counts) result.set(row.eventId, { registered: row._count._all, friends: 0 });
+    const presets = await this.prisma.event.findMany({ where: { id: { in: eventIds }, presetParticipants: { gt: 0 } }, select: { id: true, presetParticipants: true } });
+    for (const p of presets) {
+      const entry = result.get(p.id) ?? { registered: 0, friends: 0 };
+      entry.registered += p.presetParticipants;
+      result.set(p.id, entry);
+    }
 
     if (userId) {
       const friendships = await this.prisma.friendship.findMany({

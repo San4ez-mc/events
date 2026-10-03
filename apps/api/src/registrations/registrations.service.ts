@@ -99,7 +99,7 @@ export class RegistrationsService {
       const activeCount = await tx.registration.count({
         where: { eventId, status: { in: [...ACTIVE_STATUSES] } },
       });
-      const capacityReached = event.capacity != null && activeCount >= event.capacity;
+      const capacityReached = event.capacity != null && activeCount + event.presetParticipants >= event.capacity;
 
       let status: (typeof ACTIVE_STATUSES)[number] | "WAITLISTED";
       if (capacityReached) {
@@ -540,13 +540,13 @@ export class RegistrationsService {
     tx: Prisma.TransactionClient,
     eventId: string,
   ): Promise<{ id: string; userId: string; eventId: string } | null> {
-    const event = await tx.event.findUnique({ where: { id: eventId }, select: { capacity: true, approvalMode: true } });
+    const event = await tx.event.findUnique({ where: { id: eventId }, select: { capacity: true, approvalMode: true, presetParticipants: true } });
     if (!event?.capacity) return null;
 
     const activeCount = await tx.registration.count({
       where: { eventId, status: { in: [...ACTIVE_STATUSES] } },
     });
-    if (activeCount >= event.capacity) return null;
+    if (activeCount + event.presetParticipants >= event.capacity) return null;
 
     const next = await tx.registration.findFirst({
       where: { eventId, status: "WAITLISTED" },

@@ -89,6 +89,7 @@ export interface EventDetail extends EventSummary {
   youtubeUrl: string | null;
   capacity: number | null;
   minParticipants: number | null;
+  presetParticipants?: number;
   registrationDeadline: string | null;
   approvalMode: ApprovalMode;
   ageRestriction: number | null;
