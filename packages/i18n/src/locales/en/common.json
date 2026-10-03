@@ -426,8 +426,8 @@
     "ticketType": "Ticket type",
     "showAsParticipant": "Show me among the participants on the event page",
     "donate": "Support the organizer",
-    "externalRegister": "Register on the organizer's site",
-    "externalBuy": "Buy a ticket on the organizer's site",
+    "externalRegister": "Details on the organizer's site",
+    "externalBuy": "Tickets on the organizer's site",
     "externalHint": "Registration and payment happen on the organizer's side."
   },
   "notifications": {
