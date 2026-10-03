@@ -1,3 +1,5 @@
 # Keep service-account keys out of EAS build archives
 *firebase-adminsdk*.json
 *service-account*.json
+
+.turbo
