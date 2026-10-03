@@ -547,6 +547,8 @@ export class EventsService {
           capacity: source.capacity,
           minParticipants: source.minParticipants,
           presetParticipants: source.presetParticipants,
+          registrationMode: source.registrationMode,
+          externalRegistrationUrl: source.externalRegistrationUrl,
           approvalMode: source.approvalMode,
           ageRestriction: source.ageRestriction,
           rules: source.rules,
@@ -715,6 +717,8 @@ export class EventsService {
     addressText: string | null;
     onlineUrl: string | null;
     priceType: string;
+    registrationMode?: string;
+    externalRegistrationUrl?: string | null;
   }): void {
     const missing: string[] = [];
     if (!event.title?.trim()) missing.push("title");
@@ -723,6 +727,7 @@ export class EventsService {
     if (!event.description?.trim()) missing.push("description");
     if (event.format === "OFFLINE" && !event.cityId) missing.push("cityId");
     if (event.format === "ONLINE" && !event.onlineUrl) missing.push("onlineUrl");
+    if (event.registrationMode === "EXTERNAL" && !event.externalRegistrationUrl) missing.push("externalRegistrationUrl");
 
     if (missing.length > 0) {
       throw new ApiException("VALIDATION_ERROR", "Event is missing required fields to publish", 400, {

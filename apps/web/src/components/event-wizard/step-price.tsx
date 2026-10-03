@@ -55,6 +55,53 @@ export function StepPrice({ data, onChange }: StepProps) {
         </div>
       )}
 
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium">
+          {t("events.wizard.registrationMode")}
+        </span>
+        <div className="flex gap-2">
+          {(["INTERNAL", "EXTERNAL"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => onChange({ registrationMode: mode })}
+              className={`rounded-md border px-4 py-2 text-sm font-medium ${
+                data.registrationMode === mode
+                  ? "border-transparent accent-gradient text-white"
+                  : "border-border hover:bg-surface"
+              }`}
+            >
+              {mode === "INTERNAL"
+                ? t("events.wizard.regInternal")
+                : t("events.wizard.regExternal")}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {data.registrationMode === "EXTERNAL" && (
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="externalRegistrationUrl" className="text-sm font-medium">
+            {t("events.wizard.externalUrl")}
+          </label>
+          <input
+            id="externalRegistrationUrl"
+            type="url"
+            placeholder="https://"
+            value={data.externalRegistrationUrl}
+            onChange={(e) =>
+              onChange({ externalRegistrationUrl: e.target.value })
+            }
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+          />
+          <p className="text-xs text-muted-foreground">
+            {t("events.wizard.externalHint")}
+          </p>
+        </div>
+      )}
+
+      {data.registrationMode === "INTERNAL" && (
+        <>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <label htmlFor="minParticipants" className="text-sm font-medium">
@@ -123,6 +170,8 @@ export function StepPrice({ data, onChange }: StepProps) {
           ))}
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

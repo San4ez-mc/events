@@ -36,6 +36,8 @@ export interface WizardData {
   presetParticipants: string;
   minParticipants: string;
   approvalMode: ApprovalMode;
+  registrationMode: "INTERNAL" | "EXTERNAL";
+  externalRegistrationUrl: string;
   visibility: EventVisibility;
   registrationDeadline: string; // datetime-local value
   adultsOnly: boolean;
@@ -68,6 +70,8 @@ export const EMPTY_WIZARD_DATA: WizardData = {
   presetParticipants: "",
   minParticipants: "",
   approvalMode: "AUTO",
+  registrationMode: "INTERNAL",
+  externalRegistrationUrl: "",
   visibility: "PUBLIC",
   registrationDeadline: "",
   adultsOnly: false,

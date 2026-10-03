@@ -14,6 +14,8 @@ export interface InsightsReport {
   activation?: { signups: number; activated24h: number; avgMinutesToFirstAction: number | null };
   retention?: { cohort: number; d1: number; d7: number };
   swipes?: { right: number; left: number };
+  /** Taps on "register / buy a ticket" for events whose registration happens on the organizer's own site. */
+  externalRegistrations?: { clicks: number; people: number; top: { eventId: string; title: string; clicks: number }[] };
   searches?: { top: { query: string; count: number }[]; noResults: { query: string; count: number }[] };
   // From our own database — available even without PostHog.
   supplyDemand: { category: string; events: number; views: number; saves: number; registrations: number }[];
@@ -97,7 +99,7 @@ export class InsightsService {
     const since = `timestamp >= now() - INTERVAL ${days} DAY`;
     const distinct = (event: string, extra = "") => `SELECT count(DISTINCT person_id) FROM events WHERE event = '${event}' ${extra} AND ${since}`;
 
-    const [views, started, registered, s1, s2, s3, published, activation, retention, swipes, top, noResults] = await Promise.all([
+    const [views, started, registered, s1, s2, s3, published, activation, retention, swipes, top, noResults, extTotals, extTop] = await Promise.all([
       run(distinct("event_view")),
       run(distinct("event_registration_started")),
       run(distinct("registration_completed")),
@@ -112,7 +114,11 @@ export class InsightsService {
       run(`SELECT countIf(properties.direction = 'right'), countIf(properties.direction = 'left') FROM events WHERE event = 'swipe' AND ${since}`),
       run(`SELECT properties.query AS q, count() FROM events WHERE event = 'search' AND properties.query != '' AND ${since} GROUP BY q ORDER BY count() DESC LIMIT 10`),
       run(`SELECT properties.query AS q, count() FROM events WHERE event = 'search' AND properties.query != '' AND toString(properties.results_count) = '0' AND ${since} GROUP BY q ORDER BY count() DESC LIMIT 10`),
+      run(`SELECT count(), count(DISTINCT person_id) FROM events WHERE event = 'external_registration_click' AND ${since}`),
+      run(`SELECT toString(properties.event_id) AS id, count() FROM events WHERE event = 'external_registration_click' AND ${since} GROUP BY id ORDER BY count() DESC LIMIT 10`),
     ]);
+    const extIds = extTop.map((r) => String(r[0])).filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+    const extTitles = new Map((await this.prisma.event.findMany({ where: { id: { in: extIds } }, select: { id: true, title: true } })).map((e) => [e.id, e.title]));
 
     return {
       eventFunnel: { views: n(views[0]?.[0]), registrationStarted: n(started[0]?.[0]), registered: n(registered[0]?.[0]) },
@@ -124,6 +130,11 @@ export class InsightsService {
       },
       retention: { cohort: n(retention[0]?.[0]), d1: n(retention[0]?.[1]), d7: n(retention[0]?.[2]) },
       swipes: { right: n(swipes[0]?.[0]), left: n(swipes[0]?.[1]) },
+      externalRegistrations: {
+        clicks: n(extTotals[0]?.[0]),
+        people: n(extTotals[0]?.[1]),
+        top: extTop.map((r) => ({ eventId: String(r[0]), title: extTitles.get(String(r[0])) ?? String(r[0]), clicks: n(r[1]) })),
+      },
       searches: {
         top: top.map((r) => ({ query: String(r[0]), count: n(r[1]) })),
         noResults: noResults.map((r) => ({ query: String(r[0]), count: n(r[1]) })),

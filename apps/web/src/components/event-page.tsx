@@ -139,9 +139,11 @@ export function EventPage({
         <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-surface p-4 text-sm">
           <span className={`${meta} font-semibold`}>
             <Users className="h-4 w-4" aria-hidden="true" />
-            {event.capacity != null
-              ? `${social.registeredCount} / ${event.capacity}`
-              : social.registeredCount}{" "}
+            {event.registrationMode === "EXTERNAL"
+              ? "∞"
+              : event.capacity != null
+                ? `${social.registeredCount} / ${event.capacity}`
+                : social.registeredCount}{" "}
             <span className="font-normal text-muted">
               {t("events.page.participantsCount")}
             </span>

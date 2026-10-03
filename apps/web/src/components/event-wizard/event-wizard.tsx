@@ -38,6 +38,8 @@ function toWizardData(event: EventDetail): WizardData {
     presetParticipants: event.presetParticipants ? String(event.presetParticipants) : "",
     minParticipants: event.minParticipants?.toString() ?? "",
     approvalMode: event.approvalMode,
+    registrationMode: event.registrationMode ?? "INTERNAL",
+    externalRegistrationUrl: event.externalRegistrationUrl ?? "",
     visibility: event.visibility,
     registrationDeadline: event.registrationDeadline
       ? toLocalInputValue(event.registrationDeadline)
@@ -83,6 +85,11 @@ function toUpdatePayload(data: WizardData): Record<string, unknown> {
     endsAt: data.endsAt ? new Date(data.endsAt).toISOString() : undefined,
     priceType: data.priceType,
     approvalMode: data.approvalMode,
+    registrationMode: data.registrationMode,
+    externalRegistrationUrl:
+      data.registrationMode === "EXTERNAL"
+        ? data.externalRegistrationUrl.trim() || undefined
+        : undefined,
     visibility: data.visibility,
     registrationDeadline: data.registrationDeadline
       ? new Date(data.registrationDeadline).toISOString()
@@ -108,8 +115,10 @@ function toUpdatePayload(data: WizardData): Record<string, unknown> {
   }
   if (data.priceType === "PAID" && data.price)
     payload.price = Number(data.price);
-  if (data.capacity) payload.capacity = Number(data.capacity);
-  payload.presetParticipants = Number(data.presetParticipants || 0);
+  if (data.registrationMode === "INTERNAL") {
+    if (data.capacity) payload.capacity = Number(data.capacity);
+    payload.presetParticipants = Number(data.presetParticipants || 0);
+  }
   if (data.minParticipants)
     payload.minParticipants = Number(data.minParticipants);
   return payload;

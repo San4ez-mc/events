@@ -164,6 +164,17 @@ export class UpdateEventDto {
   @IsIn(["AUTO", "ORGANIZER_APPROVAL"])
   approvalMode?: ApprovalMode;
 
+  @ApiPropertyOptional({ enum: ["INTERNAL", "EXTERNAL"], description: "EXTERNAL = people register/buy on the organizer's own site." })
+  @IsOptional()
+  @IsIn(["INTERNAL", "EXTERNAL"])
+  registrationMode?: "INTERNAL" | "EXTERNAL";
+
+  @ApiPropertyOptional({ description: "Where the register/buy button leads when registrationMode is EXTERNAL." })
+  @IsOptional()
+  @IsUrl({ require_protocol: true, protocols: ["http", "https"] })
+  @MaxLength(2000)
+  externalRegistrationUrl?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Number)

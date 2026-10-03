@@ -1,15 +1,17 @@
 import { useState } from "react";
-import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { EventMedia } from "../../lib/event-types";
 import { radius, type Palette, useThemedStyles } from "../../lib/theme";
+import { VideoPlayerModal, type VideoSource } from "./VideoPlayerModal";
 
-/** UX §10 — swipeable gallery of up to 10 photos/videos. Videos show their thumbnail; tapping opens the system player. */
+/** UX §10 — swipeable gallery of up to 10 photos/videos. Videos show their thumbnail; tapping plays them in the app. */
 export function EventGallery({ media, width }: { media: EventMedia[]; width?: number }) {
   const { colors, styles } = useThemedStyles(makeStyles);
   const window = useWindowDimensions();
   const w = width ?? window.width;
   const [index, setIndex] = useState(0);
+  const [playing, setPlaying] = useState<VideoSource | null>(null);
 
   if (media.length === 0) {
     return (
@@ -34,13 +36,15 @@ export function EventGallery({ media, width }: { media: EventMedia[]; width?: nu
           <View key={m.id} style={{ width: w }}>
             <Image source={{ uri: m.type === "VIDEO" ? m.thumbnailUrl : m.displayUrl }} style={styles.item} resizeMode="cover" />
             {m.type === "VIDEO" && (
-              <Pressable style={styles.play} onPress={() => void Linking.openURL(m.originalUrl ?? m.displayUrl)} accessibilityLabel="Play video">
+              <Pressable style={styles.play} onPress={() => setPlaying({ kind: "file", uri: m.originalUrl ?? m.displayUrl })} accessibilityLabel="Play video">
                 <Ionicons name="play" size={30} color={colors.white} />
               </Pressable>
             )}
           </View>
         ))}
       </ScrollView>
+
+      <VideoPlayerModal source={playing} onClose={() => setPlaying(null)} />
 
       {media.length > 1 && (
         <>

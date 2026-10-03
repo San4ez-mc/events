@@ -519,6 +519,12 @@ enum ApprovalMode {
   ORGANIZER_APPROVAL
 }
 
+/// Where people sign up: inside Kiro, or on the organizer's own site (the button just opens the link).
+enum RegistrationMode {
+  INTERNAL
+  EXTERNAL
+}
+
 enum EventPriceType {
   FREE
   PAID
@@ -593,6 +599,10 @@ model Event {
   registrationDeadline DateTime?
 
   approvalMode ApprovalMode @default(AUTO)
+
+  registrationMode        RegistrationMode @default(INTERNAL)
+  /// Required when registrationMode = EXTERNAL — where "Зареєструватись" / "Купити квиток" leads.
+  externalRegistrationUrl String?
 
   /// Minimum age to attend, e.g. 18. Null = no restriction (UX doc §23, §41 — "усі/18+").
   ageRestriction Int?

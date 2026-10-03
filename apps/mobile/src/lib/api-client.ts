@@ -76,10 +76,17 @@ export function refreshAccessToken(): Promise<string | null> {
  */
 const originalFetch: typeof fetch = globalThis.fetch.bind(globalThis);
 globalThis.fetch = (async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.href : null;
+  const isApi = !!url && url.startsWith(`${API_URL}/api/`);
+  // Tells the API this build understands externally-registered events (older builds don't get them in the feed).
+  if (isApi) {
+    const withFeatures = new Headers(init?.headers);
+    withFeatures.set("X-App-Features", "external-reg");
+    init = { ...init, headers: withFeatures };
+  }
   const res = await originalFetch(input, init);
   if (res.status !== 401) return res;
-  const url = typeof input === "string" ? input : input instanceof URL ? input.href : null;
-  if (!url || !url.startsWith(`${API_URL}/api/`)) return res;
+  if (!isApi) return res;
   const headers = new Headers(init?.headers);
   const auth = headers.get("Authorization");
   if (!auth) return res;

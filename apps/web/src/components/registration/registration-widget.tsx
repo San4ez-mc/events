@@ -220,6 +220,35 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
       );
     }
 
+    // Registration / tickets live on the organizer's site — no login, the button just opens the link.
+    if (event.registrationMode === "EXTERNAL" && event.externalRegistrationUrl) {
+      return (
+        <div className="flex flex-col gap-2">
+          <a
+            href={event.externalRegistrationUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() =>
+              captureEvent("external_registration_click", {
+                event_id: event.id,
+                category: event.category?.nameUk,
+                city: event.city?.nameUk,
+              })
+            }
+          >
+            <Button className="w-full">
+              {event.priceType === "PAID"
+                ? t("registration.externalBuy")
+                : t("registration.externalRegister")}
+            </Button>
+          </a>
+          <p className="text-center text-xs text-muted">
+            {t("registration.externalHint")}
+          </p>
+        </div>
+      );
+    }
+
     if (authLoading || registration === undefined) {
       return (
         <Button disabled className="w-full">

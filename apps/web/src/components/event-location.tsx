@@ -79,7 +79,7 @@ export function EventLocation({ event }: { event: EventDetail }) {
             <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </a>
         )}
-        {data.addressText && (
+        {data.addressText && event.format !== "ONLINE" && (
           <a
             href={`https://www.google.com/maps/dir/?api=1&destination=${destination}`}
             target="_blank"
@@ -91,7 +91,7 @@ export function EventLocation({ event }: { event: EventDetail }) {
           </a>
         )}
       </div>
-      {hasCoords && (
+      {hasCoords && event.format !== "ONLINE" && (
         <iframe
           title="map"
           loading="lazy"

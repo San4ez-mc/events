@@ -77,7 +77,12 @@ export function SwipeCard({
   const place = [event.city?.nameUk, event.district?.nameUk].filter(Boolean).join(", ");
   const isFree = event.priceType !== "PAID";
   const social = event.social;
-  const goingLabel = event.capacity ? `${social?.registeredCount ?? 0} / ${event.capacity}` : String(social?.registeredCount ?? 0);
+  const goingLabel =
+    event.registrationMode === "EXTERNAL"
+      ? "∞"
+      : event.capacity
+        ? `${social?.registeredCount ?? 0} / ${event.capacity}`
+        : String(social?.registeredCount ?? 0);
 
   return (
     <Animated.View

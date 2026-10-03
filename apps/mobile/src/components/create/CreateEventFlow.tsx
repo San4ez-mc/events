@@ -56,6 +56,9 @@ interface EventDetail {
   presetParticipants?: number | null;
   minParticipants: number | string | null;
   approvalMode: "AUTO" | "ORGANIZER_APPROVAL";
+  registrationMode?: "INTERNAL" | "EXTERNAL";
+  externalRegistrationUrl?: string | null;
+  priceOptions?: { id: string; name: string; price: number | string; capacity: number | null }[];
   visibility: "PUBLIC" | "PRIVATE";
   ageRestriction: number | null;
   rules: string | null;
@@ -85,6 +88,9 @@ interface Form {
   presetParticipants: string;
   minParticipants: string;
   approvalMode: "AUTO" | "ORGANIZER_APPROVAL";
+  registrationMode: "INTERNAL" | "EXTERNAL";
+  externalRegistrationUrl: string;
+  packages: { id?: string; name: string; price: string; capacity: number | null }[];
   visibility: "PUBLIC" | "PRIVATE";
   adultsOnly: boolean;
   rules: string;
@@ -163,6 +169,9 @@ const INITIAL: Form = {
   presetParticipants: "",
   minParticipants: "",
   approvalMode: "AUTO",
+  registrationMode: "INTERNAL",
+  externalRegistrationUrl: "",
+  packages: [],
   visibility: "PUBLIC",
   adultsOnly: false,
   rules: "",
@@ -251,6 +260,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   const { t, locale } = useTranslations();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<Form>(INITIAL);
+  const [packagesTouched, setPackagesTouched] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
   const [slug, setSlug] = useState<string | null>(null);
   const [media, setMedia] = useState<MediaItem[]>([]);
@@ -361,6 +371,9 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
           presetParticipants: e.presetParticipants ? String(e.presetParticipants) : "",
           minParticipants: e.minParticipants?.toString() ?? "",
           approvalMode: e.approvalMode,
+          registrationMode: e.registrationMode ?? "INTERNAL",
+          externalRegistrationUrl: e.externalRegistrationUrl ?? "",
+          packages: (e.priceOptions ?? []).map((o) => ({ id: o.id, name: o.name, price: String(Number(o.price)), capacity: o.capacity })),
           visibility: e.visibility,
           adultsOnly: (e.ageRestriction ?? 0) >= 18,
           rules: e.rules ?? "",
@@ -505,10 +518,12 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
         youtubeUrl: normalizeUrl(form.youtubeUrl),
         priceType: form.priceType,
         price: form.priceType === "PAID" && form.price ? Number(form.price) : undefined,
-        capacity: form.capacity ? Number(form.capacity) : undefined,
-        presetParticipants: Number(form.presetParticipants || 0),
-        minParticipants: form.minParticipants ? Number(form.minParticipants) : undefined,
+        capacity: form.registrationMode === "EXTERNAL" ? undefined : form.capacity ? Number(form.capacity) : undefined,
+        presetParticipants: form.registrationMode === "EXTERNAL" ? 0 : Number(form.presetParticipants || 0),
+        minParticipants: form.registrationMode === "EXTERNAL" ? undefined : form.minParticipants ? Number(form.minParticipants) : undefined,
         approvalMode: form.approvalMode,
+        registrationMode: form.registrationMode,
+        externalRegistrationUrl: form.registrationMode === "EXTERNAL" ? normalizeUrl(form.externalRegistrationUrl) : undefined,
         visibility: form.visibility,
         ageRestriction: form.adultsOnly ? 18 : 0,
         rules: form.rules.trim() || undefined,
@@ -542,6 +557,14 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
     const body = payloadFor(currentStep);
     if (eventId && Object.values(body).some((v) => v !== undefined)) {
       await authed(`/events/${eventId}`, { method: "PATCH", body: JSON.stringify(body) });
+    }
+    if (eventId && currentStep === 1 && (form.packages.length > 0 || packagesTouched)) {
+      // Only sent when there is something to save or the organizer changed the list — never wipes tiers we failed to load.
+      // Participation packages (ticket types with their own price) — replaced as a whole, existing ones keep their id.
+      const items = form.packages
+        .filter((p) => p.name.trim())
+        .map((p) => ({ ...(p.id ? { id: p.id } : {}), name: p.name.trim(), price: Number(p.price || 0), ...(p.capacity ? { capacity: p.capacity } : {}) }));
+      await authed(`/events/${eventId}/price-options`, { method: "PUT", body: JSON.stringify({ items }) });
     }
 
     // New events only — editing an already-recurring event is a bulk-occurrence operation that
@@ -987,6 +1010,51 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
                     </Field>
                   </>
                 )}
+                <Section title={t("create.registrationMode")}>
+                  <Chips
+                    value={form.registrationMode}
+                    options={[
+                      { value: "INTERNAL" as const, label: t("create.regInternal") },
+                      { value: "EXTERNAL" as const, label: t("create.regExternal") },
+                    ]}
+                    onChange={(v) => set({ registrationMode: v })}
+                  />
+                </Section>
+                {form.registrationMode === "EXTERNAL" && (
+                  <>
+                    <Field label={t("create.externalUrl")} required>
+                      <TextInput value={form.externalRegistrationUrl} onChangeText={(v) => set({ externalRegistrationUrl: v })} style={styles.input} autoCapitalize="none" keyboardType="url" placeholder="https://" placeholderTextColor={colors.muted} />
+                    </Field>
+                    <Text style={{ color: colors.muted, fontSize: 12 }}>{t("create.externalHint")}</Text>
+                  </>
+                )}
+                <Section title={t("create.packages")}>
+                  <Text style={{ color: colors.muted, fontSize: 12 }}>{t("create.packagesHint")}</Text>
+                  {form.packages.map((pkg, i) => (
+                    <View key={pkg.id ?? `new-${i}`} style={styles.row}>
+                      <View style={{ flex: 2 }}>
+                        <TextInput value={pkg.name} onChangeText={(v) => set({ packages: form.packages.map((x, j) => (j === i ? { ...x, name: v } : x)) })} style={styles.input} placeholder={t("create.packageName")} placeholderTextColor={colors.muted} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <TextInput value={pkg.price} onChangeText={(v) => set({ packages: form.packages.map((x, j) => (j === i ? { ...x, price: v.replace(/[^0-9.]/g, "") } : x)) })} style={styles.input} keyboardType="decimal-pad" placeholder="грн" placeholderTextColor={colors.muted} />
+                      </View>
+                      <Pressable onPress={() => {
+                        setPackagesTouched(true);
+                        set({ packages: form.packages.filter((_, j) => j !== i) });
+                      }} hitSlop={8} style={{ justifyContent: "center" }}>
+                        <Ionicons name="close-circle" size={22} color={colors.muted} />
+                      </Pressable>
+                    </View>
+                  ))}
+                  {form.packages.length < 10 && (
+                    <Button title={t("create.addPackage")} variant="secondary" onPress={() => {
+                      setPackagesTouched(true);
+                      set({ packages: [...form.packages, { name: "", price: "", capacity: null }] });
+                    }} />
+                  )}
+                </Section>
+                {form.registrationMode === "INTERNAL" && (
+                  <>
                 <View style={styles.row}>
                   <View style={{ flex: 1 }}>
                     <Field label={t("create.maxPeople")}>
@@ -1013,6 +1081,8 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
                     onChange={(v) => set({ approvalMode: v })}
                   />
                 </Section>
+                  </>
+                )}
                 <Section title={t("events.wizard.visibility")}>
                   <Chips
                     value={form.visibility}

@@ -20,6 +20,8 @@ export interface SocialProof {
 export interface EventCard {
   description?: string | null;
   capacity?: number | null;
+  registrationMode?: "INTERNAL" | "EXTERNAL";
+  externalRegistrationUrl?: string | null;
   social?: SocialProof;
   id: string;
   slug: string;

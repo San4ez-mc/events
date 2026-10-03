@@ -12,6 +12,7 @@ interface Insights {
   activation?: { signups: number; activated24h: number; avgMinutesToFirstAction: number | null };
   retention?: { cohort: number; d1: number; d7: number };
   swipes?: { right: number; left: number };
+  externalRegistrations?: { clicks: number; people: number; top: { eventId: string; title: string; clicks: number }[] };
   searches?: { top: { query: string; count: number }[]; noResults: { query: string; count: number }[] };
   supplyDemand: { category: string; events: number; views: number; saves: number; registrations: number }[];
   supplyDemandByCity: { city: string; events: number; views: number; saves: number; registrations: number }[];
@@ -121,6 +122,19 @@ export function InsightsPanel() {
       rows: [
         { key: "r", label: i("swipeRight"), value: `${data.swipes.right}${pct(data.swipes.right, total)}` },
         { key: "l", label: i("swipeLeft"), value: `${data.swipes.left}${pct(data.swipes.left, total)}` },
+      ],
+    });
+  }
+  if (data.externalRegistrations) {
+    const x = data.externalRegistrations;
+    sections.push({
+      id: "externalClicks",
+      title: i("externalClicks"),
+      hint: i("externalClicksHint"),
+      rows: [
+        { key: "c", label: i("externalTotal"), value: String(x.clicks) },
+        { key: "p", label: i("externalPeople"), value: String(x.people) },
+        ...x.top.map((e) => ({ key: e.eventId, label: e.title, value: String(e.clicks) })),
       ],
     });
   }

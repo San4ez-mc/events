@@ -227,7 +227,12 @@
       "priceDonation": "Donation (any amount)",
       "donationHint": "Entry is free. Attendees can optionally support you through the link below — any amount they choose.",
       "presetParticipants": "Participants you already have (optional)",
-      "presetParticipantsHint": "If you already gathered people outside Kiro, enter the number — it counts toward registrations and reduces the free spots."
+      "presetParticipantsHint": "If you already gathered people outside Kiro, enter the number — it counts toward registrations and reduces the free spots.",
+      "registrationMode": "Where people register",
+      "regInternal": "In Kiro",
+      "regExternal": "On the organizer's site",
+      "externalUrl": "Registration / tickets link",
+      "externalHint": "People tap “Register” and are sent to this link. Capacity is unlimited — Kiro shows ∞."
     },
     "actions": {
       "save": "Save",
@@ -419,7 +424,10 @@
     "eventCancelled": "This event was cancelled by the organizer",
     "ticketType": "Ticket type",
     "showAsParticipant": "Show me among the participants on the event page",
-    "donate": "Support the organizer"
+    "donate": "Support the organizer",
+    "externalRegister": "Register on the organizer's site",
+    "externalBuy": "Buy a ticket on the organizer's site",
+    "externalHint": "Registration and payment happen on the organizer's side."
   },
   "notifications": {
     "markAllRead": "Mark all as read"
@@ -733,7 +741,11 @@
       "rejected": "Rejected",
       "notifications": "Notification delivery",
       "notificationsHint": "If PUSH is almost all FAILED, the FCM key isn't configured",
-      "empty": "No data yet"
+      "empty": "No data yet",
+      "externalClicks": "Taps to the organizer's registration",
+      "externalClicksHint": "How often people tapped Register / Buy ticket on events with external registration, and which events get the most taps.",
+      "externalTotal": "Total taps",
+      "externalPeople": "Unique people"
     }
   },
   "reviews": {
@@ -904,7 +916,8 @@
     "EVENT_ALREADY_CANCELLED": "This event is already cancelled",
     "FREE_CREDITS_ALREADY_CLAIMED": "Free credits were already claimed",
     "REVIEW_NOT_ELIGIBLE": "You can leave a review only after attending the event",
-    "REVIEW_ALREADY_EXISTS": "You already left a review"
+    "REVIEW_ALREADY_EXISTS": "You already left a review",
+    "EXTERNAL_REGISTRATION": "Registration for this event happens on the organizer's site"
   },
   "filters": {
     "title": "Filters",
@@ -1003,7 +1016,16 @@
     "maxPeople": "Maximum participants",
     "optional": "optional",
     "presetParticipants": "Participants you already have (optional)",
-    "presetParticipantsHint": "If you already gathered people outside Kiro, enter the number — it counts toward registrations and reduces the free spots."
+    "presetParticipantsHint": "If you already gathered people outside Kiro, enter the number — it counts toward registrations and reduces the free spots.",
+    "registrationMode": "Where people register",
+    "regInternal": "In Kiro",
+    "regExternal": "On the organizer's site",
+    "externalUrl": "Registration / tickets link",
+    "externalHint": "People tap “Register” and are sent to this link. Capacity is unlimited — Kiro shows ∞.",
+    "packages": "Participation packages",
+    "packagesHint": "Optional: several participation options with different prices (e.g. “Standard”, “VIP”).",
+    "packageName": "Package name",
+    "addPackage": "Add package"
   },
   "myEvents": {
     "upcoming": "Upcoming",

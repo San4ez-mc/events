@@ -90,6 +90,8 @@ export interface EventDetail extends EventSummary {
   capacity: number | null;
   minParticipants: number | null;
   presetParticipants?: number;
+  registrationMode?: "INTERNAL" | "EXTERNAL";
+  externalRegistrationUrl?: string | null;
   registrationDeadline: string | null;
   approvalMode: ApprovalMode;
   ageRestriction: number | null;
@@ -179,6 +181,7 @@ export interface SocialProof {
 export interface EventCard extends EventSummary {
   description?: string | null;
   capacity?: number | null;
+  registrationMode?: "INTERNAL" | "EXTERNAL";
   social?: SocialProof;
   category: { id: string; nameUk: string; nameEn: string } | null;
   additionalCategories?: { category: { id: string; nameUk: string; nameEn: string } }[];

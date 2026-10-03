@@ -18,6 +18,7 @@ import { ReviewsSection } from "../../src/components/event/ReviewsSection";
 import { sourceFromParam, track } from "../../src/lib/analytics";
 import { formatCurrency, formatPriceLabel, formatShortDateTime } from "../../src/lib/format";
 import type { EventDetail, Registration } from "../../src/lib/event-types";
+import { VideoPlayerModal, type VideoSource } from "../../src/components/event/VideoPlayerModal";
 import { radius, spacing, type Palette, useThemedStyles } from "../../src/lib/theme";
 
 /** Pulls the video id out of any common YouTube URL shape (watch?v=, youtu.be/, /embed/, /shorts/). */
@@ -45,6 +46,7 @@ export default function EventDetailScreen() {
   const [tierId, setTierId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
+  const [playingVideo, setPlayingVideo] = useState<VideoSource | null>(null);
   const [reportReason, setReportReason] = useState<string | null>(null);
   const [reportComment, setReportComment] = useState("");
   useEffect(() => {
@@ -295,13 +297,14 @@ export default function EventDetailScreen() {
 
   return (
     <>
+    <VideoPlayerModal source={playingVideo} onClose={() => setPlayingVideo(null)} />
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.galleryBleed}>
         <EventGallery media={event.media} />
       </View>
       {youtubeEmbedId(event.youtubeUrl) && (
-        <Pressable style={styles.youtubeCard} onPress={() => void Linking.openURL(event.youtubeUrl!)}>
+        <Pressable style={styles.youtubeCard} onPress={() => setPlayingVideo({ kind: "youtube", id: youtubeEmbedId(event.youtubeUrl)! })}>
           <Image source={{ uri: `https://img.youtube.com/vi/${youtubeEmbedId(event.youtubeUrl)}/hqdefault.jpg` }} style={styles.youtubeThumb} />
           <View style={styles.youtubePlay}>
             <Ionicons name="logo-youtube" size={28} color={colors.white} />
@@ -375,7 +378,7 @@ export default function EventDetailScreen() {
           <View style={styles.socialRow}>
             <Ionicons name="people" size={18} color={colors.foreground} />
             <Text style={styles.socialCount}>
-              {event.capacity != null ? `${social.registeredCount} / ${event.capacity}` : social.registeredCount}{" "}
+              {event.registrationMode === "EXTERNAL" ? "∞" : event.capacity != null ? `${social.registeredCount} / ${event.capacity}` : social.registeredCount}{" "}
               <Text style={styles.socialMuted}>{t("events.page.participantsCount")}</Text>
             </Text>
             {spotsLeft !== null && (
@@ -445,7 +448,7 @@ export default function EventDetailScreen() {
                 <Text style={[styles.locationText, { textDecorationLine: "underline" }]}>{t("events.location.joinOnline")}</Text>
               </Pressable>
             )}
-            {mapsUrl && (
+            {mapsUrl && event.format !== "ONLINE" && (
               <Pressable style={styles.routeButton} onPress={() => void Linking.openURL(mapsUrl)}>
                 <Ionicons name="navigate" size={16} color={colors.white} />
                 <Text style={styles.routeText}>{t("events.location.route")}</Text>
@@ -600,6 +603,23 @@ export default function EventDetailScreen() {
     if (!event) return null;
     if (event.status === "CANCELLED") return <Text style={styles.error}>{t("registration.eventCancelled")}</Text>;
     if (event.status !== "PUBLISHED") return <Text style={styles.muted}>{t("registration.registrationClosed")}</Text>;
+
+    // Registration / tickets live on the organizer's site: no login, no Kiro registration — the button just opens the link.
+    if (event.registrationMode === "EXTERNAL" && event.externalRegistrationUrl) {
+      const url = event.externalRegistrationUrl;
+      return (
+        <View style={styles.form}>
+          <Button
+            title={event.priceType === "PAID" ? t("registration.externalBuy") : t("registration.externalRegister")}
+            onPress={() => {
+              captureEvent("external_registration_click", { event_id: event.id, category: event.category?.nameUk, city: event.city?.nameUk });
+              void Linking.openURL(url);
+            }}
+          />
+          <Text style={styles.muted}>{t("registration.externalHint")}</Text>
+        </View>
+      );
+    }
 
     if (authLoading || registration === undefined) return <ActivityIndicator color={colors.accentFrom} />;
     if (!user) return <Button title={t("auth.login.title")} onPress={() => router.push("/login")} />;

@@ -58,6 +58,7 @@ module.exports = {
       "expo-web-browser",
       "expo-notifications",
       "expo-font",
+      "expo-video",
     ],
     extra: {
       router: {},

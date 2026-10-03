@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, Req } from "@nestjs/common";
+import { isLegacyNativeClient } from "../common/utils/client-features";
 import { ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 import { Public } from "../common/decorators/public.decorator";
@@ -26,6 +27,7 @@ export class DiscoveryController {
   @Public()
   @Get()
   getFeed(@Query() query: DiscoveryQueryDto, @Req() req: Request) {
+    if (isLegacyNativeClient(req)) Object.assign(query, { hideExternal: true }); // not a DTO field: set server-side only
     return this.discoveryService.getFeed(this.tryExtractUserId(req), query);
   }
 

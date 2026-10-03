@@ -67,6 +67,9 @@ export class RegistrationsService {
       });
       if (!event) throw new ResourceNotFoundException("Event not found");
       this.assertRegistrationOpen(event);
+      if (event.registrationMode === "EXTERNAL") {
+        throw new ApiException("EXTERNAL_REGISTRATION", "Registration for this event happens on the organizer's site", 409);
+      }
       await this.assertOldEnough(tx, userId, event.ageRestriction);
 
       const existing = await tx.registration.findUnique({

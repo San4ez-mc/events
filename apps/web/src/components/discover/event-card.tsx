@@ -43,9 +43,12 @@ export function EventCard({
   const isFree = event.priceType !== "PAID";
   const place = [cityName, districtName].filter(Boolean).join(", ");
   const social = event.social;
-  const goingLabel = event.capacity
-    ? `${social?.registeredCount ?? 0} / ${event.capacity}`
-    : String(social?.registeredCount ?? 0);
+  const goingLabel =
+    event.registrationMode === "EXTERNAL"
+      ? "∞"
+      : event.capacity
+        ? `${social?.registeredCount ?? 0} / ${event.capacity}`
+        : String(social?.registeredCount ?? 0);
 
   return (
     <div className="relative aspect-[3/4] w-full select-none overflow-hidden rounded-3xl bg-surface shadow-xl ring-1 ring-black/5">

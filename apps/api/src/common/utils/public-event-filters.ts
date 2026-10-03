@@ -17,6 +17,8 @@ export interface PublicEventFilterParams {
   capacityMax?: number;
   dateFrom?: string;
   dateTo?: string;
+  /** Set by controllers for old app builds that can't handle externally-registered events. */
+  hideExternal?: boolean;
 }
 
 /** Only ever surfaces published, public events — never drafts or private events — to anonymous/public callers. */
@@ -54,6 +56,7 @@ export function buildPublicEventWhere(query: PublicEventFilterParams, now: Date)
     AND: and,
     status: "PUBLISHED",
     visibility: "PUBLIC",
+    registrationMode: query.hideExternal ? "INTERNAL" : undefined,
     cityId: query.cityIds?.length ? { in: query.cityIds } : undefined,
     districtId: query.districtIds?.length ? { in: query.districtIds } : undefined,
     format: query.format,
