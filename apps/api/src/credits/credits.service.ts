@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { SYSTEM_SETTING_DEFAULTS, SystemSettingKey } from "@kiro/types";
 import { PrismaService } from "../prisma/prisma.service";
 import { ApiException } from "../common/exceptions/api.exception";
+import { NotificationsService } from "../notifications/notifications.service";
 import { AuditLogService } from "../audit/audit-log.service";
 
 const FREE_BONUS_SOURCE_TYPE = "FREE_ORGANIZER_BONUS";
@@ -15,6 +16,7 @@ export class CreditsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLog: AuditLogService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async getBalance(userId: string): Promise<number> {
@@ -155,7 +157,7 @@ export class CreditsService {
   }
 
   /** Phase 10's `/admin/credits` — a manual grant or deduction, always audited, always a fresh ledger row (never editing the balance directly). */
-  async adminAdjust(adminId: string, userId: string, delta: number, description: string): Promise<number> {
+  async adminAdjust(adminId: string, userId: string, delta: number, description: string, notify = true): Promise<number> {
     await this.prisma.listingCreditLedger.create({
       data: {
         userId,
@@ -175,6 +177,20 @@ export class CreditsService {
       entityId: userId,
       after: { delta, description, newBalance: balance },
     });
+
+    // A manual referral approval sends its own, more specific message — it passes notify=false.
+    if (notify && delta !== 0) {
+      const n = Math.abs(delta);
+      await this.notifications
+        .create({
+          userId,
+          type: "MODERATION_UPDATE",
+          title: "Credits updated",
+          body: delta > 0 ? `You received ${n} listing credit${n === 1 ? "" : "s"} from the Kiro team.` : `${n} listing credit${n === 1 ? " was" : "s were"} deducted from your balance.`,
+          payloadJson: { screen: "credits" },
+        })
+        .catch(() => undefined);
+    }
 
     return balance;
   }

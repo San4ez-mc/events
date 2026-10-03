@@ -1111,6 +1111,7 @@ enum NotificationType {
   CATEGORY_MERGED
   DISTRICT_MERGED
   ORGANIZER_MESSAGE
+  MODERATION_UPDATE
 }
 
 enum NotificationChannel {

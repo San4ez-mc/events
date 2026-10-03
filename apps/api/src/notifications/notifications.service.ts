@@ -58,6 +58,30 @@ export class NotificationsService {
   }
 
   /**
+   * Heads-up for staff when something needs their decision (a new report, a category awaiting approval, an event held
+   * for moderation...). Goes through create(), so each gets the in-app row and a push. Best-effort: a failure here must
+   * never break the user action that triggered it, so errors are swallowed per recipient.
+   */
+  async notifyStaff(params: {
+    roles: ("MODERATOR" | "ADMIN" | "SUPER_ADMIN")[];
+    title: string;
+    body: string;
+    /** Where tapping it should land in the admin screen (the app opens /admin on this tab). */
+    adminTab: string;
+    excludeUserId?: string;
+  }): Promise<void> {
+    const staff = await this.prisma.user.findMany({
+      where: { role: { in: params.roles }, status: "ACTIVE", ...(params.excludeUserId ? { id: { not: params.excludeUserId } } : {}) },
+      select: { id: true },
+    });
+    await Promise.all(
+      staff.map((u) =>
+        this.create({ userId: u.id, type: "MODERATION_UPDATE", title: params.title, body: params.body, payloadJson: { adminTab: params.adminTab } }).catch(() => undefined),
+      ),
+    );
+  }
+
+  /**
    * §40 (UX) — a manual announcement to every ACTIVE user (suspended/blocked/deleted accounts are skipped).
    * Goes through create(), so each recipient still gets the in-app row and a push unless they opted out of
    * push. Walks users in id-ordered pages so it never loads the whole table, and sends a handful at a time

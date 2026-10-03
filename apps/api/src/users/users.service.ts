@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { NotificationsService } from "../notifications/notifications.service";
 import sharp from "sharp";
 import * as argon2 from "argon2";
 import { randomBytes } from "node:crypto";
@@ -41,6 +42,7 @@ export class UsersService {
     private readonly auditLog: AuditLogService,
     private readonly storage: StorageService,
     private readonly authService: AuthService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async getFullProfile(userId: string) {
@@ -412,6 +414,17 @@ export class UsersService {
     if (!user) throw new ResourceNotFoundException("User not found");
 
     await this.prisma.user.update({ where: { id: userId }, data: { status } });
+    // Tell the person (DELETED is the user's own account-removal path — nothing to announce).
+    if (status !== user.status && status !== "DELETED") {
+      await this.notifications
+        .create({
+          userId,
+          type: "MODERATION_UPDATE",
+          title: "Account update",
+          body: status === "SUSPENDED" ? "Your account was suspended by a moderator. Contact support: kiro@fineko.space." : status === "BLOCKED" ? "Your account was blocked. Contact support: kiro@fineko.space." : "Your account is active again.",
+        })
+        .catch(() => undefined);
+    }
     await this.auditLog.record({
       actorUserId: adminId,
       action: "USER_STATUS_CHANGE",

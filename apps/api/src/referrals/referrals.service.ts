@@ -5,6 +5,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ResourceNotFoundException } from "../common/exceptions/common-exceptions";
 import { ApiException } from "../common/exceptions/api.exception";
 import { AuditLogService } from "../audit/audit-log.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { CreditsService } from "../credits/credits.service";
 import type { CreateReferralSubmissionDto } from "./dto/create-referral-submission.dto";
 import type { ListReferralSubmissionsDto } from "./dto/list-referral-submissions.dto";
@@ -27,12 +28,24 @@ export class ReferralsService {
     private readonly prisma: PrismaService,
     private readonly auditLog: AuditLogService,
     private readonly credits: CreditsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
-  create(userId: string, dto: CreateReferralSubmissionDto) {
-    return this.prisma.referralSubmission.create({
+  async create(userId: string, dto: CreateReferralSubmissionDto) {
+    const submission = await this.prisma.referralSubmission.create({
       data: { userId, eventId: dto.eventId, note: dto.note },
     });
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { name: true, nickname: true, email: true } });
+    await this.notifications
+      .notifyStaff({
+        roles: ["ADMIN", "SUPER_ADMIN"],
+        title: "New referral claim",
+        body: `${user?.name ?? user?.nickname ?? user?.email ?? "A user"} submitted a referral claim.`,
+        adminTab: "referrals",
+        excludeUserId: userId,
+      })
+      .catch(() => undefined);
+    return submission;
   }
 
   listMine(userId: string) {
@@ -78,8 +91,18 @@ export class ReferralsService {
 
     if (dto.status === "APPROVED") {
       const amount = await this.getBonusAmount();
-      await this.credits.adminAdjust(adminId, submission.userId, amount, `Referral bonus (submission ${id})`);
+      await this.credits.adminAdjust(adminId, submission.userId, amount, `Referral bonus (submission ${id})`, false);
     }
+
+    await this.notifications
+      .create({
+        userId: submission.userId,
+        type: "MODERATION_UPDATE",
+        title: dto.status === "APPROVED" ? "Referral approved" : "Referral not approved",
+        body: dto.status === "APPROVED" ? `Your share was approved — ${await this.getBonusAmount()} credits added.` : "Your share wasn't approved.",
+        payloadJson: { screen: "credits" },
+      })
+      .catch(() => undefined);
 
     await this.auditLog.record({
       actorUserId: adminId,

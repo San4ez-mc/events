@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { resolveTargets, targetFor } from "../common/utils/target-labels";
 import type { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -38,7 +39,9 @@ export class AuditLogService {
       include: { actor: { select: { id: true, name: true, nickname: true, email: true } } },
     });
     const hasMore = items.length > params.limit;
-    const page = hasMore ? items.slice(0, params.limit) : items;
+    const rows = hasMore ? items.slice(0, params.limit) : items;
+    const targets = await resolveTargets(this.prisma, rows.map((r) => ({ type: r.entityType, id: r.entityId })));
+    const page = rows.map((r) => ({ ...r, target: targetFor(targets, r.entityType, r.entityId) }));
     return { items: page, nextCursor: hasMore ? page[page.length - 1]!.id : null, hasMore };
   }
 }

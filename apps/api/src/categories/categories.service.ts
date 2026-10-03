@@ -68,6 +68,17 @@ export class CategoriesService {
       throw new ApiException("VALIDATION_ERROR", "A merged category can't be edited", 400);
     }
     const updated = await this.prisma.category.update({ where: { id }, data: dto });
+    // Whoever suggested it hears the outcome (the suggestion sat PENDING and invisible until now).
+    if (before.status === "PENDING" && before.createdByUserId && (dto.status === "ACTIVE" || dto.status === "ARCHIVED")) {
+      await this.notifications
+        .create({
+          userId: before.createdByUserId,
+          type: "MODERATION_UPDATE",
+          title: dto.status === "ACTIVE" ? "Category approved" : "Category not approved",
+          body: dto.status === "ACTIVE" ? `Your suggested category "${before.nameUk}" was approved and is now available.` : `Your suggested category "${before.nameUk}" wasn't approved.`,
+        })
+        .catch(() => undefined);
+    }
     await this.auditLog.record({
       actorUserId: adminId,
       action: dto.status && dto.status !== before.status ? `CATEGORY_${dto.status}` : "CATEGORY_UPDATE",
@@ -104,7 +115,7 @@ export class CategoriesService {
       slug = slugifyUnique(dto.nameUk);
     }
 
-    return this.prisma.category.create({
+    const created = await this.prisma.category.create({
       data: {
         slug,
         nameUk: dto.nameUk,
@@ -115,6 +126,10 @@ export class CategoriesService {
         createdByUserId: userId,
       },
     });
+    await this.notifications
+      .notifyStaff({ roles: ["ADMIN", "SUPER_ADMIN"], title: "New category to approve", body: `"${dto.nameUk}" is waiting for approval.`, adminTab: "categories", excludeUserId: userId })
+      .catch(() => undefined);
+    return created;
   }
 
   /**

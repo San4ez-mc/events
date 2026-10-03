@@ -14,7 +14,7 @@ interface NotificationItem {
   body: string;
   readAt: string | null;
   createdAt: string;
-  payloadJson: { eventId?: string; slug?: string; friendshipId?: string; invitationId?: string } | null;
+  payloadJson: { eventId?: string; slug?: string; friendshipId?: string; invitationId?: string; adminTab?: string; screen?: string } | null;
 }
 
 const FRIEND_TYPES = new Set(["FRIEND_REQUEST", "FRIEND_ACCEPTED", "FRIEND_EVENT_REGISTERED"]);
@@ -82,6 +82,15 @@ export default function NotificationsScreen() {
     }
     if (item.type.includes("INVITATION") || item.payloadJson?.invitationId) {
       router.push("/invitations");
+      return;
+    }
+    // Staff alerts (new report, category to approve...) open the admin screen on the matching tab.
+    if (item.payloadJson?.adminTab) {
+      router.push(`/admin?tab=${item.payloadJson.adminTab}`);
+      return;
+    }
+    if (item.payloadJson?.screen === "credits") {
+      router.push("/credits");
       return;
     }
     const eventId = item.payloadJson?.eventId;

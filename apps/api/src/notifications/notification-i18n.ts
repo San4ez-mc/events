@@ -41,6 +41,27 @@ const RULES: Rule[] = [
   { title: "Payment confirmed", ukTitle: "Оплату підтверджено", body: /^Your payment for "(.*)" was confirmed\. See you there!$/s, ukBody: (m) => `Вашу оплату за «${q(m)}» підтверджено. До зустрічі!` },
   { title: "A spot opened up!", ukTitle: "З'явилося місце!", body: /^A spot opened up for "(.*)" — you're in\.$/s, ukBody: (m) => `З'явилося місце на «${q(m)}» — ви в списку.` },
   { title: "A participant cancelled", ukTitle: "Учасник скасував реєстрацію", body: /^(.*) cancelled their registration for "(.*)"\.$/s, ukBody: (m) => `${q(m)} скасував(-ла) реєстрацію на «${q(m, 2)}».` },
+  // --- Admin decisions about the user's own submissions/account ---
+  { title: "Category approved", ukTitle: "Категорію схвалено", body: /^Your suggested category "(.*)" was approved and is now available\.$/s, ukBody: (m) => `Вашу категорію «${q(m)}» схвалено — вона вже доступна.` },
+  { title: "Category not approved", ukTitle: "Категорію не схвалено", body: /^Your suggested category "(.*)" wasn't approved\.$/s, ukBody: (m) => `Вашу категорію «${q(m)}» не схвалено.` },
+  { title: "District approved", ukTitle: "Район схвалено", body: /^Your suggested district "(.*)" was approved and is now available\.$/s, ukBody: (m) => `Ваш район «${q(m)}» схвалено — він вже доступний.` },
+  { title: "District not approved", ukTitle: "Район не схвалено", body: /^Your suggested district "(.*)" wasn't approved\.$/s, ukBody: (m) => `Ваш район «${q(m)}» не схвалено.` },
+  { title: "Account update", ukTitle: "Оновлення акаунта", body: /^Your account was suspended by a moderator\. Contact support: (.*)\.$/s, ukBody: (m) => `Ваш акаунт призупинено модератором. Зверніться в підтримку: ${q(m)}.` },
+  { title: "Account update", ukTitle: "Оновлення акаунта", body: /^Your account was blocked\. Contact support: (.*)\.$/s, ukBody: (m) => `Ваш акаунт заблоковано. Зверніться в підтримку: ${q(m)}.` },
+  { title: "Account update", ukTitle: "Оновлення акаунта", body: /^Your account is active again\.$/s, ukBody: () => "Ваш акаунт знову активний." },
+  { title: "Credits updated", ukTitle: "Кредити оновлено", body: /^You received (\d+) listing credits? from the Kiro team\.$/s, ukBody: (m) => `Вам нараховано кредитів на публікацію: ${q(m)}.` },
+  { title: "Credits updated", ukTitle: "Кредити оновлено", body: /^(\d+) listing credits? (?:was|were) deducted from your balance\.$/s, ukBody: (m) => `З вашого балансу списано кредитів: ${q(m)}.` },
+  { title: "Referral approved", ukTitle: "Заявку схвалено", body: /^Your share was approved — (\d+) credits added\.$/s, ukBody: (m) => `Ваш репост схвалено — нараховано кредитів: ${q(m)}.` },
+  { title: "Referral not approved", ukTitle: "Заявку не схвалено", body: /^Your share wasn't approved\.$/s, ukBody: () => "Ваш репост не схвалено." },
+  { title: "Review hidden", ukTitle: "Відгук приховано", body: /^Your review of "(.*)" was hidden by a moderator\.$/s, ukBody: (m) => `Ваш відгук про «${q(m)}» приховано модератором.` },
+  { title: "Report reviewed", ukTitle: "Скаргу розглянуто", body: /^Thanks — we reviewed your report and took action\.$/s, ukBody: () => "Дякуємо — ми розглянули вашу скаргу й вжили заходів." },
+  { title: "Report reviewed", ukTitle: "Скаргу розглянуто", body: /^We reviewed your report and found no violation\.$/s, ukBody: () => "Ми розглянули вашу скаргу й не знайшли порушення." },
+  // --- Heads-ups for staff ---
+  { title: "New report", ukTitle: "Нова скарга", body: /^Report on "(.*)": (.*)$/s, ukBody: (m) => `Скарга на «${q(m)}»: ${q(m, 2)}` },
+  { title: "New category to approve", ukTitle: "Нова категорія на схвалення", body: /^"(.*)" is waiting for approval\.$/s, ukBody: (m) => `«${q(m)}» чекає на схвалення.` },
+  { title: "New district to approve", ukTitle: "Новий район на схвалення", body: /^"(.*)" is waiting for approval\.$/s, ukBody: (m) => `«${q(m)}» чекає на схвалення.` },
+  { title: "Event needs moderation", ukTitle: "Подія на модерації", body: /^"(.*)" was held for review\.$/s, ukBody: (m) => `«${q(m)}» затримано на перевірку.` },
+  { title: "New referral claim", ukTitle: "Нова реферальна заявка", body: /^(.*) submitted a referral claim\.$/s, ukBody: (m) => `${q(m)} подав(-ла) реферальну заявку.` },
   // Body is the organizer's own free-text message — left untranslated, title only.
   { title: "Message from the organizer", ukTitle: "Повідомлення від організатора" },
 ];

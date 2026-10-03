@@ -3,6 +3,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { ApiException } from "../../common/exceptions/api.exception";
 import { ResourceNotFoundException } from "../../common/exceptions/common-exceptions";
 import { EventsService } from "../../events/events.service";
+import { resolveTargets, targetFor } from "../../common/utils/target-labels";
 
 /** §53/§55 — the admin/moderator queue for the automatic pre-publish content scan's flagged events. */
 @Injectable()
@@ -12,11 +13,13 @@ export class AdminModerationService {
     private readonly eventsService: EventsService,
   ) {}
 
-  listPending() {
-    return this.prisma.moderationCase.findMany({
+  async listPending() {
+    const cases = await this.prisma.moderationCase.findMany({
       where: { status: "PENDING" },
       orderBy: { createdAt: "asc" },
     });
+    const targets = await resolveTargets(this.prisma, cases.map((c) => ({ type: c.targetType, id: c.targetId })));
+    return cases.map((c) => ({ ...c, target: targetFor(targets, c.targetType, c.targetId) }));
   }
 
   async approve(caseId: string, adminId: string) {

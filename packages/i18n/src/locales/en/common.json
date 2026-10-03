@@ -244,7 +244,9 @@
         "wrongInfo": "Wrong information",
         "other": "Other"
       },
-      "follow": "Follow this event"
+      "follow": "Follow this event",
+      "reportCommentPlaceholder": "Describe what's wrong (optional, but it helps the moderator)",
+      "reportSend": "Send report"
     }
   },
   "consent": {
@@ -555,7 +557,9 @@
       "title": "Moderation queue",
       "empty": "Nothing pending",
       "approve": "Approve",
-      "reject": "Reject"
+      "reject": "Reject",
+      "hint": "Events the automatic text check held back before publishing (e.g. war mentions or other sensitive words) land here. The event stays unpublished until you approve or reject it.",
+      "reason": "Why it was held"
     },
     "reports": {
       "title": "Reports",
@@ -563,7 +567,11 @@
       "resolve": "Resolve",
       "dismiss": "Dismiss",
       "hideTarget": "Also hide the reported content",
-      "target": "Target"
+      "target": "Target",
+      "reason": "Reason",
+      "comment": "Reporter's comment",
+      "noComment": "no comment",
+      "from": "Reported by"
     },
     "users": {
       "title": "Users",
@@ -579,7 +587,8 @@
       "never": "Never",
       "total": "Total users",
       "openProfile": "Open profile",
-      "loadMore": "Show more"
+      "loadMore": "Show more",
+      "manage": "Manage user"
     },
     "events": {
       "title": "Events",
@@ -627,7 +636,45 @@
       "empty": "Nothing logged yet",
       "action": "Action",
       "entity": "Entity",
-      "actor": "By"
+      "actor": "By",
+      "system": "System",
+      "balance": "balance",
+      "testOn": "marked as test",
+      "testOff": "test mark removed",
+      "actions": {
+        "USER_STATUS_CHANGE": "User status changed",
+        "USER_ROLE_CHANGE": "User role changed",
+        "EVENT_ADMIN_UPDATE": "Admin edited an event",
+        "EVENT_ADMIN_CANCEL": "Admin cancelled an event",
+        "EVENT_ADMIN_SET_TEST": "Test mark on event",
+        "CATEGORY_ACTIVE": "Category approved",
+        "CATEGORY_ARCHIVED": "Category rejected",
+        "CATEGORY_UPDATE": "Category edited",
+        "CATEGORY_MERGE": "Categories merged",
+        "DISTRICT_ACTIVE": "District approved",
+        "DISTRICT_ARCHIVED": "District rejected",
+        "DISTRICT_UPDATE": "District edited",
+        "DISTRICT_MERGE": "Districts merged",
+        "REPORT_RESOLVE": "Report reviewed",
+        "REFERRAL_SUBMISSION_RESOLVE": "Referral claim reviewed",
+        "CREDIT_ADJUSTMENT": "Credits adjusted manually",
+        "NOTIFICATION_BROADCAST": "Broadcast sent",
+        "MODERATION_APPROVE": "Event approved in moderation",
+        "MODERATION_REJECT": "Event rejected in moderation",
+        "FEATURE_FLAG_SET": "Feature setting changed",
+        "APP_VERSION_SET": "App version changed",
+        "SUBSCRIPTION_SET": "Subscription changed"
+      },
+      "entities": {
+        "User": "User",
+        "Event": "Event",
+        "Category": "Category",
+        "District": "District",
+        "Report": "Report",
+        "ReferralSubmission": "Referral claim",
+        "NOTIFICATION_BROADCAST": "Broadcast",
+        "Review": "Review"
+      }
     },
     "reviews": {
       "title": "Reviews",

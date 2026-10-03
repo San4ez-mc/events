@@ -73,7 +73,7 @@ export class GeographyService {
     if (!city || city.status !== "ACTIVE") throw new ResourceNotFoundException("City not found");
     const existing = await this.prisma.district.findUnique({ where: { cityId_nameUk: { cityId: dto.cityId, nameUk: dto.nameUk.trim() } } });
     if (existing) return existing; // idempotent: same name -> same row, whatever its status
-    return this.prisma.district.create({
+    const created = await this.prisma.district.create({
       data: {
         cityId: dto.cityId,
         nameUk: dto.nameUk.trim(),
@@ -83,6 +83,10 @@ export class GeographyService {
         createdByUserId: userId,
       },
     });
+    await this.notifications
+      .notifyStaff({ roles: ["ADMIN", "SUPER_ADMIN"], title: "New district to approve", body: `"${dto.nameUk.trim()}" is waiting for approval.`, adminTab: "districts", excludeUserId: userId })
+      .catch(() => undefined);
+    return created;
   }
 
   listAllDistrictsForAdmin(cityId?: string) {
@@ -107,6 +111,16 @@ export class GeographyService {
     if (!before) throw new ResourceNotFoundException("District not found");
     if (before.status === "MERGED") throw new ApiException("VALIDATION_ERROR", "A merged district can't be edited", 400);
     const updated = await this.prisma.district.update({ where: { id }, data: dto });
+    if (before.status === "PENDING" && before.createdByUserId && (dto.status === "ACTIVE" || dto.status === "ARCHIVED")) {
+      await this.notifications
+        .create({
+          userId: before.createdByUserId,
+          type: "MODERATION_UPDATE",
+          title: dto.status === "ACTIVE" ? "District approved" : "District not approved",
+          body: dto.status === "ACTIVE" ? `Your suggested district "${before.nameUk}" was approved and is now available.` : `Your suggested district "${before.nameUk}" wasn't approved.`,
+        })
+        .catch(() => undefined);
+    }
     await this.auditLog.record({
       actorUserId: adminId,
       action: dto.status && dto.status !== before.status ? `DISTRICT_${dto.status}` : "DISTRICT_UPDATE",

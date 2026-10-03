@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { API_URL, getAccessToken } from "../../lib/api-client";
 import { useTranslations } from "../../lib/locale-context";
 import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
+import { AdminLoader } from "./AdminLoader";
 
 interface TrafficReport {
   configured: boolean;
@@ -29,7 +30,7 @@ function formatDuration(totalSeconds: number): string {
 
 /** Site + app visitors from PostHog, via the API's /admin/analytics/traffic (the personal API key stays on the server). */
 export function TrafficPanel() {
-  const { colors, styles } = useThemedStyles(makeStyles);
+  const { styles } = useThemedStyles(makeStyles);
   const { t } = useTranslations();
   const [report, setReport] = useState<TrafficReport | null>(null);
 
@@ -44,7 +45,7 @@ export function TrafficPanel() {
     })();
   }, []);
 
-  if (report === null) return <ActivityIndicator color={colors.accentFrom} />;
+  if (report === null) return <AdminLoader />;
   if (!report.configured) return <Text style={styles.muted}>{t("admin.traffic.notConfigured")}</Text>;
   if (report.error || !report.totals) return <Text style={styles.error}>{t("admin.traffic.unavailable")}</Text>;
 

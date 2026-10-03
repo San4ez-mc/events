@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { API_URL, getAccessToken } from "../../lib/api-client";
 import { useTranslations } from "../../lib/locale-context";
 import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
@@ -37,7 +37,7 @@ const pct = (part: number, whole: number) => (whole > 0 ? ` (${Math.round((part 
 
 /** Funnels, activation, retention, search terms (PostHog) and supply/demand, payments, referrals, delivery (our DB) — mobile twin of the web admin block. */
 export function InsightsPanel() {
-  const { colors, styles } = useThemedStyles(makeStyles);
+  const { styles } = useThemedStyles(makeStyles);
   const { t } = useTranslations();
   const [data, setData] = useState<Insights | null>(null);
   const [failed, setFailed] = useState(false);
@@ -55,7 +55,7 @@ export function InsightsPanel() {
   }, []);
 
   if (failed) return <Text style={styles.error}>{t("common.somethingWentWrong")}</Text>;
-  if (!data) return <ActivityIndicator color={colors.accentFrom} />;
+  if (!data) return null;
 
   const i = (k: string) => t(`admin.insights.${k}`);
   const provider = (p: string) => {

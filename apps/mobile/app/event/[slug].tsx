@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { captureEvent } from "../../src/lib/product-analytics";
 import { router, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { File, Paths } from "expo-file-system";
@@ -45,6 +45,14 @@ export default function EventDetailScreen() {
   const [tierId, setTierId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<string | null>(null);
+  const [reportComment, setReportComment] = useState("");
+  useEffect(() => {
+    if (!reportOpen) {
+      setReportReason(null);
+      setReportComment("");
+    }
+  }, [reportOpen]);
   const [qrOpen, setQrOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
@@ -138,14 +146,14 @@ export default function EventDetailScreen() {
   // A native Alert with 5 reasons + Cancel (6 buttons) silently drops buttons past the 3rd on Android — that's
   // why "Скасувати" used to disappear and the popup felt stuck. A real Modal has no such limit and is always
   // dismissable (backdrop tap, hardware back, or the close button).
-  async function sendReport(reason: string) {
+  async function sendReport(reason: string, comment: string) {
     const token = getAccessToken();
     setReportOpen(false);
     if (!token || !event) return;
     const res = await fetch(`${API_URL}/api/v1/reports`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ targetType: "EVENT", targetId: event.id, reason }),
+      body: JSON.stringify({ targetType: "EVENT", targetId: event.id, reason, description: comment.trim() || undefined }),
     }).catch(() => null);
     Alert.alert(res?.ok ? t("events.actions.reportSent") : t("common.somethingWentWrong"));
   }
@@ -556,11 +564,28 @@ export default function EventDetailScreen() {
               </Pressable>
             )}
             {!isOwner &&
+              !reportReason &&
               REPORT_REASONS.map((r) => (
-                <Pressable key={r} style={styles.reportRow} onPress={() => void sendReport(t(`events.actions.reasons.${r}`))}>
+                <Pressable key={r} style={styles.reportRow} onPress={() => setReportReason(t(`events.actions.reasons.${r}`))}>
                   <Text style={styles.reportRowText}>{t(`events.actions.reasons.${r}`)}</Text>
                 </Pressable>
               ))}
+            {!isOwner && reportReason && (
+              <View style={{ padding: spacing.lg, gap: spacing.md }}>
+                <Text style={styles.reportRowText}>{reportReason}</Text>
+                <TextInput
+                  value={reportComment}
+                  onChangeText={setReportComment}
+                  placeholder={t("events.actions.reportCommentPlaceholder")}
+                  placeholderTextColor={colors.muted}
+                  multiline
+                  maxLength={1000}
+                  style={{ minHeight: 90, textAlignVertical: "top", color: colors.foreground, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, fontSize: 14 }}
+                />
+                <Button title={t("events.actions.reportSend")} onPress={() => void sendReport(reportReason, reportComment)} />
+                <Button title={t("common.back")} variant="secondary" onPress={() => setReportReason(null)} />
+              </View>
+            )}
             <Pressable style={styles.reportCancel} onPress={() => setReportOpen(false)}>
               <Text style={styles.reportCancelText}>{t("common.cancel")}</Text>
             </Pressable>

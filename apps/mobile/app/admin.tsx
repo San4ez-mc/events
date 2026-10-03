@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { router, Stack } from "expo-router";
+import { router, Stack, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { API_URL, getAccessToken } from "../src/lib/api-client";
 import { useAuth } from "../src/lib/auth-context";
 import { useTranslations } from "../src/lib/locale-context";
@@ -10,10 +10,18 @@ import { TextField } from "../src/components/ui/TextField";
 import { formatShortDate, formatShortDateTime } from "../src/lib/format";
 import { TrafficPanel } from "../src/components/admin/TrafficPanel";
 import { InsightsPanel } from "../src/components/admin/InsightsPanel";
+import { AdminLoader } from "../src/components/admin/AdminLoader";
 import { radius, spacing, type Palette, useThemedStyles } from "../src/lib/theme";
 
+interface TargetInfo {
+  label: string;
+  slug?: string;
+  userId?: string;
+  excerpt?: string;
+}
 interface ModerationCase {
   id: string;
+  target: TargetInfo | null;
   targetType: string;
   targetId: string;
   reasonCode: string;
@@ -30,6 +38,7 @@ interface AdminReview {
 }
 interface AdminReport {
   id: string;
+  target: TargetInfo | null;
   targetType: string;
   targetId: string;
   reason: string;
@@ -58,6 +67,7 @@ interface PendingDistrict {
 }
 interface AdminUser {
   id: string;
+  avatarUrl: string | null;
   email: string;
   name: string | null;
   nickname: string | null;
@@ -72,6 +82,7 @@ interface UserDetail {
 }
 interface AdminEvent {
   id: string;
+  slug: string;
   title: string;
   status: string;
   startsAt: string | null;
@@ -95,6 +106,9 @@ interface AuditEntry {
   entityType: string;
   entityId: string;
   createdAt: string;
+  beforeJson: Record<string, unknown> | null;
+  afterJson: Record<string, unknown> | null;
+  target: TargetInfo | null;
   actor: { name: string | null; nickname: string | null; email: string } | null;
 }
 
@@ -127,7 +141,12 @@ export default function AdminScreen() {
   const { t } = useTranslations();
   const isAdmin = !!user && ADMIN_ROLES.includes(user.role);
   const tabs: Tab[] = isAdmin ? [...MODERATOR_TABS, ...ADMIN_TABS] : [...MODERATOR_TABS];
+  const params = useLocalSearchParams<{ tab?: string }>();
   const [tab, setTab] = useState<Tab>("moderation");
+  useEffect(() => {
+    const wanted = params.tab as Tab | undefined;
+    if (wanted && tabs.includes(wanted)) setTab(wanted);
+  }, [params.tab]);
   const [busy, setBusy] = useState<string | null>(null);
 
   const headers = () => ({ Authorization: `Bearer ${getAccessToken() ?? ""}`, "Content-Type": "application/json" });
@@ -416,6 +435,33 @@ export default function AdminScreen() {
     }
   }
 
+  /** "USER_STATUS_CHANGE" -> "Змінено статус користувача"; unknown codes fall back to the raw code. */
+  const auditAction = (code: string) => {
+    const label = t(`admin.audit.actions.${code}`);
+    return label === `admin.audit.actions.${code}` ? code : label;
+  };
+  const auditEntity = (type: string) => {
+    const label = t(`admin.audit.entities.${type}`);
+    return label === `admin.audit.entities.${type}` ? type : label;
+  };
+  /** A one-line "what changed": status before → after, role, credit delta, or the cancel reason. */
+  const auditChange = (a: AuditEntry): string => {
+    const before = a.beforeJson ?? {};
+    const after = a.afterJson ?? {};
+    const enumLabel = (group: string, v: unknown) => {
+      const key = `enums.${group}.${String(v)}`;
+      const label = t(key);
+      return label === key ? String(v) : label;
+    };
+    if (typeof after.status === "string") return before.status ? `${enumLabel("status", before.status)} → ${enumLabel("status", after.status)}` : enumLabel("status", after.status);
+    if (typeof after.role === "string") return before.role ? `${enumLabel("role", before.role)} → ${enumLabel("role", after.role)}` : enumLabel("role", after.role);
+    if (typeof after.delta === "number") return `${after.delta > 0 ? "+" : ""}${after.delta} · ${t("admin.audit.balance")}: ${String(after.newBalance ?? "")}`;
+    if (typeof after.isTest === "boolean") return after.isTest ? t("admin.audit.testOn") : t("admin.audit.testOff");
+    if (typeof after.reason === "string" && after.reason) return after.reason;
+    if (typeof after.title === "string") return after.title;
+    return "";
+  };
+
   if (authLoading || !user) return <ActivityIndicator style={{ flex: 1 }} color={colors.accentFrom} />;
 
   return (
@@ -432,14 +478,18 @@ export default function AdminScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {tab === "moderation" && (
           <>
-            {cases === null && <ActivityIndicator color={colors.accentFrom} />}
+            <Text style={styles.muted}>{t("admin.moderation.hint")}</Text>
+            {cases === null && <AdminLoader />}
             {cases?.length === 0 && <Text style={styles.muted}>{t("common.empty")}</Text>}
             {cases?.map((c) => (
               <View key={c.id} style={styles.card}>
                 <Text style={styles.title}>
-                  {c.targetType} · {c.reasonCode}
+                  {t(`enums.target.${c.targetType}`)}: {c.target ? `«${c.target.label}»` : "—"}
                 </Text>
-                {c.details ? <Text style={styles.muted}>{c.details}</Text> : null}
+                {c.target?.excerpt ? <Text style={styles.body}>{c.target.excerpt}</Text> : null}
+                <Text style={styles.muted}>
+                  {t("admin.moderation.reason")}: {c.details ?? c.reasonCode}
+                </Text>
                 <View style={styles.actions}>
                   <Button title={t("organizerRegistrations.approve")} onPress={() => void decide(c.id, "approve")} loading={busy === c.id} style={styles.small} />
                   <Button title={t("organizerRegistrations.reject")} variant="secondary" onPress={() => void decide(c.id, "reject")} loading={busy === c.id} style={styles.small} />
@@ -451,7 +501,7 @@ export default function AdminScreen() {
 
         {tab === "reviews" && (
           <>
-            {reviews === null && <ActivityIndicator color={colors.accentFrom} />}
+            {reviews === null && <AdminLoader />}
             {reviews?.length === 0 && <Text style={styles.muted}>{t("common.empty")}</Text>}
             {reviews?.map((r) => (
               <View key={r.id} style={styles.card}>
@@ -471,16 +521,28 @@ export default function AdminScreen() {
 
         {tab === "reports" && (
           <>
-            {reports === null && <ActivityIndicator color={colors.accentFrom} />}
+            {reports === null && <AdminLoader />}
             {reports?.length === 0 && <Text style={styles.muted}>{t("admin.reports.empty")}</Text>}
             {reports?.map((r) => (
               <View key={r.id} style={styles.card}>
-                <Text style={styles.title}>
-                  {t("admin.reports.target")}: {r.targetType} ({r.targetId})
+                <Pressable
+                  disabled={!r.target?.slug && !r.target?.userId}
+                  onPress={() => router.push(r.target?.slug ? `/event/${r.target.slug}` : `/users/${r.target?.userId}`)}
+                >
+                  <Text style={[styles.title, (r.target?.slug || r.target?.userId) && { color: colors.accentFrom }]}>
+                    {t(`enums.target.${r.targetType}`)}: {r.target ? `«${r.target.label}»` : "—"}
+                  </Text>
+                </Pressable>
+                {r.target?.excerpt ? <Text style={styles.muted}>{r.target.excerpt}</Text> : null}
+                <Text style={styles.body}>
+                  {t("admin.reports.reason")}: {r.reason}
                 </Text>
-                <Text style={styles.body}>{r.reason}</Text>
-                {r.description ? <Text style={styles.muted}>{r.description}</Text> : null}
-                <Text style={styles.muted}>{r.reporter.name ?? r.reporter.nickname ?? r.reporter.email}</Text>
+                <Text style={styles.body}>
+                  {t("admin.reports.comment")}: {r.description ? r.description : t("admin.reports.noComment")}
+                </Text>
+                <Text style={styles.muted}>
+                  {t("admin.reports.from")}: {r.reporter.name ?? r.reporter.nickname ?? r.reporter.email} · {formatShortDateTime(r.createdAt)}
+                </Text>
                 <View style={styles.actions}>
                   <Button title={`${t("admin.reports.resolve")} + ${t("admin.reports.hideTarget")}`} onPress={() => void resolveReport(r.id, "RESOLVED", true)} loading={busy === r.id} style={styles.small} />
                   <Button title={t("admin.reports.resolve")} variant="secondary" onPress={() => void resolveReport(r.id, "RESOLVED", false)} loading={busy === r.id} style={styles.small} />
@@ -493,7 +555,7 @@ export default function AdminScreen() {
 
         {tab === "categories" && (
           <>
-            {categories === null && <ActivityIndicator color={colors.accentFrom} />}
+            {categories === null && <AdminLoader />}
             {categories?.length === 0 && <Text style={styles.muted}>{t("adminContent.nothing")}</Text>}
             {categories?.map((c) => (
               <View key={c.id} style={styles.card}>
@@ -510,7 +572,7 @@ export default function AdminScreen() {
 
         {tab === "districts" && (
           <>
-            {districts === null && <ActivityIndicator color={colors.accentFrom} />}
+            {districts === null && <AdminLoader />}
             {districts?.length === 0 && <Text style={styles.muted}>{t("adminContent.nothing")}</Text>}
             {districts?.map((d) => (
               <View key={d.id} style={styles.card}>
@@ -537,27 +599,39 @@ export default function AdminScreen() {
                 {t("admin.users.total")}: {usersTotal}
               </Text>
             )}
-            {users === null && <ActivityIndicator color={colors.accentFrom} />}
+            {users === null && <AdminLoader />}
             {users?.length === 0 && <Text style={styles.muted}>{t("admin.emptyList")}</Text>}
             {users?.map((u) => {
               const expanded = expandedUserId === u.id;
               const detail = userDetails[u.id];
               return (
-                <Pressable key={u.id} style={styles.card} onPress={() => void toggleUserExpanded(u.id)}>
-                  <View style={styles.cardHeadRow}>
-                    <Text style={[styles.title, { flex: 1 }]} numberOfLines={1}>
-                      {u.name ?? u.nickname ?? u.email}
-                    </Text>
-                    <Pressable onPress={() => router.push(`/users/${u.id}`)} hitSlop={10} accessibilityLabel={t("admin.users.openProfile")}>
-                      <Ionicons name="person-circle-outline" size={26} color={colors.accentFrom} />
+                <View key={u.id} style={styles.card}>
+                  <Pressable style={styles.userRow} onPress={() => router.push(`/users/${u.id}`)} accessibilityLabel={t("admin.users.openProfile")}>
+                    {u.avatarUrl ? (
+                      <Image source={{ uri: u.avatarUrl }} style={styles.userAvatar} />
+                    ) : (
+                      <View style={[styles.userAvatar, styles.userAvatarEmpty]}>
+                        <Ionicons name="person" size={36} color={colors.muted} />
+                      </View>
+                    )}
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text style={styles.title} numberOfLines={1}>
+                        {u.name ?? u.nickname ?? u.email}
+                      </Text>
+                      <Text style={styles.muted} numberOfLines={1}>
+                        {u.email}
+                      </Text>
+                      <Text style={styles.muted}>
+                        {t(`enums.role.${u.role}`)} · {t(`enums.status.${u.status}`)}
+                      </Text>
+                      <Text style={styles.muted}>
+                        {t("admin.users.memberSince")} {formatShortDate(u.createdAt)}
+                      </Text>
+                    </View>
+                    <Pressable onPress={() => void toggleUserExpanded(u.id)} hitSlop={12} accessibilityLabel={t("admin.users.manage")}>
+                      <Ionicons name={expanded ? "chevron-up-circle-outline" : "settings-outline"} size={26} color={colors.accentFrom} />
                     </Pressable>
-                  </View>
-                  <Text style={styles.muted}>
-                    {u.email} · {t(`enums.role.${u.role}`)} · {t(`enums.status.${u.status}`)}
-                  </Text>
-                  <Text style={styles.muted}>
-                    {t("admin.users.memberSince")} {formatShortDate(u.createdAt)}
-                  </Text>
+                  </Pressable>
                   {expanded && (
                     <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
                       {!detail && <ActivityIndicator color={colors.accentFrom} />}
@@ -603,7 +677,7 @@ export default function AdminScreen() {
                       )}
                     </View>
                   )}
-                </Pressable>
+                </View>
               );
             })}
             {usersCursor && (
@@ -628,10 +702,10 @@ export default function AdminScreen() {
                 </Pressable>
               ))}
             </ScrollView>
-            {events === null && <ActivityIndicator color={colors.accentFrom} />}
+            {events === null && <AdminLoader />}
             {events?.length === 0 && <Text style={styles.muted}>{t("admin.emptyList")}</Text>}
             {events?.map((e) => (
-              <View key={e.id} style={styles.card}>
+              <Pressable key={e.id} style={styles.card} onPress={() => router.push(`/event/${e.slug}`)}>
                 <View style={styles.cardHeadRow}>
                   <Text style={styles.title}>{e.title}</Text>
                   {e.isTest && (
@@ -641,7 +715,7 @@ export default function AdminScreen() {
                   )}
                 </View>
                 <Text style={styles.muted}>
-                  {e.owner.name ?? e.owner.nickname ?? e.owner.email} · {e.status}
+                  {e.owner.name ?? e.owner.nickname ?? e.owner.email} · {t(`enums.status.${e.status}`) === `enums.status.${e.status}` ? e.status : t(`enums.status.${e.status}`)}
                 </Text>
                 {e.startsAt && <Text style={styles.muted}>{formatShortDateTime(e.startsAt)}</Text>}
                 <View style={styles.actions}>
@@ -656,14 +730,14 @@ export default function AdminScreen() {
                     style={styles.small}
                   />
                 </View>
-              </View>
+              </Pressable>
             ))}
           </>
         )}
 
         {tab === "payments" && (
           <>
-            {orders === null && <ActivityIndicator color={colors.accentFrom} />}
+            {orders === null && <AdminLoader />}
             {orders?.length === 0 && <Text style={styles.muted}>{t("admin.emptyList")}</Text>}
             {orders?.map((o) => (
               <View key={o.id} style={styles.card}>
@@ -701,16 +775,18 @@ export default function AdminScreen() {
 
         {tab === "audit" && (
           <>
-            {audit === null && <ActivityIndicator color={colors.accentFrom} />}
+            {audit === null && <AdminLoader />}
             {audit !== null && audit.length === 0 && <Text style={styles.muted}>{t("admin.audit.empty")}</Text>}
             {audit?.map((a) => (
               <View key={a.id} style={styles.card}>
-                <Text style={styles.title}>{a.action}</Text>
-                <Text style={styles.muted}>
-                  {a.entityType} · {a.entityId}
+                <Text style={styles.title}>{auditAction(a.action)}</Text>
+                <Text style={styles.body}>
+                  {a.target ? `«${a.target.label}»` : auditEntity(a.entityType)}
+                  {auditChange(a) ? ` — ${auditChange(a)}` : ""}
                 </Text>
-                <Text style={styles.muted}>{formatShortDateTime(a.createdAt)}</Text>
-                {a.actor && <Text style={styles.muted}>{a.actor.name ?? a.actor.nickname ?? a.actor.email}</Text>}
+                <Text style={styles.muted}>
+                  {a.actor ? a.actor.name ?? a.actor.nickname ?? a.actor.email : t("admin.audit.system")} · {formatShortDateTime(a.createdAt)}
+                </Text>
               </View>
             ))}
           </>
@@ -743,10 +819,14 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   // A horizontal ScrollView in a column grows to fill all free height unless told not to — the tabs became screen-tall pills.
   hScroll: { flexGrow: 0 },
+  userRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  userAvatar: { width: 78, height: 78, borderRadius: 39, backgroundColor: colors.background },
+  userAvatarEmpty: { alignItems: "center", justifyContent: "center" },
   tabsRow: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   tab: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border },
   tabOn: { backgroundColor: colors.accentFrom, borderColor: "transparent" },
-  tabText: { color: colors.foreground, fontWeight: "700", fontSize: 13 },
+  // Explicit lineHeight: with the default, Android clipped the bottom ~2px of these labels.
+  tabText: { color: colors.foreground, fontWeight: "700", fontSize: 13, lineHeight: 19 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, gap: spacing.xs },
   title: { color: colors.foreground, fontSize: 14, fontWeight: "700" },
@@ -762,5 +842,5 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   pillRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
   pill: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border },
   pillOn: { backgroundColor: colors.accentFrom, borderColor: "transparent" },
-  pillText: { color: colors.foreground, fontSize: 11, fontWeight: "600" },
+  pillText: { color: colors.foreground, fontSize: 11, fontWeight: "600", lineHeight: 16 },
 });

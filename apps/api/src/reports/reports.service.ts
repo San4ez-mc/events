@@ -4,6 +4,8 @@ import type { CursorPage } from "@kiro/types";
 import { PrismaService } from "../prisma/prisma.service";
 import { ResourceNotFoundException } from "../common/exceptions/common-exceptions";
 import { AuditLogService } from "../audit/audit-log.service";
+import { NotificationsService } from "../notifications/notifications.service";
+import { resolveTargets, targetFor } from "../common/utils/target-labels";
 import type { CreateReportDto } from "./dto/create-report.dto";
 import type { ListReportsDto } from "./dto/list-reports.dto";
 import type { ResolveReportDto } from "./dto/resolve-report.dto";
@@ -18,10 +20,11 @@ export class ReportsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLog: AuditLogService,
+    private readonly notifications: NotificationsService,
   ) {}
 
-  create(reporterId: string, dto: CreateReportDto) {
-    return this.prisma.report.create({
+  async create(reporterId: string, dto: CreateReportDto) {
+    const report = await this.prisma.report.create({
       data: {
         reporterId,
         targetType: dto.targetType,
@@ -30,6 +33,12 @@ export class ReportsService {
         description: dto.description,
       },
     });
+    const targets = await resolveTargets(this.prisma, [{ type: dto.targetType, id: dto.targetId }]);
+    const label = targetFor(targets, dto.targetType, dto.targetId)?.label ?? dto.targetType;
+    await this.notifications
+      .notifyStaff({ roles: ["MODERATOR", "ADMIN", "SUPER_ADMIN"], title: "New report", body: `Report on "${label}": ${dto.reason}`, adminTab: "reports", excludeUserId: reporterId })
+      .catch(() => undefined);
+    return report;
   }
 
   async list(query: ListReportsDto): Promise<CursorPage<unknown>> {
@@ -42,7 +51,10 @@ export class ReportsService {
       include: REPORTER_INCLUDE,
     });
     const hasMore = reports.length > limit;
-    const items = hasMore ? reports.slice(0, limit) : reports;
+    const page = hasMore ? reports.slice(0, limit) : reports;
+    // The raw row only has "EVENT + a uuid" — resolve it to a title/name so a moderator can tell what was reported.
+    const targets = await resolveTargets(this.prisma, page.map((r) => ({ type: r.targetType, id: r.targetId })));
+    const items = page.map((r) => ({ ...r, target: targetFor(targets, r.targetType, r.targetId) }));
     return { items, nextCursor: hasMore ? items[items.length - 1]!.id : null, hasMore };
   }
 
@@ -70,6 +82,15 @@ export class ReportsService {
       before: { status: report.status },
       after: { status: dto.status, hideTarget: dto.hideTarget ?? false },
     });
+
+    await this.notifications
+      .create({
+        userId: report.reporterId,
+        type: "MODERATION_UPDATE",
+        title: "Report reviewed",
+        body: dto.status === "RESOLVED" ? "Thanks — we reviewed your report and took action." : "We reviewed your report and found no violation.",
+      })
+      .catch(() => undefined);
 
     return updated;
   }

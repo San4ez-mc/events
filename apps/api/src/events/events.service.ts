@@ -388,6 +388,11 @@ export class EventsService {
           details: `Matched term: "${scan.matchedTerm}"`,
         });
         return tx.event.findUniqueOrThrow({ where: { id: eventId } });
+      }).then(async (held) => {
+        await this.notifications
+          .notifyStaff({ roles: ["MODERATOR", "ADMIN", "SUPER_ADMIN"], title: "Event needs moderation", body: `"${held.title}" was held for review.`, adminTab: "moderation", excludeUserId: userId })
+          .catch(() => undefined);
+        return held;
       });
     }
 

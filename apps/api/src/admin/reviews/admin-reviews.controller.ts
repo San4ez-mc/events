@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Query, Req } from "@nestjs/common";
+import { NotificationsService } from "../../notifications/notifications.service";
 import { ApiTags } from "@nestjs/swagger";
 import { IsIn, IsInt, IsOptional, IsString, Max, Min } from "class-validator";
 import { Type } from "class-transformer";
@@ -42,6 +43,7 @@ export class AdminReviewsController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLog: AuditLogService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   @Get()
@@ -71,7 +73,12 @@ export class AdminReviewsController {
   ) {
     const before = await this.prisma.eventReview.findUnique({ where: { id }, select: { status: true } });
     if (!before) throw new ResourceNotFoundException("Review not found");
-    const updated = await this.prisma.eventReview.update({ where: { id }, data: { status: dto.status } });
+    const updated = await this.prisma.eventReview.update({ where: { id }, data: { status: dto.status }, include: { event: { select: { title: true } } } });
+    if (dto.status !== "PUBLISHED" && before?.status !== dto.status) {
+      await this.notifications
+        .create({ userId: updated.authorUserId, type: "MODERATION_UPDATE", title: "Review hidden", body: `Your review of "${updated.event.title}" was hidden by a moderator.` })
+        .catch(() => undefined);
+    }
     await this.auditLog.record({
       actorUserId: user.id,
       action: `REVIEW_${dto.status}`,
