@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { IoNotificationsOutline } from "react-icons/io5";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
@@ -20,8 +21,9 @@ const ATTENDEE_TYPES = new Set([
   "EVENT_REMINDER_1H",
 ]);
 
-/** No deep link to the specific event yet (payload only carries an id, not a slug) — routes to the relevant list instead. */
+/** Event notifications open the event itself (the API resolves its slug into the payload); the rest go to the relevant list. */
 function linkFor(notification: AppNotification): string | null {
+  if (notification.payloadJson?.slug) return `/events/${notification.payloadJson.slug}`;
   if (ORGANIZER_TYPES.has(notification.type)) return "/organizer/events";
   if (ATTENDEE_TYPES.has(notification.type)) return "/my-registrations";
   return null;
@@ -94,12 +96,12 @@ export function NotificationBell() {
       <button
         type="button"
         onClick={() => void toggleOpen()}
-        className="relative flex h-8 w-8 items-center justify-center rounded-full hover:bg-surface"
+        className="relative flex h-9 w-9 items-center justify-center rounded-full hover:bg-surface"
         aria-label={t("nav.notifications")}
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        🔔
+        <IoNotificationsOutline className="h-[22px] w-[22px]" aria-hidden="true" />
         {unreadCount > 0 && (
           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
             {unreadCount > 9 ? "9+" : unreadCount}
@@ -110,7 +112,7 @@ export function NotificationBell() {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-2 max-h-96 w-80 overflow-y-auto rounded-lg border border-border bg-background py-2 shadow-lg"
+          className="absolute right-0 mt-2 max-h-96 w-80 overflow-y-auto rounded-[14px] border border-border bg-surface py-2 shadow-lg"
         >
           <div className="flex items-center justify-between px-3 pb-2">
             <span className="text-sm font-semibold">{t("nav.notifications")}</span>
@@ -129,7 +131,7 @@ export function NotificationBell() {
           {items?.map((notification) => {
             const href = linkFor(notification);
             const content = (
-              <div className={`flex flex-col gap-0.5 px-3 py-2 text-sm ${!notification.readAt ? "bg-surface" : ""}`}>
+              <div className={`flex flex-col gap-0.5 px-3 py-2 text-sm ${!notification.readAt ? "bg-[var(--accent-from)]/10" : ""}`}>
                 <span className="font-medium">{notification.title}</span>
                 <span className="text-xs text-muted">{notification.body}</span>
                 <span className="text-[10px] text-muted">

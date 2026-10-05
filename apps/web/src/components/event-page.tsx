@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, MapPin, Star, Tag, Users, Video } from "lucide-react";
+import { IoCalendarOutline, IoLocationOutline, IoPeople, IoPricetagOutline, IoStar, IoVideocamOutline } from "react-icons/io5";
 import type { SupportedLocale } from "@kiro/i18n";
 import { getT } from "@/lib/i18n-server";
 import type { EventDetail } from "@/lib/event-types";
@@ -13,6 +13,7 @@ import { EventLocation } from "@/components/event-location";
 import { EventChat } from "@/components/event-chat";
 import { EventViewTracker } from "@/components/event-view-tracker";
 import { EventActions } from "@/components/event-actions";
+import { EventCtaBar } from "@/components/event-cta-bar";
 
 /**
  * Shared presentational component for the public event page — used by both
@@ -47,17 +48,32 @@ export function EventPage({
     event.capacity != null && social
       ? Math.max(0, event.capacity - social.registeredCount)
       : null;
-  const meta = "flex items-center gap-2";
+  const row = "flex items-center gap-3 rounded-[14px] border border-border bg-surface px-3.5 py-3 text-[15px]";
+  const badge = "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent-from)]/10 text-[var(--accent-from)]";
+  const priceLabel =
+    event.priceType === "FREE"
+      ? t("common.free")
+      : event.priceType === "DONATION"
+        ? t("common.donation")
+        : `${formatPriceAmount(event.price, event.priceMax)} ${formatCurrency(event.currency)}`;
+  const ctaLabel =
+    event.registrationMode === "EXTERNAL"
+      ? event.priceType === "PAID"
+        ? t("registration.externalBuy")
+        : t("registration.externalRegister")
+      : event.approvalMode === "ORGANIZER_APPROVAL"
+        ? t("registration.apply")
+        : t("registration.register");
 
   return (
-    <article className="mx-auto max-w-2xl px-4 pb-24 pt-6">
+    <article className="mx-auto max-w-5xl pb-36 sm:px-4 sm:pt-6 lg:pb-12">
       {event.status !== "PUBLISHED" && event.status !== "COMPLETED" && (
-        <div className="mb-4 rounded-md border border-[var(--accent-from)] bg-surface px-4 py-2 text-sm">
+        <div className="mx-4 mb-4 mt-4 rounded-[10px] border border-[var(--accent-from)] bg-surface px-4 py-2 text-sm sm:mx-0 sm:mt-0">
           {t("events.page.previewBanner")}
         </div>
       )}
       {event.isTest && (
-        <div className="mb-4 flex items-center gap-2 rounded-md border border-red-500 bg-red-500/10 px-4 py-2 text-sm text-red-600">
+        <div className="mx-4 mb-4 mt-4 flex items-center gap-2 rounded-[10px] border border-red-500 bg-red-500/10 px-4 py-2 text-sm text-red-600 sm:mx-0 sm:mt-0">
           <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
             {t("events.testBadge")}
           </span>
@@ -69,9 +85,11 @@ export function EventPage({
         eventId={event.id}
         published={event.status === "PUBLISHED"}
       />
-      <EventGallery media={event.media} />
+      <div className="lg:grid lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)] lg:items-start lg:gap-10">
+        <div className="lg:sticky lg:top-20">
+          <EventGallery media={event.media} />
       {youtubeEmbedId(event.youtubeUrl) && (
-        <div className="mb-6 aspect-video w-full overflow-hidden rounded-2xl">
+        <div className="mt-4 aspect-video w-full overflow-hidden sm:rounded-[20px]">
           <iframe
             src={`https://www.youtube.com/embed/${youtubeEmbedId(event.youtubeUrl)}`}
             title="YouTube"
@@ -82,63 +100,72 @@ export function EventPage({
         </div>
       )}
 
-      <h1 className="mb-3 text-3xl font-bold leading-tight">{event.title}</h1>
+        </div>
 
-      <div className="mb-4 flex flex-col gap-1.5 text-sm text-muted">
-        {event.startsAt && (
-          <span className={meta}>
-            <CalendarDays className="h-4 w-4 shrink-0" aria-hidden="true" />
-            {formatDateTime(event.startsAt, locale)}
-            <a
-              href={`/api/v1/events/${event.id}/calendar.ics`}
-              download
-              className="ml-2 text-accent underline underline-offset-2 hover:no-underline"
-            >
-              {t("events.actions.addToCalendar")}
-            </a>
-          </span>
+        <div className="flex min-w-0 flex-col px-4 pt-5 sm:px-0 lg:pt-0">
+      <h1 className="text-[28px] font-extrabold leading-tight sm:text-[32px]">{event.title}</h1>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        {event.status === "PUBLISHED" && (
+          <EventActions eventId={event.id} slug={event.slug} title={event.title} startsAt={event.startsAt} />
         )}
-        {event.format === "OFFLINE" && (cityName || districtName) && (
-          <span className={meta}>
-            <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
-            {[cityName, districtName].filter(Boolean).join(", ")}
-          </span>
-        )}
-        {event.format === "ONLINE" && (
-          <span className={meta}>
-            <Video className="h-4 w-4 shrink-0" aria-hidden="true" />
-            {t("events.wizard.formatOnline")}
-          </span>
-        )}
-        <span className={meta}>
-          <Tag className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <strong className="text-foreground">
-            {event.priceType === "FREE"
-              ? t("common.free")
-              : event.priceType === "DONATION"
-                ? t("common.donation")
-                : `${formatPriceAmount(event.price, event.priceMax)} ${formatCurrency(event.currency)}`}
-          </strong>
-          {categoryName && <span>· {categoryName}</span>}
-        </span>
-        {event.additionalCategories.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {event.additionalCategories.map(({ category }) => (
-              <span
-                key={category.id}
-                className="rounded-full border border-border px-2.5 py-0.5 text-xs"
-              >
-                {locale === "uk" ? category.nameUk : category.nameEn}
-              </span>
-            ))}
-          </div>
-        )}
+        <FollowButton eventId={event.id} />
       </div>
 
+      <ul className="mt-5 flex flex-col gap-3">
+        {event.startsAt && (
+          <li className={row}>
+            <span className={badge}>
+              <IoCalendarOutline className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-semibold">{formatDateTime(event.startsAt, locale)}</span>
+              <a href={`/api/v1/events/${event.id}/calendar.ics`} download className="text-xs text-[var(--accent-from)] hover:underline">
+                {t("events.actions.addToCalendar")}
+              </a>
+            </span>
+          </li>
+        )}
+        {event.format === "OFFLINE" && (cityName || districtName) && (
+          <li className={row}>
+            <span className={badge}>
+              <IoLocationOutline className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <span className="font-semibold">{[cityName, districtName].filter(Boolean).join(", ")}</span>
+          </li>
+        )}
+        {event.format === "ONLINE" && (
+          <li className={row}>
+            <span className={badge}>
+              <IoVideocamOutline className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <span className="font-semibold">{t("events.wizard.formatOnline")}</span>
+          </li>
+        )}
+        <li className={row}>
+          <span className={badge}>
+            <IoPricetagOutline className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <span className="min-w-0">
+            <span className="block font-semibold">{priceLabel}</span>
+            {categoryName && <span className="text-xs text-muted">{categoryName}</span>}
+          </span>
+        </li>
+      </ul>
+      {event.additionalCategories.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {event.additionalCategories.map(({ category }) => (
+            <span key={category.id} className="rounded-full border border-border bg-surface px-3 py-1 text-xs">
+              {locale === "uk" ? category.nameUk : category.nameEn}
+            </span>
+          ))}
+        </div>
+      )}
+
       {social && (
-        <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-surface p-4 text-sm">
-          <span className={`${meta} font-semibold`}>
-            <Users className="h-4 w-4" aria-hidden="true" />
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[14px] border border-border bg-surface p-4 text-sm">
+          <span className="flex items-center gap-2 font-semibold">
+            <IoPeople className="h-[18px] w-[18px]" aria-hidden="true" />
             {event.registrationMode === "EXTERNAL"
               ? "∞"
               : event.capacity != null
@@ -176,29 +203,40 @@ export function EventPage({
         </div>
       )}
 
-      <div className="mb-6 flex flex-col gap-3">
-        {event.status === "PUBLISHED" && (
-          <EventActions
-            eventId={event.id}
-            slug={event.slug}
-            title={event.title}
-          />
+      <div id="register" className="order-last mt-8 scroll-mt-24 lg:order-none lg:mt-6">
+        <RegistrationWidget event={event} />
+
+        {/* Donation events: entry is free and needs no registration step to give, so the link is always available. */}
+        {event.priceType === "DONATION" && event.paymentUrl && (
+          <a
+            href={event.paymentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 block rounded-md border border-border px-4 py-2 text-center text-sm font-medium hover:bg-surface"
+          >
+            {t("registration.donate")}
+          </a>
         )}
-        <FollowButton eventId={event.id} />
+
+        {event.priceType === "PAID" && (
+          <p className="mt-4 rounded-xl bg-surface p-3 text-xs leading-relaxed text-muted">
+            {t("events.page.paidDisclaimer")}
+          </p>
+        )}
       </div>
 
       {event.description && (
-        <section className="mb-8 whitespace-pre-wrap text-sm leading-relaxed">
+        <section className="mb-8 mt-8 whitespace-pre-wrap text-[15px] leading-relaxed">
           {event.description}
         </section>
       )}
 
       {organizer && (
         <section className="mb-8">
-          <h2 className="mb-2 text-sm font-semibold">
+          <h2 className="mb-2 text-lg font-bold">
             {t("events.page.organizer")}
           </h2>
-          <div className="flex items-center gap-3 rounded-2xl border border-border p-4">
+          <div className="flex items-center gap-3 rounded-[14px] border border-border bg-surface p-4">
             {organizer.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- external avatar URLs
               <img
@@ -220,10 +258,7 @@ export function EventPage({
               <p className="flex flex-wrap items-center gap-x-3 text-xs text-muted">
                 {organizer.rating.average !== null && (
                   <span className="flex items-center gap-1 font-semibold text-amber-500">
-                    <Star
-                      className="h-3.5 w-3.5 fill-current"
-                      aria-hidden="true"
-                    />
+                    <IoStar className="h-3.5 w-3.5" aria-hidden="true" />
                     {organizer.rating.average.toFixed(1)}
                   </span>
                 )}
@@ -246,7 +281,7 @@ export function EventPage({
 
       {event.rules && (
         <section className="mb-8">
-          <h2 className="mb-2 text-sm font-semibold">
+          <h2 className="mb-2 text-lg font-bold">
             {t("events.page.rules")}
           </h2>
           <p className="whitespace-pre-wrap text-sm text-muted">
@@ -257,14 +292,14 @@ export function EventPage({
 
       {event.priceOptions && event.priceOptions.length > 0 && (
         <section className="mb-8">
-          <h2 className="mb-2 text-sm font-semibold">
+          <h2 className="mb-2 text-lg font-bold">
             {t("registration.ticketType")}
           </h2>
           <ul className="flex flex-col gap-2">
             {event.priceOptions.map((tier) => (
               <li
                 key={tier.id}
-                className="flex items-center justify-between rounded-2xl border border-border px-4 py-3 text-sm"
+                className="flex items-center justify-between rounded-[14px] border border-border bg-surface px-4 py-3 text-sm"
               >
                 <span>
                   {tier.name}
@@ -287,12 +322,12 @@ export function EventPage({
 
       {event.faqItems && event.faqItems.length > 0 && (
         <section className="mb-8">
-          <h2 className="mb-2 text-sm font-semibold">{t("events.page.faq")}</h2>
+          <h2 className="mb-2 text-lg font-bold">{t("events.page.faq")}</h2>
           <div className="flex flex-col gap-2">
             {event.faqItems.map((item) => (
               <details
                 key={item.id}
-                className="rounded-2xl border border-border px-4 py-3 text-sm"
+                className="rounded-[14px] border border-border bg-surface px-4 py-3 text-sm"
               >
                 <summary className="cursor-pointer font-medium">
                   {item.question}
@@ -308,7 +343,7 @@ export function EventPage({
 
       {event.participants && event.participants.length > 0 && (
         <section className="mb-8">
-          <h2 className="mb-3 text-sm font-semibold">
+          <h2 className="mb-3 text-lg font-bold">
             {t("events.page.participants")} ·{" "}
             {social?.registeredCount ?? event.participants.length}
           </h2>
@@ -352,24 +387,16 @@ export function EventPage({
         reviewSummary={event.reviewSummary}
       />
 
-      <RegistrationWidget event={event} />
+        </div>
+      </div>
 
-      {/* Donation events: entry is free and needs no registration step to give, so the link is always available. */}
-      {event.priceType === "DONATION" && event.paymentUrl && (
-        <a
-          href={event.paymentUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-3 block rounded-md border border-border px-4 py-2 text-center text-sm font-medium hover:bg-surface"
-        >
-          {t("registration.donate")}
-        </a>
-      )}
-
-      {event.priceType === "PAID" && (
-        <p className="mt-4 rounded-xl bg-surface p-3 text-xs leading-relaxed text-muted">
-          {t("events.page.paidDisclaimer")}
-        </p>
+      {event.status === "PUBLISHED" && (
+        <EventCtaBar
+          eventId={event.id}
+          priceLabel={priceLabel}
+          label={ctaLabel}
+          externalUrl={event.registrationMode === "EXTERNAL" ? (event.externalRegistrationUrl ?? null) : null}
+        />
       )}
     </article>
   );

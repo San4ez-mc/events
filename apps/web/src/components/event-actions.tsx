@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bookmark, Flag, Share2 } from "lucide-react";
+import { IoCalendarOutline, IoEllipsisHorizontal, IoHeart, IoHeartOutline, IoShareSocialOutline } from "react-icons/io5";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
@@ -21,10 +21,12 @@ export function EventActions({
   eventId,
   slug,
   title,
+  startsAt,
 }: {
   eventId: string;
   slug: string;
   title: string;
+  startsAt?: string | null;
 }) {
   const { t } = useTranslations();
   const { user } = useAuth();
@@ -104,27 +106,38 @@ export function EventActions({
   }
 
   const btn =
-    "inline-flex min-h-10 items-center gap-2 rounded-full border border-border px-4 text-sm font-medium hover:bg-surface";
+    "flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-foreground transition hover:border-[var(--accent-from)]/50 active:scale-90";
 
   return (
     <div className="relative">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2.5">
         <button
           type="button"
           onClick={toggleSave}
           aria-pressed={saved}
+          aria-label={saved ? t("events.actions.saved") : t("events.actions.save")}
+          title={saved ? t("events.actions.saved") : t("events.actions.save")}
           className={btn}
         >
-          <Bookmark
-            className="h-4 w-4"
-            fill={saved ? "currentColor" : "none"}
-            aria-hidden="true"
-          />
-          {saved ? t("events.actions.saved") : t("events.actions.save")}
+          {saved ? (
+            <IoHeart className="h-[22px] w-[22px] text-[var(--accent-to)]" aria-hidden="true" />
+          ) : (
+            <IoHeartOutline className="h-[22px] w-[22px]" aria-hidden="true" />
+          )}
         </button>
-        <button type="button" onClick={share} className={btn}>
-          <Share2 className="h-4 w-4" aria-hidden="true" />
-          {t("events.actions.share")}
+        {startsAt && (
+          <a
+            href={`/api/v1/events/${eventId}/calendar.ics`}
+            download
+            aria-label={t("events.actions.addToCalendar")}
+            title={t("events.actions.addToCalendar")}
+            className={btn}
+          >
+            <IoCalendarOutline className="h-5 w-5" aria-hidden="true" />
+          </a>
+        )}
+        <button type="button" onClick={share} aria-label={t("events.actions.share")} title={t("events.actions.share")} className={btn}>
+          <IoShareSocialOutline className="h-[22px] w-[22px]" aria-hidden="true" />
         </button>
         <button
           type="button"
@@ -133,19 +146,20 @@ export function EventActions({
           }}
           className={btn}
           aria-expanded={reporting}
+          aria-label={t("events.actions.report")}
+          title={t("events.actions.report")}
         >
-          <Flag className="h-4 w-4" aria-hidden="true" />
-          {t("events.actions.report")}
+          <IoEllipsisHorizontal className="h-5 w-5" aria-hidden="true" />
         </button>
       </div>
       {reporting && (
-        <ul className="absolute left-0 z-10 mt-2 w-64 overflow-hidden rounded-2xl border border-border bg-background shadow-lg">
+        <ul className="absolute left-0 z-10 mt-2 w-64 overflow-hidden rounded-[14px] border border-border bg-surface shadow-lg">
           {REPORT_REASONS.map((reason) => (
             <li key={reason}>
               <button
                 type="button"
                 onClick={() => void report(reason)}
-                className="block w-full px-4 py-2.5 text-left text-sm hover:bg-surface"
+                className="block w-full px-4 py-2.5 text-left text-sm hover:bg-background"
               >
                 {t(`events.actions.reasons.${reason}`)}
               </button>

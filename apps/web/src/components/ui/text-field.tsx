@@ -49,7 +49,7 @@ export function TextField({
           placeholder={placeholder}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
-          className={`w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--accent-from)] ${isPassword ? "pr-11" : ""}`}
+          className={`w-full rounded-[10px] border border-border bg-surface px-3.5 py-2.5 text-[15px] outline-none focus:border-[var(--accent-from)] focus:ring-2 focus:ring-[var(--accent-from)]/30 ${isPassword ? "pr-11" : ""}`}
         />
         {isPassword && (
           <button

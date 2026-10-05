@@ -6,6 +6,8 @@ import { useTranslations } from "@/lib/locale-context";
 import type { CursorPage, EventCard } from "@/lib/event-types";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
+import { EmptyState, ScreenHeader } from "@/components/ui/screen-header";
+import { IoSadOutline, IoSearch, IoSparkles } from "react-icons/io5";
 import { EventResultRow } from "./event-result-row";
 
 /** UX §9/§63 — search is public, list-style, no auth required. */
@@ -52,7 +54,8 @@ export function SearchPageContent() {
   const displayedItems = searched ? items : [];
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-8">
+    <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6 pb-24 sm:py-10">
+      <ScreenHeader title={t("nav.search")} subtitle={t("screens.searchSubtitle")} Icon={IoSearch} />
       <TextField
         label={t("nav.search")}
         value={query}
@@ -62,13 +65,15 @@ export function SearchPageContent() {
 
       {loading && displayedItems.length === 0 && <p className="text-center text-muted">{t("search.loading")}</p>}
 
-      {!loading && trimmedQuery === "" && <p className="text-center text-muted">{t("search.prompt")}</p>}
-
-      {!loading && searched && displayedItems.length === 0 && (
-        <p className="text-center text-muted">{t("search.empty")}</p>
+      {!loading && trimmedQuery === "" && (
+        <EmptyState Icon={IoSparkles} title={t("screens.searchHintTitle")} text={t("screens.searchHintText")} />
       )}
 
-      <div className="flex flex-col gap-2">
+      {!loading && searched && displayedItems.length === 0 && (
+        <EmptyState Icon={IoSadOutline} text={t("screens.searchNothing")} />
+      )}
+
+      <div className="flex flex-col gap-2.5">
         {displayedItems.map((event) => (
           <EventResultRow key={event.id} event={event} locale={locale} t={t} />
         ))}

@@ -2,21 +2,23 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Globe, Monitor, Moon, Sun } from "lucide-react";
+import { IoDesktopOutline, IoGlobeOutline, IoMoon, IoSunny } from "react-icons/io5";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
 import { useTheme } from "@/lib/theme-context";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { useNavItems } from "@/components/nav-items";
 
 export function SiteHeader() {
   const { user, logout, isLoading } = useAuth();
   const { t, locale, setLocale } = useTranslations();
   const { theme, setTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+  const navItems = useNavItems();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5">
         <Link href="/" className="flex items-center gap-2" aria-label="Кіро">
           {/* eslint-disable-next-line @next/next/no-img-element -- tiny static brand mark */}
           <img
@@ -29,24 +31,21 @@ export function SiteHeader() {
           <span className="text-lg font-bold accent-gradient-text">Кіро</span>
         </Link>
 
-        <nav className="hidden items-center gap-6 text-sm font-medium sm:flex">
-          <Link href="/" className="hover:opacity-80">
-            {t("nav.discover")}
-          </Link>
-          <Link href="/search" className="hover:opacity-80">
-            {t("nav.search")}
-          </Link>
-          {user && (
-            <Link href="/saved" className="hover:opacity-80">
-              {t("nav.saved")}
+        {/* The app's five tabs, as a tab strip: filled icon + label, accent colour when active. */}
+        <nav aria-label={t("a11y.mainNav")} className="hidden items-center gap-1 sm:flex">
+          {navItems.map(({ href, label, Icon, active, primary }) => (
+            <Link
+              key={label}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              className={`flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold transition hover:bg-surface ${
+                active ? "bg-surface text-[var(--accent-from)]" : primary ? "text-[var(--accent-from)]" : "text-muted hover:text-foreground"
+              }`}
+            >
+              <Icon className="h-5 w-5" aria-hidden="true" />
+              <span className="hidden md:inline">{label}</span>
             </Link>
-          )}
-          <Link href="/organizer/events" className="hover:opacity-80">
-            {t("nav.organizer")}
-          </Link>
-          <Link href="/credits" className="hover:opacity-80">
-            {t("nav.pricing")}
-          </Link>
+          ))}
         </nav>
 
         <div className="flex items-center gap-3">
@@ -56,7 +55,7 @@ export function SiteHeader() {
             className="flex h-9 items-center gap-1.5 rounded-full border border-border px-3 text-xs font-semibold uppercase hover:bg-surface"
             aria-label={t("a11y.changeLanguage")}
           >
-            <Globe className="h-4 w-4" aria-hidden="true" />
+            <IoGlobeOutline className="h-4 w-4" aria-hidden="true" />
             {locale}
           </button>
 
@@ -76,11 +75,11 @@ export function SiteHeader() {
             title={t("a11y.changeTheme")}
           >
             {theme === "dark" ? (
-              <Moon className="h-4 w-4" />
+              <IoMoon className="h-4 w-4" />
             ) : theme === "light" ? (
-              <Sun className="h-4 w-4" />
+              <IoSunny className="h-4 w-4" />
             ) : (
-              <Monitor className="h-4 w-4" />
+              <IoDesktopOutline className="h-4 w-4" />
             )}
           </button>
 
@@ -89,7 +88,7 @@ export function SiteHeader() {
           {!isLoading && !user && (
             <Link
               href="/login"
-              className="rounded-md accent-gradient px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90"
+              className="rounded-[10px] accent-gradient px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
             >
               {t("auth.login.title")}
             </Link>
@@ -111,7 +110,7 @@ export function SiteHeader() {
               {menuOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 mt-2 w-48 rounded-lg border border-border bg-background py-1 shadow-lg"
+                  className="absolute right-0 mt-2 w-52 rounded-[14px] border border-border bg-surface py-1 shadow-lg"
                 >
                   <Link
                     href="/saved"
@@ -173,6 +172,14 @@ export function SiteHeader() {
                       {t("nav.admin")}
                     </Link>
                   )}
+                  <Link
+                    href="/credits"
+                    role="menuitem"
+                    className="block px-4 py-2 text-sm hover:bg-surface"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {t("nav.pricing")}
+                  </Link>
                   <button
                     type="button"
                     role="menuitem"

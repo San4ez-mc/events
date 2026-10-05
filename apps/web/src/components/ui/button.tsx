@@ -9,10 +9,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 export function Button({ variant = "primary", loading, disabled, className = "", children, ...rest }: ButtonProps) {
   const base =
-    "inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex min-h-11 items-center justify-center gap-2 rounded-[10px] px-4 py-2 text-[15px] font-semibold transition active:opacity-80 disabled:cursor-not-allowed disabled:opacity-50";
   const variants: Record<typeof variant, string> = {
     primary: "accent-gradient text-white hover:opacity-90",
-    secondary: "border border-border hover:bg-surface",
+    secondary: "border border-border bg-transparent text-foreground hover:bg-surface",
     ghost: "hover:bg-surface",
   };
 

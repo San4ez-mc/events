@@ -151,8 +151,8 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
       : t("registration.register");
 
   return (
-    <div className="fixed inset-x-0 bottom-0 border-t border-border bg-background/95 p-4 backdrop-blur">
-      <div className="mx-auto max-w-2xl">
+    <div className="rounded-[14px] border border-border bg-surface p-4">
+      <div>
         {error && (
           <p role="alert" className="mb-2 text-center text-sm text-danger">
             {error}

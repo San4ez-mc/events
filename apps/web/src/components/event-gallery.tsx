@@ -16,7 +16,7 @@ export function EventGallery({ media }: { media: EventMedia[] }) {
 
   if (media.length === 0) {
     return (
-      <div className="accent-gradient mb-6 flex aspect-[3/4] w-full items-center justify-center rounded-2xl text-white/80">
+      <div className="accent-gradient flex aspect-[3/4] w-full items-center justify-center text-white/80 sm:rounded-[28px]">
         <CalendarDays className="h-16 w-16" strokeWidth={1.5} />
       </div>
     );
@@ -30,14 +30,14 @@ export function EventGallery({ media }: { media: EventMedia[] }) {
   }
 
   return (
-    <div className="relative mb-6">
+    <div className="relative">
       <div
         ref={scroller}
         onScroll={(e) => {
           const el = e.currentTarget;
           setIndex(Math.round(el.scrollLeft / el.clientWidth));
         }}
-        className="flex snap-x snap-mandatory overflow-x-auto rounded-2xl bg-surface [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex snap-x snap-mandatory overflow-x-auto bg-surface sm:rounded-[28px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {media.map((m) => (
           <div key={m.id} className="aspect-[3/4] w-full shrink-0 snap-center">

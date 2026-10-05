@@ -3,17 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowRight,
-  ChevronLeft,
-  ChevronRight,
-  Heart,
-  PartyPopper,
-  RotateCcw,
-  Share2,
-  SlidersHorizontal,
-  Undo2,
-  X,
-} from "lucide-react";
+  IoArrowForward,
+  IoArrowUndo,
+  IoClose,
+  IoHeart,
+  IoHeartOutline,
+  IoOptionsOutline,
+  IoRefresh,
+  IoShareSocialOutline,
+  IoSparkles,
+} from "react-icons/io5";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
@@ -28,8 +27,13 @@ const FILTERS_STORAGE_KEY = "kiro_discover_filters";
 const SWIPE_DISTANCE = 100;
 const TAP_DISTANCE = 6;
 
+/** Action circles over the card: surface fill, hairline border, coloured icon — as in the app. */
 const roundButton =
-  "flex items-center justify-center rounded-full border border-border bg-background shadow-md transition active:scale-90 hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40";
+  "flex items-center justify-center rounded-full border border-border bg-surface shadow-lg transition active:scale-90 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-40";
+/** Dark translucent circles for the icons floating over the card's top edge. */
+const overlayButton =
+  "flex h-[42px] w-[42px] items-center justify-center rounded-full bg-black/45 text-white backdrop-blur transition active:scale-90 hover:bg-black/60 disabled:opacity-40";
+const ACTIONS_INSET = 96;
 
 /**
  * UX §3-8 — the Tinder-style discovery feed. Swipe left = pass, swipe right
@@ -339,226 +343,182 @@ export function DiscoverFeed() {
   const hasCards = !loading && !error && items.length > 0;
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-5">
-      <div className="relative flex items-center justify-between">
-        <h1 className="text-2xl font-bold accent-gradient-text">
-          {t("nav.discover")}
-        </h1>
-        <div className="flex items-center gap-2">
+    <div className="mx-auto w-full max-w-[460px] sm:px-4 sm:py-5">
+      <h1 className="sr-only">{t("nav.discover")}</h1>
+
+      {/* The deck fills the screen between the header and the tab bar on a phone (like the app); on a larger screen it is a tall centred card. */}
+      <div className="relative h-[calc(100dvh-7.5rem)] min-h-[440px] sm:h-[min(calc(100dvh-8rem),760px)]">
+        {loading && items.length === 0 && (
+          <div className="h-full w-full animate-pulse bg-surface sm:rounded-[28px]" aria-label={t("discover.loading")} />
+        )}
+
+        {error && items.length === 0 && (
+          <div className="flex h-full flex-col items-center justify-center gap-3 bg-surface p-10 text-center text-muted sm:rounded-[28px]">
+            <p>{t("discover.errorLoading")}</p>
+            <Button variant="secondary" onClick={() => void fetchPage(filters, null, true)}>
+              {t("common.retry")}
+            </Button>
+          </div>
+        )}
+
+        {!loading && !error && !current && (
+          <div className="flex h-full flex-col items-center justify-center gap-4 bg-surface p-10 text-center sm:rounded-[28px]">
+            <span className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--accent-from)]/10 text-[var(--accent-from)]">
+              <IoSparkles className="h-10 w-10" aria-hidden="true" />
+            </span>
+            <h2 className="text-[22px] font-extrabold text-foreground">{t("discover.endTitle")}</h2>
+            <p className="max-w-xs text-sm text-muted">{t("discover.endText")}</p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button onClick={() => void seeAgain()} loading={restarting}>
+                <IoRefresh className="h-[18px] w-[18px]" aria-hidden="true" /> {t("discover.seeAgain")}
+              </Button>
+              <Button variant="secondary" onClick={() => setFiltersOpen(true)}>
+                <IoOptionsOutline className="h-[18px] w-[18px]" aria-hidden="true" /> {t("discover.changeFilters")}
+              </Button>
+            </div>
+            {index > 0 && (
+              <button type="button" onClick={handleUndo} className="inline-flex items-center gap-1 text-sm text-muted hover:underline">
+                <IoArrowUndo className="h-4 w-4" aria-hidden="true" /> {t("discover.undo")}
+              </button>
+            )}
+          </div>
+        )}
+
+        {current && (
+          <>
+            {upcoming && (
+              <div className="pointer-events-none absolute inset-0 origin-bottom scale-[0.96] opacity-70" aria-hidden="true">
+                <EventCard event={upcoming} locale={locale} t={t} bottomInset={ACTIONS_INSET} />
+              </div>
+            )}
+
+            <div
+              role="button"
+              tabIndex={0}
+              aria-label={t("discover.open")}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleOpen();
+                if (e.key === "ArrowLeft") handlePass();
+                if (e.key === "ArrowRight") handleOpen();
+              }}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerCancel={() => {
+                startRef.current = null;
+                setDrag({ x: 0, y: 0, active: false });
+              }}
+              className="absolute inset-0 cursor-grab touch-pan-y select-none active:cursor-grabbing"
+              style={{
+                transform: `translate(${drag.x}px, ${drag.y}px) rotate(${drag.x / 25}deg)`,
+                transition: drag.active ? "none" : "transform 220ms ease-out",
+              }}
+            >
+              <EventCard event={current} locale={locale} t={t} bottomInset={ACTIONS_INSET} />
+              <span
+                className="pointer-events-none absolute left-5 top-24 rotate-[-12deg] rounded-[10px] border-4 border-rose-500 px-3 py-1 text-2xl font-extrabold uppercase text-rose-500"
+                style={{ opacity: passOpacity }}
+              >
+                {t("discover.pass")}
+              </span>
+              <span
+                className="pointer-events-none absolute right-5 top-24 rotate-[12deg] rounded-[10px] border-4 border-emerald-400 px-3 py-1 text-2xl font-extrabold uppercase text-emerald-400"
+                style={{ opacity: openOpacity }}
+              >
+                {t("discover.open")}
+              </span>
+            </div>
+          </>
+        )}
+
+        {/* Share and filters float over the card's top edge, as in the app. */}
+        <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-end gap-2 p-4">
           <button
             type="button"
             onClick={() => void handleShare()}
             disabled={!current}
             aria-label={t("discover.share")}
             title={t("discover.share")}
-            className={`h-11 w-11 ${roundButton}`}
+            className={overlayButton}
           >
-            <Share2 className="h-5 w-5" />
+            <IoShareSocialOutline className="h-[22px] w-[22px]" />
           </button>
           <button
             type="button"
             onClick={() => setFiltersOpen((o) => !o)}
             aria-label={t("discover.filters")}
             title={t("discover.filters")}
-            className={`relative h-11 w-11 ${roundButton}`}
+            className={`relative ${overlayButton}`}
           >
-            <SlidersHorizontal className="h-5 w-5" />
+            <IoOptionsOutline className="h-[22px] w-[22px]" />
             {activeFilterCount > 0 && (
-              <span className="accent-gradient absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold text-white">
+              <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--accent-to)] px-1 text-[11px] font-extrabold text-white">
                 {activeFilterCount}
               </span>
             )}
           </button>
+          {shareNote && (
+            <span
+              role="status"
+              className="absolute right-4 top-full mt-1 rounded-full bg-foreground px-3 py-1 text-xs font-semibold text-background"
+            >
+              {shareNote}
+            </span>
+          )}
         </div>
-        {shareNote && (
-          <span
-            role="status"
-            className="absolute right-0 top-full mt-2 rounded-full bg-foreground px-3 py-1 text-xs font-semibold text-background"
-          >
-            {shareNote}
-          </span>
-        )}
         {filtersOpen && (
-          <DiscoverFilters
-            filters={filters}
-            onApply={applyFilters}
-            onClose={() => setFiltersOpen(false)}
-          />
+          <DiscoverFilters filters={filters} onApply={applyFilters} onClose={() => setFiltersOpen(false)} />
         )}
-      </div>
 
-      {loading && items.length === 0 && (
-        <div
-          className="aspect-[3/4] w-full animate-pulse rounded-3xl bg-surface"
-          aria-label={t("discover.loading")}
-        />
-      )}
-
-      {error && items.length === 0 && (
-        <div className="flex flex-col items-center gap-3 rounded-3xl bg-surface p-10 text-center text-muted">
-          <p>{t("discover.errorLoading")}</p>
-          <Button
-            variant="secondary"
-            onClick={() => void fetchPage(filters, null, true)}
-          >
-            {t("common.retry")}
-          </Button>
-        </div>
-      )}
-
-      {!loading && !error && !current && (
-        <div className="flex aspect-[3/4] w-full flex-col items-center justify-center gap-4 rounded-3xl bg-surface p-10 text-center">
-          <span className="accent-gradient flex h-16 w-16 items-center justify-center rounded-full text-white">
-            <PartyPopper className="h-8 w-8" aria-hidden="true" />
-          </span>
-          <h2 className="text-xl font-bold text-foreground">
-            {t("discover.endTitle")}
-          </h2>
-          <p className="max-w-xs text-sm text-muted">{t("discover.endText")}</p>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button onClick={() => void seeAgain()} loading={restarting}>
-              <RotateCcw className="h-4 w-4" aria-hidden="true" />{" "}
-              {t("discover.seeAgain")}
-            </Button>
-            <Button variant="secondary" onClick={() => setFiltersOpen(true)}>
-              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />{" "}
-              {t("discover.changeFilters")}
-            </Button>
-          </div>
-          {index > 0 && (
+        {hasCards && (
+          <div className="absolute inset-x-0 bottom-5 z-10 flex items-center justify-center gap-4">
             <button
               type="button"
               onClick={handleUndo}
-              className="inline-flex items-center gap-1 text-sm text-muted hover:underline"
+              disabled={index === 0}
+              title={t("discover.undo")}
+              aria-label={t("discover.undo")}
+              className={`h-12 w-12 text-amber-500 ${roundButton}`}
             >
-              <Undo2 className="h-4 w-4" aria-hidden="true" />{" "}
-              {t("discover.undo")}
+              <IoArrowUndo className="h-6 w-6" />
             </button>
-          )}
-        </div>
-      )}
-
-      {current && (
-        <div className="relative">
-          {upcoming && (
-            <div
-              className="pointer-events-none absolute inset-0 origin-bottom scale-[0.94] opacity-70"
-              aria-hidden="true"
+            <button
+              type="button"
+              onClick={handlePass}
+              disabled={!current}
+              title={t("discover.pass")}
+              aria-label={t("discover.pass")}
+              className={`h-16 w-16 text-rose-500 ${roundButton}`}
             >
-              <EventCard event={upcoming} locale={locale} t={t} />
-            </div>
-          )}
-
-          <div
-            role="button"
-            tabIndex={0}
-            aria-label={t("discover.open")}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleOpen();
-              if (e.key === "ArrowLeft") handlePass();
-              if (e.key === "ArrowRight") handleOpen();
-            }}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={() => {
-              startRef.current = null;
-              setDrag({ x: 0, y: 0, active: false });
-            }}
-            className="relative cursor-grab touch-pan-y select-none active:cursor-grabbing"
-            style={{
-              transform: `translate(${drag.x}px, ${drag.y}px) rotate(${drag.x / 25}deg)`,
-              transition: drag.active ? "none" : "transform 220ms ease-out",
-            }}
-          >
-            <EventCard event={current} locale={locale} t={t} />
-            <span
-              className="pointer-events-none absolute left-5 top-16 rotate-[-12deg] rounded-xl border-4 border-rose-500 px-3 py-1 text-xl font-extrabold uppercase text-rose-500"
-              style={{ opacity: passOpacity }}
+              <IoClose className="h-8 w-8" />
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={!current}
+              title={user ? t("discover.save") : t("discover.signInToSave")}
+              aria-label={t("discover.save")}
+              className={`h-16 w-16 ${roundButton} ${
+                current && savedIds.has(current.id)
+                  ? "!border-[var(--accent-to)] !bg-[var(--accent-to)] text-white"
+                  : "text-[#ec4899]"
+              }`}
             >
-              {t("discover.pass")}
-            </span>
-            <span
-              className="pointer-events-none absolute right-5 top-16 rotate-[12deg] rounded-xl border-4 border-emerald-400 px-3 py-1 text-xl font-extrabold uppercase text-emerald-400"
-              style={{ opacity: openOpacity }}
+              {current && savedIds.has(current.id) ? <IoHeart className="h-8 w-8" /> : <IoHeartOutline className="h-8 w-8" />}
+            </button>
+            <button
+              type="button"
+              onClick={handleOpen}
+              disabled={!current}
+              title={t("discover.open")}
+              aria-label={t("discover.open")}
+              className={`h-12 w-12 text-emerald-400 ${roundButton}`}
             >
-              {t("discover.open")}
-            </span>
+              <IoArrowForward className="h-6 w-6" />
+            </button>
           </div>
-
-          <button
-            type="button"
-            onClick={handleUndo}
-            disabled={index === 0}
-            aria-label={t("discover.undo")}
-            className={`absolute -left-16 top-1/2 hidden h-12 w-12 -translate-y-1/2 md:flex ${roundButton}`}
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </button>
-          <button
-            type="button"
-            onClick={handlePass}
-            aria-label={t("discover.pass")}
-            className={`absolute -right-16 top-1/2 hidden h-12 w-12 -translate-y-1/2 md:flex ${roundButton}`}
-          >
-            <ChevronRight className="h-6 w-6" />
-          </button>
-        </div>
-      )}
-
-      {hasCards && (
-        <div className="flex items-center justify-center gap-4">
-          <button
-            type="button"
-            onClick={handleUndo}
-            disabled={index === 0}
-            title={t("discover.undo")}
-            aria-label={t("discover.undo")}
-            className={`h-12 w-12 text-amber-500 ${roundButton}`}
-          >
-            <Undo2 className="h-5 w-5" />
-          </button>
-          <button
-            type="button"
-            onClick={handlePass}
-            disabled={!current}
-            title={t("discover.pass")}
-            aria-label={t("discover.pass")}
-            className={`h-16 w-16 text-rose-500 ${roundButton}`}
-          >
-            <X className="h-8 w-8" strokeWidth={2.5} />
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={!current}
-            title={user ? t("discover.save") : t("discover.signInToSave")}
-            aria-label={t("discover.save")}
-            className={`h-16 w-16 ${roundButton} ${
-              current && savedIds.has(current.id)
-                ? "accent-gradient border-transparent text-white"
-                : "text-pink-500"
-            }`}
-          >
-            <Heart
-              className="h-7 w-7"
-              fill={
-                current && savedIds.has(current.id) ? "currentColor" : "none"
-              }
-            />
-          </button>
-          <button
-            type="button"
-            onClick={handleOpen}
-            disabled={!current}
-            title={t("discover.open")}
-            aria-label={t("discover.open")}
-            className={`h-12 w-12 text-emerald-500 ${roundButton}`}
-          >
-            <ArrowRight className="h-5 w-5" />
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

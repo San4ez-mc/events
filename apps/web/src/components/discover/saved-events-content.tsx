@@ -8,6 +8,8 @@ import { getAccessToken } from "@/lib/api-client";
 import type { CursorPage, EventCard } from "@/lib/event-types";
 import { EventResultRow } from "@/components/search/event-result-row";
 import { Button } from "@/components/ui/button";
+import { EmptyState, ScreenHeader } from "@/components/ui/screen-header";
+import { IoHeart } from "react-icons/io5";
 
 /** UX §5 — "Мої → Збережені". */
 export function SavedEventsContent() {
@@ -51,19 +53,17 @@ export function SavedEventsContent() {
   if (authLoading || !user) return null;
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-8">
-      <h1 className="text-lg font-bold accent-gradient-text">
-        {t("discover.savedTitle")}
-      </h1>
+    <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6 pb-24 sm:py-10">
+      <ScreenHeader title={t("discover.savedTitle")} Icon={IoHeart} />
 
       {loading && items.length === 0 && (
         <p className="text-center text-muted">{t("common.loading")}</p>
       )}
       {!loading && items.length === 0 && (
-        <p className="text-center text-muted">{t("discover.savedEmpty")}</p>
+        <EmptyState Icon={IoHeart} text={t("discover.savedEmpty")} />
       )}
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2.5">
         {items.map((event) => (
           <EventResultRow key={event.id} event={event} locale={locale} t={t} />
         ))}
