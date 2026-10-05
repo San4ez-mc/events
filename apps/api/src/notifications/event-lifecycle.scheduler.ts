@@ -37,7 +37,10 @@ export class EventLifecycleScheduler {
     ]);
   }
 
-  /** §43 — 24h/1h-before reminders to every actively-registered attendee, skipping opt-outs. */
+  /**
+   * §43 — 24h/1h-before reminders to every actively-registered attendee, skipping opt-outs. People who only showed
+   * interest (liked, followed or opened the event) get a single reminder, 12–24h before: enough to plan, not a spam.
+   */
   private async sendEventReminders(): Promise<void> {
     const hours = await this.getReminderHours();
     const now = new Date();
@@ -49,7 +52,7 @@ export class EventLifecycleScheduler {
       const threshold = new Date(now.getTime() + hour * 60 * 60 * 1000);
       const events = await this.prisma.event.findMany({
         where: { status: "PUBLISHED", startsAt: { gt: now, lte: threshold } },
-        select: { id: true, title: true },
+        select: { id: true, title: true, ownerId: true, startsAt: true },
       });
 
       for (const event of events) {
@@ -72,6 +75,25 @@ export class EventLifecycleScheduler {
             body: `"${event.title}" starts in about ${hour} hour${hour === 1 ? "" : "s"}.`,
             payloadJson: { eventId: event.id },
           });
+        }
+
+        // Interested-only people: one reminder, once the event is 12-24h away (24h slot).
+        const hoursLeft = event.startsAt ? (event.startsAt.getTime() - now.getTime()) / 3_600_000 : 0;
+        if (hour >= 24 && hoursLeft >= 12) {
+          const registered = new Set(registrations.map((r) => r.userId));
+          const interested = (await this.notifications.getInterestedUserIds(event.id, event.ownerId)).filter((id) => !registered.has(id));
+          for (const userId of interested) {
+            const preferences = await this.prisma.userPreferences.findUnique({ where: { userId } });
+            if (preferences && !preferences.allowEventReminderNotifications) continue;
+            if (await this.notifications.existsForPayload(userId, type, "eventId", event.id)) continue;
+            await this.notifications.create({
+              userId,
+              type,
+              title: "Event tomorrow",
+              body: `"${event.title}" starts in about ${Math.round(hoursLeft)} hours.`,
+              payloadJson: { eventId: event.id },
+            });
+          }
         }
       }
     }

@@ -301,6 +301,12 @@ export class EventsService {
       throw new ResourceNotFoundException("Event not found");
     }
 
+    // Opening an upcoming event's page is a sign of interest (feeds the event's reminders/notices); the organizer
+    // viewing their own page, or a finished event, isn't.
+    if (requesterId && event.ownerId !== requesterId && event.status === "PUBLISHED") {
+      this.notifications.recordEventInterest(requesterId, event.id);
+    }
+
     const [withSocial] = await this.socialProof.attach([event], requesterId);
     const organizerEventsCount = await this.prisma.event.count({
       where: { ownerId: event.ownerId, status: { in: ["PUBLISHED", "COMPLETED"] } },
@@ -690,12 +696,18 @@ export class EventsService {
     eventId: string,
     notification: { type: "EVENT_CHANGED" | "EVENT_CANCELLED"; title: string; body: string },
   ): Promise<void> {
-    const registrations = await this.prisma.registration.findMany({
-      where: { eventId, status: { in: [...ACTIVE_REGISTRATION_STATUSES] } },
-      select: { userId: true },
-    });
+    const [registrations, event] = await Promise.all([
+      this.prisma.registration.findMany({
+        where: { eventId, status: { in: [...ACTIVE_REGISTRATION_STATUSES] } },
+        select: { userId: true },
+      }),
+      this.prisma.event.findUnique({ where: { id: eventId }, select: { ownerId: true } }),
+    ]);
+    // Registered people plus those who liked / follow / opened the event; scrolling past it doesn't count.
+    const interested = await this.notifications.getInterestedUserIds(eventId, event?.ownerId);
+    const recipients = [...new Set([...registrations.map((r) => r.userId), ...interested])];
     await Promise.all(
-      registrations.map(({ userId }) =>
+      recipients.map((userId) =>
         this.notifications.create({
           userId,
           type: notification.type,

@@ -275,6 +275,30 @@ export class NotificationsService {
     await this.prisma.notification.deleteMany({ where: { userId } });
   }
 
+  /** Called when a signed-in user opens an event page. Idempotent; never throws into the request. */
+  recordEventInterest(userId: string, eventId: string): void {
+    void this.prisma.eventInterest
+      .upsert({ where: { userId_eventId: { userId, eventId } }, create: { userId, eventId }, update: {} })
+      .catch(() => undefined);
+  }
+
+  /**
+   * People who showed interest in an event without registering: liked (saved) it, follow it, or opened it.
+   * Merely scrolling past a card in the feed counts for nothing. The organizer is never included.
+   */
+  async getInterestedUserIds(eventId: string, ownerId?: string): Promise<string[]> {
+    const [saved, followed, opened, swipedIn] = await Promise.all([
+      this.prisma.savedEvent.findMany({ where: { eventId }, select: { userId: true } }),
+      this.prisma.subscription.findMany({ where: { scope: "EVENT", eventId, active: true }, select: { userId: true } }),
+      this.prisma.eventInterest.findMany({ where: { eventId }, select: { userId: true } }),
+      // A swipe-right / tap on the card in the feed (a PASS swipe means "not interested" and is ignored).
+      this.prisma.eventInteraction.findMany({ where: { eventId, interaction: "OPEN" }, select: { userId: true } }),
+    ]);
+    const ids = new Set([...saved, ...followed, ...opened, ...swipedIn].map((r) => r.userId));
+    if (ownerId) ids.delete(ownerId);
+    return [...ids];
+  }
+
   /** Reminder/warning jobs use this to avoid sending the same one-off notification twice. */
   async existsForPayload(userId: string, type: NotificationType, payloadKey: string, payloadValue: string): Promise<boolean> {
     const existing = await this.prisma.notification.findFirst({

@@ -114,6 +114,7 @@ model User {
   moderationCasesResolved  ModerationCase[]
   eventInteractions        EventInteraction[]
   savedEvents              SavedEvent[]
+  eventInterests           EventInterest[]
   registrations            Registration[]
   notifications            Notification[]
   friendshipsSent          Friendship[]             @relation("FriendshipRequester")
@@ -636,6 +637,7 @@ model Event {
   media              EventMedia[]
   interactions       EventInteraction[]
   savedBy            SavedEvent[]
+  interests          EventInterest[]
   registrationFields RegistrationField[]
   faqItems           EventFaqItem[]
   priceOptions       EventPriceOption[]
@@ -971,6 +973,23 @@ model EventInteraction {
 
 /// UX §5 — "Save is not a registration." One row per user+event; saving
 /// twice is a no-op (unique constraint), unsaving deletes the row.
+/// "This person opened the event page" — one of the signals (with a like/save, a follow or a registration) that
+/// makes an event relevant to them, so reminders and change/cancel notices reach them. Just scrolling past a card
+/// in the feed never creates a row. Recorded server-side when a signed-in user (not the organizer) loads the event.
+model EventInterest {
+  id      String @id @default(uuid()) @db.Uuid
+  userId  String @db.Uuid
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId String @db.Uuid
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, eventId])
+  @@index([eventId])
+  @@map("event_interests")
+}
+
 model SavedEvent {
   id      String @id @default(uuid()) @db.Uuid
   userId  String @db.Uuid
