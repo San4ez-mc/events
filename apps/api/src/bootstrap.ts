@@ -1,5 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
-import { ValidationPipe } from "@nestjs/common";
+import { ValidationPipe, type ValidationError } from "@nestjs/common";
+import { ApiException } from "./common/exceptions/api.exception";
 import type { ConfigService } from "@nestjs/config";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
@@ -34,6 +35,23 @@ export function configureApp(app: INestApplication, configService: ConfigService
       forbidNonWhitelisted: true,
       transform: true,
       transformOptions: { enableImplicitConversion: true },
+      // `_` keeps the human-readable messages (existing clients read it); every invalid field also gets its own key
+      // (nested ones as "links.0.url") holding the failed rules (e.g. ["isUrl"]) so a form can mark that exact input.
+      exceptionFactory: (errors: ValidationError[]) => {
+        const details: Record<string, string[]> = { _: [] };
+        const walk = (list: ValidationError[], prefix: string) => {
+          for (const e of list) {
+            const path = prefix ? `${prefix}.${e.property}` : e.property;
+            if (e.constraints) {
+              details._!.push(...Object.values(e.constraints));
+              details[path] = Object.keys(e.constraints);
+            }
+            if (e.children?.length) walk(e.children, path);
+          }
+        };
+        walk(errors, "");
+        return new ApiException("VALIDATION_ERROR", "Validation failed", 400, details);
+      },
     }),
   );
 }

@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
 import { formatPhoneInput } from "@/lib/format";
+import { fieldErrorMessage, readFieldErrors, type FieldErrors } from "@/lib/field-errors";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 
@@ -81,6 +82,8 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState<"idle" | "saved" | "failed">("idle");
+  // field -> message, for the inputs the server rejected ("links.2.url" for social link #3)
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteFailed, setDeleteFailed] = useState(false);
@@ -111,6 +114,28 @@ export default function ProfilePage() {
   function patch(changes: Partial<Me>) {
     setMe((prev) => (prev ? { ...prev, ...changes } : prev));
     setStatus("idle");
+    setErrors((prev) => {
+      const keys = Object.keys(changes).flatMap((k) => (k === "socialLinks" ? Object.keys(prev).filter((e) => e.startsWith("links.")) : [k]));
+      if (!keys.some((k) => k in prev)) return prev;
+      const next = { ...prev };
+      for (const k of keys) delete next[k];
+      return next;
+    });
+  }
+
+  /** Marks the inputs the server rejected, with the reason under each, and brings the first one into view. */
+  function showFieldErrors(raw: FieldErrors, sentLinkIndexes: number[]) {
+    const next: Record<string, string> = {};
+    for (const [field, rules] of Object.entries(raw)) {
+      const m = /^links\.(\d+)\.url$/.exec(field);
+      // The request only carried the non-empty links, so map the position back to the row the person sees.
+      const key = m ? `links.${sentLinkIndexes[Number(m[1])] ?? m[1]}.url` : field;
+      next[key] = fieldErrorMessage(t, field.replace(/^links\.\d+\./, ""), rules);
+    }
+    setErrors(next);
+    if (Object.keys(next).length > 0) {
+      requestAnimationFrame(() => document.querySelector('[aria-invalid="true"]')?.scrollIntoView({ behavior: "smooth", block: "center" }));
+    }
   }
 
   async function save() {
@@ -118,6 +143,7 @@ export default function ProfilePage() {
     if (!token || !me) return;
     setSaving(true);
     setStatus("idle");
+    setErrors({});
     const headers = {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
@@ -156,6 +182,7 @@ export default function ProfilePage() {
             }),
           })
         : null;
+      const sentLinkIndexes = (me.socialLinks ?? []).flatMap((l, i) => (l.url.trim() ? [i] : []));
       const links = await fetch("/api/v1/users/me/social-links", {
         method: "PUT",
         headers,
@@ -163,9 +190,16 @@ export default function ProfilePage() {
           links: (me.socialLinks ?? []).filter((l) => l.url.trim()),
         }),
       });
-      setStatus(
-        profile.ok && links.ok && (!prefs || prefs.ok) ? "saved" : "failed",
-      );
+      if (profile.ok && links.ok && (!prefs || prefs.ok)) {
+        setStatus("saved");
+      } else {
+        const found: FieldErrors = {
+          ...(profile.ok ? {} : await readFieldErrors(profile)),
+          ...(links.ok ? {} : await readFieldErrors(links)),
+        };
+        showFieldErrors(found, sentLinkIndexes);
+        setStatus("failed");
+      }
     } catch {
       setStatus("failed");
     } finally {
@@ -269,11 +303,13 @@ export default function ProfilePage() {
         value={me.name ?? ""}
         onChange={(v) => patch({ name: v })}
         autoComplete="name"
+        error={errors.name}
       />
       <TextField
         label={t("auth.register.nickname")}
         value={me.nickname ?? ""}
         onChange={(v) => patch({ nickname: v })}
+        error={errors.nickname}
       />
 
       <div className="flex flex-col gap-1.5">
@@ -286,8 +322,14 @@ export default function ProfilePage() {
           maxLength={1000}
           value={me.bio ?? ""}
           onChange={(e) => patch({ bio: e.target.value })}
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--accent-from)]"
+          aria-invalid={Boolean(errors.bio)}
+          className="rounded-[10px] border border-border bg-surface px-3.5 py-2.5 text-[15px] outline-none focus:border-[var(--accent-from)] focus:ring-2 focus:ring-[var(--accent-from)]/30 aria-invalid:border-danger"
         />
+        {errors.bio && (
+          <p role="alert" className="text-xs text-danger">
+            {errors.bio}
+          </p>
+        )}
       </div>
 
       <div>
@@ -297,6 +339,7 @@ export default function ProfilePage() {
           value={me.phone ?? ""}
           onChange={(v) => patch({ phone: formatPhoneInput(v) })}
           autoComplete="tel"
+          error={errors.phone}
         />
         <p className="mt-1 text-xs text-muted">{t("profile.phoneHint")}</p>
       </div>
@@ -307,6 +350,7 @@ export default function ProfilePage() {
           type="date"
           value={me.birthDate ? me.birthDate.slice(0, 10) : ""}
           onChange={(v) => patch({ birthDate: v || null })}
+          error={errors.birthDate}
         />
         <p className="mt-1 text-xs text-muted">{t("profile.birthDateHint")}</p>
       </div>
@@ -329,7 +373,8 @@ export default function ProfilePage() {
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold">{t("profile.socialLinks")}</h2>
         {(me.socialLinks ?? []).map((link, i) => (
-          <div key={i} className="flex gap-2">
+          <div key={i} className="flex flex-col gap-1">
+          <div className="flex gap-2">
             <select
               value={link.type}
               onChange={(e) =>
@@ -362,7 +407,8 @@ export default function ProfilePage() {
                 })
               }
               aria-label={t("profile.socialUrl")}
-              className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+              aria-invalid={Boolean(errors[`links.${i}.url`])}
+              className="min-w-0 flex-1 rounded-[10px] border border-border bg-surface px-3 py-2 text-sm aria-invalid:border-danger"
             />
             <button
               type="button"
@@ -378,6 +424,12 @@ export default function ProfilePage() {
             >
               ×
             </button>
+          </div>
+          {errors[`links.${i}.url`] && (
+            <p role="alert" className="text-xs text-danger">
+              {errors[`links.${i}.url`]}
+            </p>
+          )}
           </div>
         ))}
         {(me.socialLinks ?? []).length < 8 && (
@@ -441,7 +493,9 @@ export default function ProfilePage() {
           <span className="text-sm text-green-600">{t("profile.saved")}</span>
         )}
         {status === "failed" && (
-          <span className="text-sm text-danger">{t("profile.saveFailed")}</span>
+          <span className="text-sm text-danger">
+            {Object.keys(errors).length > 0 ? t("profile.fixFields") : t("profile.saveFailed")}
+          </span>
         )}
       </div>
 

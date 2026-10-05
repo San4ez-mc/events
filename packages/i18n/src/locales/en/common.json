@@ -513,7 +513,8 @@
       "TIKTOK": "TikTok",
       "WEBSITE": "Website",
       "OTHER": "Other"
-    }
+    },
+    "fixFields": "Couldn't save. Fix the fields marked in red."
   },
   "admin": {
     "traffic": {
@@ -947,7 +948,29 @@
     "FREE_CREDITS_ALREADY_CLAIMED": "Free credits were already claimed",
     "REVIEW_NOT_ELIGIBLE": "You can leave a review only after attending the event",
     "REVIEW_ALREADY_EXISTS": "You already left a review",
-    "EXTERNAL_REGISTRATION": "Registration for this event happens on the organizer's site"
+    "EXTERNAL_REGISTRATION": "Registration for this event happens on the organizer's site",
+    "fields": {
+      "isUrl": "Invalid link. Example: https://site.com",
+      "isNotEmpty": "Required field",
+      "isDefined": "Required field",
+      "isString": "Invalid value",
+      "maxLength": "Value is too long",
+      "minLength": "Value is too short",
+      "isDateString": "Invalid date",
+      "isISO8601": "Invalid date",
+      "isEmail": "Invalid email address",
+      "isIn": "Value not allowed",
+      "isEnum": "Value not allowed",
+      "matches": "Invalid format",
+      "isInt": "Must be a whole number",
+      "isNumber": "Must be a number",
+      "min": "Value is too small",
+      "max": "Value is too large",
+      "whitelistValidation": "This field can't be changed",
+      "phoneInvalid": "Invalid phone number. Example: +380 96 123 45 67",
+      "nicknameInvalid": "Nickname: 2–30 characters, Latin letters, digits, _ and - only",
+      "unknown": "Invalid value"
+    }
   },
   "filters": {
     "title": "Filters",
