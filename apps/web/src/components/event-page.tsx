@@ -119,7 +119,7 @@ export function EventPage({
               <IoCalendarOutline className="h-5 w-5" aria-hidden="true" />
             </span>
             <span className="min-w-0">
-              <span className="block font-semibold">{formatDateTime(event.startsAt, locale)}</span>
+              <span className="block font-semibold">{formatDateTime(event.startsAt, locale, event.timezone)}</span>
               <a href={`/api/v1/events/${event.id}/calendar.ics`} download className="text-xs text-[var(--accent-from)] hover:underline">
                 {t("events.actions.addToCalendar")}
               </a>
@@ -409,8 +409,10 @@ function youtubeEmbedId(url: string | null | undefined): string | null {
   return m?.[1] ?? null;
 }
 
-function formatDateTime(iso: string, locale: SupportedLocale): string {
+/** Shown in the event's own time zone: this runs on the server (UTC), so without it a 18:00 Kyiv event read 15:00. */
+function formatDateTime(iso: string, locale: SupportedLocale, timeZone = "Europe/Kyiv"): string {
   return new Date(iso).toLocaleString(locale === "uk" ? "uk-UA" : "en-US", {
+    timeZone,
     weekday: "short",
     day: "numeric",
     month: "long",

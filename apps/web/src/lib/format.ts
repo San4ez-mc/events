@@ -59,3 +59,6 @@ export function formatPriceAmount(price: string | null | undefined, priceMax?: s
   if (price && priceMax && Number(priceMax) > Number(price)) return `${Number(price)}–${Number(priceMax)}`;
   return price ?? "?";
 }
+
+/** Every event is shown in Kyiv time (the platform is Ukraine-only); pages that render on the server would otherwise show UTC. */
+export const EVENT_TZ = "Europe/Kyiv";

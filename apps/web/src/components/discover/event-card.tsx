@@ -4,7 +4,7 @@ import { IoCalendar, IoCalendarOutline, IoLocationOutline, IoPeople, IoPeopleCir
 import { AttendeeStack } from "./attendee-stack";
 import type { SupportedLocale } from "@kiro/i18n";
 import type { EventCard as EventCardData } from "@/lib/event-types";
-import { formatCurrency, formatPriceAmount } from "@/lib/format";
+import { EVENT_TZ, formatCurrency, formatPriceAmount } from "@/lib/format";
 
 /**
  * The swipe card — laid out like the app's: a full-bleed cover with the chips (category, price), a big title,
@@ -167,12 +167,14 @@ function formatCardDate(
 
   const tag = locale === "uk" ? "uk-UA" : "en-US";
   const time = date.toLocaleTimeString(tag, {
+    timeZone: EVENT_TZ,
     hour: "2-digit",
     minute: "2-digit",
   });
   if (isSameDay) return `${t("discover.today")} · ${time}`;
   if (isTomorrow) return `${t("discover.tomorrow")} · ${time}`;
   const day = date.toLocaleDateString(tag, {
+    timeZone: EVENT_TZ,
     weekday: "short",
     day: "numeric",
     month: "long",
