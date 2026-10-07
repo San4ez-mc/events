@@ -59,6 +59,18 @@ module.exports = {
       "expo-notifications",
       "expo-font",
       "expo-video",
+      [
+        "expo-build-properties",
+        {
+          android: {
+            // Google Play flags "DEX code optimization below threshold" (obfuscation 1% < 25%): turn on R8 shrinking +
+            // obfuscation and resource shrinking for release builds. Expo modules ship their own keep rules; the first
+            // build with this should go through closed testing before it is promoted (a bad keep rule only shows at runtime).
+            enableProguardInReleaseBuilds: true,
+            enableShrinkResourcesInReleaseBuilds: true,
+          },
+        },
+      ],
     ],
     extra: {
       router: {},
