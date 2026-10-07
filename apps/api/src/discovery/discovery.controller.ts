@@ -64,6 +64,19 @@ export class DiscoveryController {
     return this.discoveryService.recordInteraction(user.id, eventId, dto);
   }
 
+  /** "Я піду" for events registered elsewhere: public, no registration. Idempotent. */
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post(":eventId/going")
+  markGoing(@CurrentUser() user: AuthenticatedUser, @Param("eventId") eventId: string) {
+    return this.discoveryService.markGoing(user.id, eventId);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete(":eventId/going")
+  unmarkGoing(@CurrentUser() user: AuthenticatedUser, @Param("eventId") eventId: string) {
+    return this.discoveryService.unmarkGoing(user.id, eventId);
+  }
+
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post(":eventId/save")
   saveEvent(@CurrentUser() user: AuthenticatedUser, @Param("eventId") eventId: string) {

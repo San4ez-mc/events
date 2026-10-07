@@ -60,7 +60,8 @@ export class SensitiveContentService {
     { pattern: /(?<![\p{L}\p{N}])війн[аи](?![\p{L}\p{N}])/iu, reasonCode: "WAR_RELATED" },
     { pattern: /воєнн(ий|а|і)/iu, reasonCode: "WAR_RELATED" },
     { pattern: /окупаці[їі]/iu, reasonCode: "WAR_RELATED" },
-    { pattern: /(?<![\p{L}\p{N}])зсу(?![\p{L}\p{N}])/iu, reasonCode: "WAR_RELATED" },
+    // "ЗСУ" alone is no longer held: "частина коштів на ЗСУ" is a routine, legitimate line in Ukrainian event announcements
+    // (it held a tour guide's event for 40 minutes). War/occupation/mobilisation wording still goes to a human.
     { pattern: /мобілізаці[їі]/iu, reasonCode: "WAR_RELATED" },
     { pattern: /(?<![\p{L}\p{N}])фронт(і|у)?(?![\p{L}\p{N}])/iu, reasonCode: "WAR_RELATED" },
   ];

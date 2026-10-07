@@ -43,7 +43,22 @@ export class EventsService {
 
   /** §10 — creating a first event is what makes a user an "organizer" (not a role). */
   async create(ownerId: string, dto: CreateEventDto) {
-    await this.usersService.activateOrganizerIfNeeded(ownerId);
+    const firstEvent = await this.usersService.activateOrganizerIfNeeded(ownerId);
+    if (firstEvent) {
+      // The welcome credits used to be a button people had to find; two organizers got stuck without credits at the
+      // publish step. Hand them over with the first draft instead (idempotent: nobody gets them twice).
+      const grant = await this.creditsService.claimFreeCredits(ownerId).catch(() => null);
+      if (grant?.granted) {
+        void this.notifications
+          .create({
+            userId: ownerId,
+            type: "ADMIN_BROADCAST",
+            title: "Вам нараховано 7 кредитів 🎁",
+            body: "Вітаємо в Кіро! Ми нарахували вам 7 безкоштовних кредитів для публікації подій. Один кредит — одна публікація.",
+          })
+          .catch(() => undefined);
+      }
+    }
 
     const slug = await this.generateUniqueSlug(dto.title);
 
@@ -338,6 +353,9 @@ export class EventsService {
       })),
       participants: participantRows.map((r) => ({ id: r.user.id, name: r.user.name ?? r.user.nickname, avatarUrl: r.user.avatarUrl })),
       friendsGoing: await this.getFriendsGoing(event.id, requesterId),
+      viewerGoing: requesterId
+        ? !!(await this.prisma.eventIntent.findUnique({ where: { userId_eventId: { userId: requesterId, eventId: event.id } }, select: { id: true } }))
+        : false,
       viewerSaved: requesterId
         ? !!(await this.prisma.savedEvent.findUnique({ where: { userId_eventId: { userId: requesterId, eventId: event.id } }, select: { id: true } }))
         : false,

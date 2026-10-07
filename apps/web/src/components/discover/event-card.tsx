@@ -39,7 +39,9 @@ export function EventCard({
   const social = event.social;
   const goingLabel =
     event.registrationMode === "EXTERNAL"
-      ? "∞"
+      ? (social?.registeredCount ?? 0) > 0
+        ? String(social?.registeredCount)
+        : "∞"
       : event.capacity
         ? `${social?.registeredCount ?? 0} / ${event.capacity}`
         : String(social?.registeredCount ?? 0);

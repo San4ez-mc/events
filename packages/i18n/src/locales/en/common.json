@@ -123,7 +123,10 @@
       "paidDisclaimer": "Kiro is a platform for discovering and publishing events. Payment for participation and refunds are handled directly between the participant and the organizer.",
       "faq": "FAQ",
       "previewBanner": "This is a preview — the event isn't published yet.",
-      "rules": "Rules"
+      "rules": "Rules",
+      "imGoing": "I'm going",
+      "youAreGoing": "You're going",
+      "goingHint": "Let others see you're going: friends and other attendees will see it on the event."
     },
     "wizard": {
       "stepBasics": "Basics",
@@ -391,7 +394,13 @@
       "undone": "Brought back the previous event",
       "loginToSave": "Sign in to save events"
     },
-    "showTips": "Show tips"
+    "showTips": "Show tips",
+    "cityPrompt": {
+      "title": "Which city are you in?",
+      "text": "We'll show nearby events first.",
+      "later": "Later",
+      "saved": "City saved"
+    }
   },
   "search": {
     "placeholder": "Search events, categories, organizers, cities…",
@@ -1243,7 +1252,13 @@
     "title": "Kiro as an app",
     "iosSteps": "Tap “Share” at the bottom of Safari, then “Add to Home Screen” — Kiro will open like an app.",
     "androidText": "Install Kiro on your phone to open events in one tap.",
-    "install": "Install"
+    "install": "Install",
+    "waitTitle": "iPhone app coming soon",
+    "waitText": "Leave your email and we'll tell you first when it's out.",
+    "waitPlaceholder": "Your email",
+    "waitButton": "Notify me",
+    "waitThanks": "Thanks! We'll let you know when the app is out.",
+    "waitError": "Couldn't save. Check your email."
   },
   "social": {
     "threads": "Follow us on Threads"

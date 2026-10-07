@@ -23,6 +23,11 @@ describe("SensitiveContentService", () => {
       expect(result).toMatchObject({ reasonCode: "WAR_RELATED" });
     });
 
+    it("lets an ordinary charity mention of ЗСУ through", () => {
+      const result = service.scan(null, "Екскурсія містом. Частина коштів перераховується на допомогу ЗСУ.", null);
+      expect(result.decision).toBe("ALLOW");
+    });
+
     it("does not flag unrelated words that merely contain the substring", () => {
       // "війна" as a real word should flag; a word that only *contains* the
       // fragment without being a boundary-matched instance should not.

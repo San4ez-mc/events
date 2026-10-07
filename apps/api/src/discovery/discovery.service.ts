@@ -5,6 +5,8 @@ import { SYSTEM_SETTING_DEFAULTS, SystemSettingKey } from "@kiro/types";
 import type { CursorPage, CursorPageQuery } from "@kiro/types";
 import { PrismaService } from "../prisma/prisma.service";
 import { ResourceNotFoundException } from "../common/exceptions/common-exceptions";
+import { ApiException } from "../common/exceptions/api.exception";
+import { NotificationsService } from "../notifications/notifications.service";
 import { decodeScoredCursor, encodeScoredCursor, sliceAfterScoredCursor } from "../common/utils/scored-cursor";
 import { ageOn } from "../common/utils/age";
 import { buildPublicEventWhere } from "../common/utils/public-event-filters";
@@ -35,6 +37,7 @@ export class DiscoveryService {
     private readonly prisma: PrismaService,
     private readonly socialProof: SocialProofService,
     private readonly analytics: AnalyticsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /** §57/§58 — ranked, filtered, cursor-paginated discovery feed. */
@@ -139,6 +142,24 @@ export class DiscoveryService {
     this.analytics.record({ eventId, userId, action: "SAVE" });
   }
 
+  async markGoing(userId: string, eventId: string): Promise<void> {
+    const event = await this.prisma.event.findUnique({ where: { id: eventId }, select: { id: true, status: true, registrationMode: true, ownerId: true } });
+    if (!event) throw new ResourceNotFoundException("Event not found");
+    if (event.status !== "PUBLISHED") throw new ApiException("VALIDATION_ERROR", "This event isn't open", 400);
+    // Events registered on Kiro have their own registration (it already means "going").
+    if (event.registrationMode !== "EXTERNAL") throw new ApiException("VALIDATION_ERROR", "Register for this event instead", 400);
+
+    const existing = await this.prisma.eventIntent.findUnique({ where: { userId_eventId: { userId, eventId } }, select: { id: true } });
+    if (existing) return;
+    await this.prisma.eventIntent.create({ data: { userId, eventId } });
+    this.analytics.record({ eventId, userId, action: "SAVE" });
+    void this.notifications.notifyFriendsOfGoing(userId, eventId).catch(() => undefined);
+  }
+
+  async unmarkGoing(userId: string, eventId: string): Promise<void> {
+    await this.prisma.eventIntent.deleteMany({ where: { userId, eventId } });
+  }
+
   async unsaveEvent(userId: string, eventId: string): Promise<void> {
     await this.prisma.savedEvent.deleteMany({ where: { userId, eventId } });
     this.analytics.record({ eventId, userId, action: "UNSAVE" });
@@ -211,7 +232,7 @@ export class DiscoveryService {
    * exist until Phase 4 (registrations) — both contribute 0 for now.
    */
   private scoreEvent(
-    event: Pick<EventCard, "cityId" | "districtId" | "categoryId" | "startsAt" | "createdAt" | "capacity" | "priceType" | "price">,
+    event: Pick<EventCard, "cityId" | "districtId" | "categoryId" | "startsAt" | "createdAt" | "capacity" | "priceType" | "price"> & { registrationMode?: string },
     preferences: {
       preferredCityId: string | null;
       preferredDistrictIds: string[];
@@ -236,6 +257,12 @@ export class DiscoveryService {
     // Budget fit: free events always fit; paid ones fit within the user's stated max budget.
     // A DONATION event costs nothing to attend, so it fits a budget / "free only" preference like a free one.
     const entryIsFree = event.priceType === "FREE" || event.priceType === "DONATION";
+    // Taste signal from real swipes: free / registered-on-Kiro events up, expensive externally-ticketed shows down.
+    if (entryIsFree) score += DISCOVERY_RANKING_WEIGHTS.freeEntry;
+    if (event.registrationMode === "INTERNAL") score += DISCOVERY_RANKING_WEIGHTS.internalRegistration;
+    if (event.registrationMode === "EXTERNAL" && !entryIsFree && event.price != null && Number(event.price) >= DISCOVERY_RANKING_WEIGHTS.expensiveExternalFromPrice) {
+      score += DISCOVERY_RANKING_WEIGHTS.expensiveExternalPenalty;
+    }
     if (preferences?.freeOnly ? entryIsFree : preferences?.maxBudget != null && (entryIsFree || (event.price != null && Number(event.price) <= Number(preferences.maxBudget)))) {
       score += DISCOVERY_RANKING_WEIGHTS.budgetFit;
     }

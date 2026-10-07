@@ -200,6 +200,37 @@ export class NotificationsService {
     );
   }
 
+  /** "Your friend is going" for an event registered elsewhere ("Я піду"): same privacy rules as a registration. */
+  async notifyFriendsOfGoing(userId: string, eventId: string): Promise<void> {
+    const [event, user] = await Promise.all([
+      this.prisma.event.findUnique({ where: { id: eventId }, select: { id: true, slug: true, title: true, status: true, visibility: true } }),
+      this.prisma.user.findUnique({ where: { id: userId }, select: { name: true, nickname: true } }),
+    ]);
+    if (!event || event.status !== "PUBLISHED" || event.visibility !== "PUBLIC") return;
+    const friendships = await this.prisma.friendship.findMany({
+      where: { status: "ACCEPTED", OR: [{ requesterId: userId }, { addresseeId: userId }] },
+      select: { requesterId: true, addresseeId: true },
+    });
+    const friendIds = friendships.map((f) => (f.requesterId === userId ? f.addresseeId : f.requesterId));
+    if (friendIds.length === 0) return;
+    const recipients = await this.prisma.userPreferences.findMany({
+      where: { userId: { in: friendIds }, allowFriendActivityNotifications: true },
+      select: { userId: true },
+    });
+    const who = user?.name ?? user?.nickname ?? "A friend";
+    await Promise.all(
+      recipients.map((r) =>
+        this.create({
+          userId: r.userId,
+          type: "FRIEND_EVENT_REGISTERED",
+          title: "Friend is going",
+          body: `${who} is going to "${event.title}".`,
+          payloadJson: { eventId: event.id, slug: event.slug, friendId: userId },
+        }).catch(() => undefined),
+      ),
+    );
+  }
+
   /** UX §7/preferences-style opt-out (`allowPush`) is checked here, not by callers. */
   private async sendPush(
     userId: string,
@@ -215,7 +246,7 @@ export class NotificationsService {
     if (devices.length === 0) return;
 
     const results = await this.expoPush.send(
-      devices.map((d) => ({ to: d.pushToken, title, body, data })),
+      devices.map((d) => ({ to: d.pushToken, title, body, data: { ...data, notificationId } })),
     );
 
     await Promise.all(
@@ -287,14 +318,15 @@ export class NotificationsService {
    * Merely scrolling past a card in the feed counts for nothing. The organizer is never included.
    */
   async getInterestedUserIds(eventId: string, ownerId?: string): Promise<string[]> {
-    const [saved, followed, opened, swipedIn] = await Promise.all([
+    const [saved, followed, opened, swipedIn, going] = await Promise.all([
       this.prisma.savedEvent.findMany({ where: { eventId }, select: { userId: true } }),
       this.prisma.subscription.findMany({ where: { scope: "EVENT", eventId, active: true }, select: { userId: true } }),
       this.prisma.eventInterest.findMany({ where: { eventId }, select: { userId: true } }),
       // A swipe-right / tap on the card in the feed (a PASS swipe means "not interested" and is ignored).
       this.prisma.eventInteraction.findMany({ where: { eventId, interaction: "OPEN" }, select: { userId: true } }),
+      this.prisma.eventIntent.findMany({ where: { eventId }, select: { userId: true } }),
     ]);
-    const ids = new Set([...saved, ...followed, ...opened, ...swipedIn].map((r) => r.userId));
+    const ids = new Set([...saved, ...followed, ...opened, ...swipedIn, ...going].map((r) => r.userId));
     if (ownerId) ids.delete(ownerId);
     return [...ids];
   }

@@ -43,6 +43,7 @@ export default function EventDetailScreen() {
   const [showAsParticipant, setShowAsParticipant] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [going, setGoing] = useState(false);
   const [tierId, setTierId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
@@ -71,7 +72,10 @@ export default function EventDetailScreen() {
       const body = res.ok ? await res.json() : null;
       setLoadFailed(false);
       setEvent(body);
-      if (body) setSaved(Boolean(body.viewerSaved));
+      if (body) {
+        setSaved(Boolean(body.viewerSaved));
+        setGoing(Boolean(body.viewerGoing));
+      }
     } catch {
       setLoadFailed(true);
     }
@@ -117,6 +121,21 @@ export default function EventDetailScreen() {
    * so there is one button/concept instead of two ("save" and a separate bell that only differed
    * by which endpoint it hit) — they read as duplicates of each other in the UI.
    */
+  /** "Я піду" on events registered on the organizer's site: how someone says they're going, with no registration. */
+  async function toggleGoing() {
+    const token = getAccessToken();
+    if (!token || !event) {
+      router.push("/login");
+      return;
+    }
+    const next = !going;
+    setGoing(next);
+    captureEvent(next ? "event_going" : "event_not_going", { event_id: event.id, category: event.category?.nameUk, city: event.city?.nameUk });
+    const res = await fetch(`${API_URL}/api/v1/discovery/${event.id}/going`, { method: next ? "POST" : "DELETE", headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+    if (!res?.ok) setGoing(!next);
+    else void loadEvent();
+  }
+
   async function toggleSave() {
     const token = getAccessToken();
     if (!token || !event) {
@@ -378,7 +397,7 @@ export default function EventDetailScreen() {
           <View style={styles.socialRow}>
             <Ionicons name="people" size={18} color={colors.foreground} />
             <Text style={styles.socialCount}>
-              {event.registrationMode === "EXTERNAL" ? "∞" : event.capacity != null ? `${social.registeredCount} / ${event.capacity}` : social.registeredCount}{" "}
+              {event.registrationMode === "EXTERNAL" ? (social.registeredCount > 0 ? social.registeredCount : "∞") : event.capacity != null ? `${social.registeredCount} / ${event.capacity}` : social.registeredCount}{" "}
               <Text style={styles.socialMuted}>{t("events.page.participantsCount")}</Text>
             </Text>
             {spotsLeft !== null && (
@@ -616,6 +635,7 @@ export default function EventDetailScreen() {
               void Linking.openURL(url);
             }}
           />
+          <Button title={going ? t("events.page.youAreGoing") : t("events.page.imGoing")} variant={going ? "primary" : "secondary"} onPress={() => void toggleGoing()} />
           <Text style={styles.muted}>{t("registration.externalHint")}</Text>
         </View>
       );

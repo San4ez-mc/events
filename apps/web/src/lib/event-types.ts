@@ -91,6 +91,7 @@ export interface EventDetail extends EventSummary {
   minParticipants: number | null;
   presetParticipants?: number;
   priceMax?: string | null;
+  viewerGoing?: boolean;
   registrationMode?: "INTERNAL" | "EXTERNAL";
   externalRegistrationUrl?: string | null;
   registrationDeadline: string | null;

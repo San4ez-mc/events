@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { IoCalendarOutline, IoEllipsisHorizontal, IoHeart, IoHeartOutline, IoShareSocialOutline } from "react-icons/io5";
+import { IoCalendarOutline, IoCheckmarkCircle, IoEllipsisHorizontal, IoHeart, IoHeartOutline, IoShareSocialOutline } from "react-icons/io5";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
@@ -22,16 +22,20 @@ export function EventActions({
   slug,
   title,
   startsAt,
+  canGo = false,
 }: {
   eventId: string;
   slug: string;
   title: string;
   startsAt?: string | null;
+  /** Events registered on the organizer's site: "Я піду" is how someone says they're going. */
+  canGo?: boolean;
 }) {
   const { t } = useTranslations();
   const { user } = useAuth();
   const router = useRouter();
   const [saved, setSaved] = useState(false);
+  const [going, setGoing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [reporting, setReporting] = useState(false);
 
@@ -45,8 +49,11 @@ export function EventActions({
         `/api/v1/events/slug/${encodeURIComponent(slug)}`,
         { headers: { Authorization: `Bearer ${token}` } },
       ).catch(() => null);
-      if (res?.ok && !cancelled)
-        setSaved(Boolean((await res.json()).viewerSaved));
+      if (res?.ok && !cancelled) {
+        const body = await res.json();
+        setSaved(Boolean(body.viewerSaved));
+        setGoing(Boolean(body.viewerGoing));
+      }
     })();
     return () => {
       cancelled = true;
@@ -68,6 +75,17 @@ export function EventActions({
       headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
     }).catch(() => null);
     if (!res?.ok) setSaved(!next);
+  }
+
+  async function toggleGoing() {
+    if (requireLogin()) return;
+    const next = !going;
+    setGoing(next);
+    const res = await fetch(`/api/v1/discovery/${eventId}/going`, {
+      method: next ? "POST" : "DELETE",
+      headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
+    }).catch(() => null);
+    if (!res?.ok) setGoing(!next);
   }
 
   async function share() {
@@ -152,6 +170,19 @@ export function EventActions({
           <IoEllipsisHorizontal className="h-5 w-5" aria-hidden="true" />
         </button>
       </div>
+      {canGo && (
+        <button
+          type="button"
+          onClick={toggleGoing}
+          aria-pressed={going}
+          className={`mt-3 inline-flex min-h-11 items-center gap-2 rounded-full px-5 text-[15px] font-semibold transition active:scale-95 ${
+            going ? "bg-[var(--accent-from)] text-white" : "border border-[var(--accent-from)] text-[var(--accent-from)] hover:bg-[var(--accent-from)]/10"
+          }`}
+        >
+          <IoCheckmarkCircle className="h-5 w-5" aria-hidden="true" />
+          {going ? t("events.page.youAreGoing") : t("events.page.imGoing")}
+        </button>
+      )}
       {reporting && (
         <ul className="absolute left-0 z-10 mt-2 w-64 overflow-hidden rounded-[14px] border border-border bg-surface shadow-lg">
           {REPORT_REASONS.map((reason) => (

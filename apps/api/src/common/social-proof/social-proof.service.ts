@@ -36,7 +36,7 @@ export class SocialProofService {
     const eventIds = events.map((e) => e.id);
     const ownerIds = [...new Set(events.map((e) => e.ownerId))];
 
-    const [counts, presets, previewRows, friendIds, ownerRating] = await Promise.all([
+    const [counts, presets, previewRows, friendIds, ownerRating, intentCounts, intentPreviewRows] = await Promise.all([
       this.prisma.registration.groupBy({
         by: ["eventId"],
         where: { eventId: { in: eventIds }, status: { in: ACTIVE_STATUSES } },
@@ -50,14 +50,22 @@ export class SocialProofService {
       }),
       this.getFriendIds(viewerId),
       this.organizerRatings(ownerIds),
+      // "Я піду" on events registered elsewhere counts as going, with the same avatars and friends signal.
+      this.prisma.eventIntent.groupBy({ by: ["eventId"], where: { eventId: { in: eventIds } }, _count: { _all: true } }),
+      this.prisma.eventIntent.findMany({
+        where: { eventId: { in: eventIds }, showAsParticipant: true },
+        orderBy: { createdAt: "asc" },
+        select: { eventId: true, user: { select: { id: true, name: true, nickname: true, avatarUrl: true } } },
+      }),
     ]);
 
     const countByEvent = new Map(counts.map((c) => [c.eventId, c._count._all]));
     // Organizer-declared outside participants count as going ("є 5 з 8").
     for (const p of presets) countByEvent.set(p.id, (countByEvent.get(p.id) ?? 0) + p.presetParticipants);
+    for (const c of intentCounts) countByEvent.set(c.eventId, (countByEvent.get(c.eventId) ?? 0) + c._count._all);
 
     const previewsByEvent = new Map<string, AttendeePreview[]>();
-    for (const row of previewRows) {
+    for (const row of [...previewRows, ...intentPreviewRows]) {
       const list = previewsByEvent.get(row.eventId) ?? [];
       if (list.length < PREVIEW_LIMIT) {
         list.push({ id: row.user.id, name: row.user.name ?? row.user.nickname, avatarUrl: row.user.avatarUrl });
@@ -73,6 +81,12 @@ export class SocialProofService {
         _count: { _all: true },
       });
       for (const r of rows) friendsGoing.set(r.eventId, r._count._all);
+      const intentRows = await this.prisma.eventIntent.groupBy({
+        by: ["eventId"],
+        where: { eventId: { in: eventIds }, userId: { in: [...friendIds] } },
+        _count: { _all: true },
+      });
+      for (const r of intentRows) friendsGoing.set(r.eventId, (friendsGoing.get(r.eventId) ?? 0) + r._count._all);
     }
 
     return events.map((event) => ({

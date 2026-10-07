@@ -19,6 +19,7 @@ import { getAccessToken } from "@/lib/api-client";
 import type { CursorPage, EventCard as EventCardData } from "@/lib/event-types";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "./event-card";
+import { CityPrompt } from "./city-prompt";
 import { DiscoverFilters, type DiscoveryFilters } from "./discover-filters";
 import { track } from "@/lib/analytics";
 import { EMPTY_FILTERS, countActiveFilters, filtersToQuery } from "@kiro/types";
@@ -466,6 +467,7 @@ export function DiscoverFeed() {
             </span>
           )}
         </div>
+        <CityPrompt />
         {filtersOpen && (
           <DiscoverFilters filters={filters} onApply={applyFilters} onClose={() => setFiltersOpen(false)} />
         )}

@@ -115,6 +115,7 @@ model User {
   eventInteractions        EventInteraction[]
   savedEvents              SavedEvent[]
   eventInterests           EventInterest[]
+  eventIntents             EventIntent[]
   registrations            Registration[]
   notifications            Notification[]
   friendshipsSent          Friendship[]             @relation("FriendshipRequester")
@@ -638,6 +639,7 @@ model Event {
   interactions       EventInteraction[]
   savedBy            SavedEvent[]
   interests          EventInterest[]
+  intents            EventIntent[]
   registrationFields RegistrationField[]
   faqItems           EventFaqItem[]
   priceOptions       EventPriceOption[]
@@ -973,6 +975,35 @@ model EventInteraction {
 
 /// UX §5 — "Save is not a registration." One row per user+event; saving
 /// twice is a no-op (unique constraint), unsaving deletes the row.
+/// "Я піду" on an event whose tickets/registration live elsewhere (EXTERNAL): a public, no-registration way to say you're
+/// going, so those events get the same social proof (a count, avatars, friends going) as events registered on Kiro.
+model EventIntent {
+  id      String @id @default(uuid()) @db.Uuid
+  userId  String @db.Uuid
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId String @db.Uuid
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  /// Pressing "Я піду" is itself the opt-in to being shown among the people going.
+  showAsParticipant Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, eventId])
+  @@index([eventId])
+  @@map("event_intents")
+}
+
+/// People who asked to be told when the iPhone app is out (iOS is built after the first 1,000 Android users).
+model IosWaitlistEntry {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  source    String?
+  createdAt DateTime @default(now())
+
+  @@map("ios_waitlist")
+}
+
 /// "This person opened the event page" — one of the signals (with a like/save, a follow or a registration) that
 /// makes an event relevant to them, so reminders and change/cancel notices reach them. Just scrolling past a card
 /// in the feed never creates a row. Recorded server-side when a signed-in user (not the organizer) loads the event.

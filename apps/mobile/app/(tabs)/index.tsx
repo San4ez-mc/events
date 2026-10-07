@@ -13,6 +13,7 @@ import { SwipeCard } from "../../src/components/discover/SwipeCard";
 import { FiltersSheet } from "../../src/components/discover/FiltersSheet";
 import { ActionToast, type ToastData } from "../../src/components/discover/ActionToast";
 import { FeedTutorial } from "../../src/components/discover/FeedTutorial";
+import { CityPrompt } from "../../src/components/discover/CityPrompt";
 import type { CursorPage, EventCard } from "../../src/lib/event-types";
 import { spacing, type Palette, useThemedStyles } from "../../src/lib/theme";
 
@@ -325,6 +326,7 @@ ${url}`, url, title: event.title }).catch(() => {});
         </View>
       </View>
 
+      <CityPrompt top={insets.top + spacing.sm + 42 + spacing.md} />
       <ActionToast toast={toast} top={insets.top + spacing.sm + 42 + spacing.md} />
       <FeedTutorial visible={tutorialOpen} onClose={closeTutorial} />
 

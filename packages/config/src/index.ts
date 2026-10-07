@@ -45,6 +45,15 @@ export const DISCOVERY_RANKING_WEIGHTS = {
   budgetFit: 8,
   /** Flat score bonus for a PRO subscriber's event — feed priority is one of the plan's perks. */
   proSubscriberBoost: 40,
+  /**
+   * What early users actually open (14-day swipe data): free and cheap, participatory events — not big ticketed shows
+   * (≈45% opens vs ≈25%, and ~0 for 500+ UAH concerts). Small nudges within a city, never enough to bury anything.
+   */
+  freeEntry: 12,
+  internalRegistration: 6,
+  expensiveExternalPenalty: -22,
+  /** Price from which an externally-ticketed event counts as "expensive". */
+  expensiveExternalFromPrice: 500,
 };
 
 /**

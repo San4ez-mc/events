@@ -107,7 +107,7 @@ export function EventPage({
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
         {event.status === "PUBLISHED" && (
-          <EventActions eventId={event.id} slug={event.slug} title={event.title} startsAt={event.startsAt} />
+          <EventActions eventId={event.id} slug={event.slug} title={event.title} startsAt={event.startsAt} canGo={event.registrationMode === "EXTERNAL"} />
         )}
         <FollowButton eventId={event.id} />
       </div>
@@ -167,7 +167,9 @@ export function EventPage({
           <span className="flex items-center gap-2 font-semibold">
             <IoPeople className="h-[18px] w-[18px]" aria-hidden="true" />
             {event.registrationMode === "EXTERNAL"
-              ? "∞"
+              ? social.registeredCount > 0
+                ? social.registeredCount
+                : "∞"
               : event.capacity != null
                 ? `${social.registeredCount} / ${event.capacity}`
                 : social.registeredCount}{" "}
