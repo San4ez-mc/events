@@ -577,7 +577,15 @@
       "approve": "Approve",
       "reject": "Reject",
       "hint": "Events the automatic text check held back before publishing (e.g. war mentions or other sensitive words) land here. The event stays unpublished until you approve or reject it.",
-      "reason": "Why it was held"
+      "reason": "Why it was held",
+      "noCredits": "The organizer has no publication credits. Approve without charging a credit?",
+      "approveFree": "Approve without charging",
+      "organizer": "Organizer",
+      "credits": "Credits",
+      "when": "When",
+      "price": "Price",
+      "address": "Address",
+      "fullText": "Full text"
     },
     "reports": {
       "title": "Reports",

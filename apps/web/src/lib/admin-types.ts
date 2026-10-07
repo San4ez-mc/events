@@ -31,6 +31,11 @@ export interface ModerationCase {
   details: string | null;
   status: "PENDING" | "APPROVED" | "REJECTED";
   createdAt: string;
+  event?: {
+    description: string | null;
+    owner: { name: string | null; nickname: string | null; email: string };
+    ownerCredits: number;
+  } | null;
 }
 
 export interface Report {

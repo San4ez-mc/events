@@ -23,16 +23,26 @@ export default function AdminModerationPage() {
     queueMicrotask(() => void load());
   }, [load]);
 
-  async function act(caseId: string, action: "approve" | "reject") {
+  async function act(caseId: string, action: "approve" | "reject", waiveCredit = false) {
     const token = getAccessToken();
     if (!token) return;
     setActingId(caseId);
     try {
       const res = await fetch(`/api/v1/admin/moderation/${caseId}/${action}`, {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: action === "approve" ? JSON.stringify({ waiveCredit }) : undefined,
       });
-      if (res.ok) setCases((prev) => (prev ? prev.filter((c) => c.id !== caseId) : prev));
+      if (res.ok) {
+        setCases((prev) => (prev ? prev.filter((c) => c.id !== caseId) : prev));
+        return;
+      }
+      const code = ((await res.json().catch(() => null)) as { error?: { code?: string } } | null)?.error?.code;
+      if (action === "approve" && code === "INSUFFICIENT_LISTING_CREDITS") {
+        if (window.confirm(t("admin.moderation.noCredits"))) await act(caseId, "approve", true);
+      } else {
+        window.alert(code && t(`errors.${code}`) !== `errors.${code}` ? t(`errors.${code}`) : t("common.somethingWentWrong"));
+      }
     } finally {
       setActingId(null);
     }
@@ -53,6 +63,12 @@ export default function AdminModerationPage() {
                 {tEnum(t, "target", c.targetType)} · {c.reasonCode}
               </p>
               {c.details && <p className="mb-2 text-sm text-muted">{c.details}</p>}
+              {c.event?.description && <p className="mb-2 whitespace-pre-wrap text-sm">{c.event.description}</p>}
+              {c.event && (
+                <p className="mb-2 text-xs text-muted">
+                  {t("admin.moderation.organizer")}: {c.event.owner.name ?? c.event.owner.nickname ?? c.event.owner.email} · {t("admin.moderation.credits")}: {c.event.ownerCredits}
+                </p>
+              )}
               <p className="mb-3 text-xs text-muted">{new Date(c.createdAt).toLocaleString(locale === "uk" ? "uk-UA" : "en-US")}</p>
               <div className="flex gap-2">
                 <Button loading={actingId === c.id} onClick={() => void act(c.id, "approve")}>

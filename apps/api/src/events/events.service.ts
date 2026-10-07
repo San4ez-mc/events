@@ -385,6 +385,11 @@ export class EventsService {
     }
 
     if (scan.decision === "FLAG") {
+      // The moderator's approval charges the credit later, so check it now (no charge): otherwise the organizer was never
+      // shown the "claim your free credits" step and the approval then failed on an empty balance.
+      if ((await this.creditsService.getBalance(userId)) < 1) {
+        throw new ApiException("INSUFFICIENT_LISTING_CREDITS", "Not enough listing credits to publish this event", 402);
+      }
       return this.prisma.$transaction(async (tx) => {
         await tx.event.update({ where: { id: eventId }, data: { status: "PENDING_MODERATION" } });
         await this.moderationService.openCase({
@@ -459,7 +464,7 @@ export class EventsService {
    * branch (debit -> PUBLISHED) — the credit was only ever reserved, never
    * consumed, while the event sat PENDING_MODERATION.
    */
-  async approveModeration(eventId: string, adminId: string) {
+  async approveModeration(eventId: string, adminId: string, options: { waiveCredit?: boolean } = {}) {
     const event = await this.prisma.event.findUnique({ where: { id: eventId } });
     if (!event) throw new ResourceNotFoundException("Event not found");
     if (event.status !== "PENDING_MODERATION") {
@@ -467,7 +472,7 @@ export class EventsService {
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      await this.creditsService.debitForPublication(tx, event.ownerId, eventId);
+      if (!options.waiveCredit) await this.creditsService.debitForPublication(tx, event.ownerId, eventId);
       const published = await tx.event.update({
         where: { id: eventId },
         data: { status: "PUBLISHED", publishedAt: new Date() },

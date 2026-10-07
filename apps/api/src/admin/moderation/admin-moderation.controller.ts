@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Patch, Req } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Req } from "@nestjs/common";
 import type { Request } from "express";
 import { AuditLogService } from "../../audit/audit-log.service";
 import { ApiTags } from "@nestjs/swagger";
@@ -6,6 +6,7 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "../../auth/types/authenticated-user";
 import { AdminModerationService } from "./admin-moderation.service";
+import { ApproveModerationDto } from "./dto/approve-moderation.dto";
 
 /** §72/§73 — MODERATOR and above (moderation queue is explicitly in MODERATOR's scope). */
 @ApiTags("admin")
@@ -23,9 +24,10 @@ export class AdminModerationController {
   }
 
   @Patch(":id/approve")
-  async approve(@CurrentUser() user: AuthenticatedUser, @Req() req: Request, @Param("id") id: string) {
-    const result = await this.adminModerationService.approve(id, user.id);
-    await this.auditLog.record({ actorUserId: user.id, action: "MODERATION_APPROVE", entityType: "ModerationCase", entityId: id, ip: req.ip });
+  async approve(@CurrentUser() user: AuthenticatedUser, @Req() req: Request, @Param("id") id: string, @Body() dto: ApproveModerationDto) {
+    const waive = dto?.waiveCredit === true;
+    const result = await this.adminModerationService.approve(id, user.id, waive);
+    await this.auditLog.record({ actorUserId: user.id, action: "MODERATION_APPROVE", entityType: "ModerationCase", entityId: id, ip: req.ip, after: { waiveCredit: waive } });
     return result;
   }
 

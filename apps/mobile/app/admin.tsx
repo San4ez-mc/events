@@ -27,6 +27,17 @@ interface ModerationCase {
   reasonCode: string;
   details: string | null;
   createdAt: string;
+  event?: {
+    description: string | null;
+    startsAt: string | null;
+    priceType: string;
+    price: string | null;
+    priceMax: string | null;
+    currency: string;
+    addressText: string | null;
+    owner: { name: string | null; nickname: string | null; email: string };
+    ownerCredits: number;
+  } | null;
 }
 interface AdminReview {
   id: string;
@@ -311,11 +322,28 @@ export default function AdminScreen() {
     }
   }
 
-  async function decide(id: string, action: "approve" | "reject") {
+  async function decide(id: string, action: "approve" | "reject", waiveCredit = false) {
     setBusy(id);
     try {
-      await fetch(`${API_URL}/api/v1/admin/moderation/${id}/${action}`, { method: "PATCH", headers: headers() });
-      await loadModeration();
+      const res = await fetch(`${API_URL}/api/v1/admin/moderation/${id}/${action}`, {
+        method: "PATCH",
+        headers: headers(),
+        body: action === "approve" ? JSON.stringify({ waiveCredit }) : undefined,
+      });
+      if (res.ok) {
+        await loadModeration();
+        return;
+      }
+      // This used to fail silently, so the button looked dead. Say why, and offer the way out for the credit case.
+      const code = ((await res.json().catch(() => null)) as { error?: { code?: string } } | null)?.error?.code;
+      if (action === "approve" && code === "INSUFFICIENT_LISTING_CREDITS") {
+        Alert.alert(t("admin.moderation.noCredits"), undefined, [
+          { text: t("common.cancel"), style: "cancel" },
+          { text: t("admin.moderation.approveFree"), onPress: () => void decide(id, "approve", true) },
+        ]);
+      } else {
+        Alert.alert(code && t(`errors.${code}`) !== `errors.${code}` ? t(`errors.${code}`) : t("common.somethingWentWrong"));
+      }
     } finally {
       setBusy(null);
     }
@@ -523,7 +551,29 @@ export default function AdminScreen() {
                 <Text style={styles.title}>
                   {t(`enums.target.${c.targetType}`)}: {c.target ? `«${c.target.label}»` : "—"}
                 </Text>
-                {c.target?.excerpt ? <Text style={styles.body}>{c.target.excerpt}</Text> : null}
+                {c.event?.description ? (
+                  <Text style={styles.body} selectable>
+                    {c.event.description}
+                  </Text>
+                ) : c.target?.excerpt ? (
+                  <Text style={styles.body}>{c.target.excerpt}</Text>
+                ) : null}
+                {c.event && (
+                  <Text style={styles.muted}>
+                    {[
+                      c.event.startsAt ? `${t("admin.moderation.when")}: ${formatShortDateTime(c.event.startsAt)}` : null,
+                      `${t("admin.moderation.price")}: ${c.event.priceType === "PAID" ? `${c.event.price ?? "?"}${c.event.priceMax ? `–${c.event.priceMax}` : ""} ${c.event.currency}` : c.event.priceType === "DONATION" ? t("common.donation") : t("common.free")}`,
+                      c.event.addressText ? `${t("admin.moderation.address")}: ${c.event.addressText}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join("  ·  ")}
+                  </Text>
+                )}
+                {c.event && (
+                  <Text style={styles.muted}>
+                    {t("admin.moderation.organizer")}: {c.event.owner.name ?? c.event.owner.nickname ?? c.event.owner.email} · {t("admin.moderation.credits")}: {c.event.ownerCredits}
+                  </Text>
+                )}
                 <Text style={styles.muted}>
                   {t("admin.moderation.reason")}: {c.details ?? c.reasonCode}
                 </Text>
