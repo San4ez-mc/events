@@ -964,6 +964,36 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
               />
             </Field>
 
+            <Section title={t("events.wizard.priceType")}>
+              <Chips
+                value={form.priceType}
+                options={[
+                  { value: "FREE" as const, label: t("events.wizard.priceFree") },
+                  { value: "PAID" as const, label: t("events.wizard.pricePaid") },
+                  { value: "DONATION" as const, label: t("events.wizard.priceDonation") },
+                ]}
+                onChange={(v) => set({ priceType: v })}
+              />
+            </Section>
+            {form.priceType === "DONATION" && <Text style={styles.hint}>{t("events.wizard.donationHint")}</Text>}
+            {form.priceType !== "FREE" && (
+              <>
+                {form.priceType === "PAID" && (
+                  <Field label={t("events.wizard.priceAmount")}>
+                    <TextInput value={form.price} onChangeText={(v) => set({ price: v.replace(/[^0-9.]/g, "") })} style={styles.input} keyboardType="decimal-pad" placeholder="350" placeholderTextColor={colors.muted} />
+                  </Field>
+                )}
+                {form.priceType === "PAID" && (
+                  <Field label={t("events.wizard.priceMax")}>
+                    <TextInput value={form.priceMax} onChangeText={(v) => set({ priceMax: v.replace(/[^0-9.]/g, "") })} style={styles.input} keyboardType="decimal-pad" placeholder="2700" placeholderTextColor={colors.muted} />
+                  </Field>
+                )}
+                <Field label={t("events.wizard.paymentUrl")}>
+                  <TextInput value={form.paymentUrl} onChangeText={(v) => set({ paymentUrl: v })} style={styles.input} autoCapitalize="none" keyboardType="url" placeholder="https://" placeholderTextColor={colors.muted} />
+                </Field>
+              </>
+            )}
+
             <Pressable style={styles.detailsToggle} onPress={() => setDetailsOpen((v) => !v)}>
               <Text style={styles.detailsToggleText}>{t("create.moreSettings")}</Text>
               <Ionicons name={detailsOpen ? "chevron-up" : "chevron-down"} size={18} color={colors.accentFrom} />
@@ -991,35 +1021,6 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
                   )}
                 </Section>
 
-                <Section title={t("events.wizard.priceType")}>
-                  <Chips
-                    value={form.priceType}
-                    options={[
-                      { value: "FREE" as const, label: t("events.wizard.priceFree") },
-                      { value: "PAID" as const, label: t("events.wizard.pricePaid") },
-                      { value: "DONATION" as const, label: t("events.wizard.priceDonation") },
-                    ]}
-                    onChange={(v) => set({ priceType: v })}
-                  />
-                </Section>
-                {form.priceType === "DONATION" && <Text style={styles.hint}>{t("events.wizard.donationHint")}</Text>}
-                {form.priceType !== "FREE" && (
-                  <>
-                    {form.priceType === "PAID" && (
-                      <Field label={t("events.wizard.priceAmount")}>
-                        <TextInput value={form.price} onChangeText={(v) => set({ price: v.replace(/[^0-9.]/g, "") })} style={styles.input} keyboardType="decimal-pad" placeholder="350" placeholderTextColor={colors.muted} />
-                      </Field>
-                    )}
-                    {form.priceType === "PAID" && (
-                      <Field label={t("events.wizard.priceMax")}>
-                        <TextInput value={form.priceMax} onChangeText={(v) => set({ priceMax: v.replace(/[^0-9.]/g, "") })} style={styles.input} keyboardType="decimal-pad" placeholder="2700" placeholderTextColor={colors.muted} />
-                      </Field>
-                    )}
-                    <Field label={t("events.wizard.paymentUrl")}>
-                      <TextInput value={form.paymentUrl} onChangeText={(v) => set({ paymentUrl: v })} style={styles.input} autoCapitalize="none" keyboardType="url" placeholder="https://" placeholderTextColor={colors.muted} />
-                    </Field>
-                  </>
-                )}
                 <Section title={t("create.registrationMode")}>
                   <Chips
                     value={form.registrationMode}
