@@ -92,6 +92,7 @@ export interface EventDetail extends EventSummary {
   presetParticipants?: number;
   priceMax?: string | null;
   viewerGoing?: boolean;
+  addressLockReason?: "REGISTER" | "PENDING_APPROVAL" | "WAITLIST" | null;
   registrationMode?: "INTERNAL" | "EXTERNAL";
   externalRegistrationUrl?: string | null;
   registrationDeadline: string | null;

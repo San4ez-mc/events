@@ -451,7 +451,15 @@ export default function EventDetailScreen() {
         {event.addressLocked || (!event.addressText && !event.onlineUrl) ? (
           <View style={styles.socialRow}>
             <Ionicons name="lock-closed-outline" size={20} color={colors.muted} />
-            <Text style={[styles.socialMuted, { flex: 1 }]}>{t("events.location.lockedHint")}</Text>
+            <Text style={[styles.socialMuted, { flex: 1 }]}>
+              {!event.addressLocked
+                ? t("events.location.missingHint")
+                : event.addressLockReason === "PENDING_APPROVAL"
+                  ? t("events.location.pendingHint")
+                  : event.addressLockReason === "WAITLIST"
+                    ? t("events.location.waitlistHint")
+                    : t("events.location.lockedHint")}
+            </Text>
           </View>
         ) : (
           <View style={{ gap: spacing.sm }}>

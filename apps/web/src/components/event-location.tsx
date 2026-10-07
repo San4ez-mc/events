@@ -23,6 +23,7 @@ export function EventLocation({ event }: { event: EventDetail }) {
   const { t } = useTranslations();
   const { user, isLoading } = useAuth();
   const [revealed, setRevealed] = useState<Revealed | null>(null);
+  const [reason, setReason] = useState<EventDetail["addressLockReason"]>(null);
 
   const load = useCallback(async () => {
     const token = getAccessToken();
@@ -31,6 +32,7 @@ export function EventLocation({ event }: { event: EventDetail }) {
     if (!res.ok) return;
     const body = (await res.json()) as EventDetail & { addressLocked?: boolean };
     setRevealed(body.addressLocked ? null : body);
+    setReason(body.addressLocked ? (body.addressLockReason ?? "REGISTER") : null);
   }, [event.slug]);
 
   useEffect(() => {
@@ -41,6 +43,9 @@ export function EventLocation({ event }: { event: EventDetail }) {
   }, [isLoading, user, load]);
 
   const data = revealed ?? (event.addressLocked ? null : event);
+  const locked = !revealed && Boolean(event.addressLocked);
+  // Registered/approved but the organizer never added an address: say so instead of showing a lock that never opens.
+  const missing = !locked && (!data || (!data.addressText && !data.onlineUrl));
   const place = [event.city?.nameUk, event.district?.nameUk].filter(Boolean).join(", ");
 
   if (!data || (!data.addressText && !data.onlineUrl)) {
@@ -54,7 +59,15 @@ export function EventLocation({ event }: { event: EventDetail }) {
               {place}
             </p>
           )}
-          <p className="text-muted">{t("events.location.lockedHint")}</p>
+          <p className="text-muted">
+            {missing
+              ? t("events.location.missingHint")
+              : (reason ?? event.addressLockReason) === "PENDING_APPROVAL"
+                ? t("events.location.pendingHint")
+                : (reason ?? event.addressLockReason) === "WAITLIST"
+                  ? t("events.location.waitlistHint")
+                  : t("events.location.lockedHint")}
+          </p>
         </div>
       </section>
     );

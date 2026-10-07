@@ -110,7 +110,10 @@
     "location": {
       "lockedHint": "The exact address and map are shown after you register for the event.",
       "joinOnline": "Join online",
-      "route": "Get directions"
+      "route": "Get directions",
+      "pendingHint": "We'll show the address once the organizer approves your request.",
+      "waitlistHint": "We'll show the address as soon as a spot opens for you.",
+      "missingHint": "The organizer hasn't added the exact address yet. Check the description or ask the organizer."
     },
     "page": {
       "participants": "Participants",

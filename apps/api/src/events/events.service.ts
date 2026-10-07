@@ -345,6 +345,8 @@ export class EventsService {
       ...withSocial!,
       ...locationFields,
       addressLocked: !canSeeExactLocation && (event.format === "OFFLINE" || event.format === "ONLINE"),
+      /** Why the address is hidden, so a client can say it ("after approval", "when a spot opens") rather than only "register". */
+      addressLockReason: canSeeExactLocation ? null : await this.addressLockReason(event.id, requesterId),
       organizer: { ...event.owner, eventsCount: organizerEventsCount, rating: withSocial!.social.organizerRating },
       priceOptions: (event.priceOptions ?? []).map(({ _count, ...option }) => ({
         ...option,
@@ -669,6 +671,14 @@ export class EventsService {
   }
 
   /** Owner, or someone with an active registration (§10: exact address only after registering). */
+  private async addressLockReason(eventId: string, userId: string | undefined): Promise<"REGISTER" | "PENDING_APPROVAL" | "WAITLIST"> {
+    if (!userId) return "REGISTER";
+    const registration = await this.prisma.registration.findUnique({ where: { eventId_userId: { eventId, userId } }, select: { status: true } });
+    if (registration?.status === "PENDING") return "PENDING_APPROVAL";
+    if (registration?.status === "WAITLISTED") return "WAITLIST";
+    return "REGISTER";
+  }
+
   private async canSeeExactLocation(eventId: string, ownerId: string, userId: string): Promise<boolean> {
     if (ownerId === userId) return true;
     const registration = await this.prisma.registration.findUnique({
