@@ -1,4 +1,5 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, type OnApplicationBootstrap } from "@nestjs/common";
+import { Cron } from "@nestjs/schedule";
 import { ConfigService } from "@nestjs/config";
 import type { EnvConfig } from "../../config/env.validation";
 
@@ -23,19 +24,29 @@ const CACHE_MS = 5 * 60 * 1000;
  * for a few minutes so opening the admin tab repeatedly doesn't hammer PostHog's rate limit.
  */
 @Injectable()
-export class TrafficService {
+export class TrafficService implements OnApplicationBootstrap {
   private readonly logger = new Logger(TrafficService.name);
   private readonly cache = new Map<number, { at: number; report: TrafficReport }>();
 
   constructor(private readonly config: ConfigService<EnvConfig, true>) {}
 
-  async getReport(days: number): Promise<TrafficReport> {
+  /** Keeps the default 30-day report hot, so opening the admin page doesn't wait for the analytics queries (≈5 s cold). */
+  @Cron("*/4 * * * *")
+  async warmCache(): Promise<void> {
+    await this.getReport(30, true).catch(() => undefined);
+  }
+
+  onApplicationBootstrap(): void {
+    void this.warmCache();
+  }
+
+  async getReport(days: number, force = false): Promise<TrafficReport> {
     const projectId = this.config.get("POSTHOG_PROJECT_ID", { infer: true });
     const apiKey = this.config.get("POSTHOG_PERSONAL_API_KEY", { infer: true });
     if (!projectId || !apiKey) return { configured: false, days };
 
     const hit = this.cache.get(days);
-    if (hit && Date.now() - hit.at < CACHE_MS) return hit.report;
+    if (!force && hit && Date.now() - hit.at < CACHE_MS) return hit.report;
 
     try {
       const host = this.config.get("POSTHOG_HOST", { infer: true }).replace(/\/$/, "");

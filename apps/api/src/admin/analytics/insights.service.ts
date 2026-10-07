@@ -1,4 +1,5 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, type OnApplicationBootstrap } from "@nestjs/common";
+import { Cron } from "@nestjs/schedule";
 import { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
@@ -35,7 +36,7 @@ const FIRST_ACTIONS = `'event_save', 'registration_completed', 'event_published'
  * minutes; PostHog failures degrade to the database-only sections instead of failing the whole report.
  */
 @Injectable()
-export class InsightsService {
+export class InsightsService implements OnApplicationBootstrap {
   private readonly logger = new Logger(InsightsService.name);
   private readonly cache = new Map<number, { at: number; report: InsightsReport }>();
 
@@ -44,9 +45,19 @@ export class InsightsService {
     private readonly config: ConfigService<EnvConfig, true>,
   ) {}
 
-  async getReport(days: number): Promise<InsightsReport> {
+  /** Keeps the default 30-day report hot, so opening the admin page doesn't wait for the analytics queries (≈5 s cold). */
+  @Cron("*/4 * * * *")
+  async warmCache(): Promise<void> {
+    await this.getReport(30, true).catch(() => undefined);
+  }
+
+  onApplicationBootstrap(): void {
+    void this.warmCache();
+  }
+
+  async getReport(days: number, force = false): Promise<InsightsReport> {
     const hit = this.cache.get(days);
-    if (hit && Date.now() - hit.at < CACHE_MS) return hit.report;
+    if (!force && hit && Date.now() - hit.at < CACHE_MS) return hit.report;
 
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     const [supplyDemand, supplyDemandByCity, payments, referrals, notifications] = await Promise.all([

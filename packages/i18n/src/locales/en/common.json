@@ -785,7 +785,8 @@
       "externalClicksHint": "How often people tapped Register / Buy ticket on events with external registration, and which events get the most taps.",
       "externalTotal": "Total taps",
       "externalPeople": "Unique people"
-    }
+    },
+    "loadingSlow": "Gathering data. This can take a few seconds…"
   },
   "reviews": {
     "title": "Reviews",

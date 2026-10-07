@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
+import { Spinner } from "@/components/ui/spinner";
 
 interface TrafficReport {
   configured: boolean;
@@ -51,7 +52,7 @@ export function AdminTraffic() {
       <h2 className="mb-1 text-lg font-bold">{t("admin.traffic.title")}</h2>
       <p className="mb-4 text-xs text-muted">{t("admin.traffic.period").replace("{days}", String(DAYS))}</p>
 
-      {report === null && <p className="text-muted">{t("common.loading")}</p>}
+      {report === null && <Spinner />}
       {report && !report.configured && <p className="rounded-lg border border-border p-4 text-sm text-muted">{t("admin.traffic.notConfigured")}</p>}
       {report?.error && <p className="text-sm text-danger">{t("admin.traffic.unavailable")}</p>}
 

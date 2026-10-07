@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
+import { Spinner } from "@/components/ui/spinner";
 import { tEnum } from "@/lib/format";
 
 interface Insights {
@@ -53,7 +54,7 @@ export function AdminInsights() {
   }, []);
 
   if (failed) return <p className="mb-8 text-sm text-danger">{t("common.somethingWentWrong")}</p>;
-  if (!data) return null;
+  if (!data) return <Spinner />;
 
   const i = (k: string) => t(`admin.insights.${k}`);
   const sections: { id: string; title: string; hint?: string; rows: Row[] }[] = [];
