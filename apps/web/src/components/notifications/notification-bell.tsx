@@ -23,6 +23,7 @@ const ATTENDEE_TYPES = new Set([
 
 /** Event notifications open the event itself (the API resolves its slug into the payload); the rest go to the relevant list. */
 function linkFor(notification: AppNotification): string | null {
+  if (notification.payloadJson?.inquiryId) return `/inbox/${notification.payloadJson.inquiryId}`;
   if (notification.payloadJson?.slug) return `/events/${notification.payloadJson.slug}`;
   if (ORGANIZER_TYPES.has(notification.type)) return "/organizer/events";
   if (ATTENDEE_TYPES.has(notification.type)) return "/my-registrations";

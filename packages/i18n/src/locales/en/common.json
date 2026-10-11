@@ -320,7 +320,13 @@
       "PENDING": "Pending",
       "APPROVED": "Approved",
       "REJECTED": "Rejected"
-    }
+    },
+    "chooseDesign": "Pick a design",
+    "design1": "Classic",
+    "design2": "Poster",
+    "design3": "Bright",
+    "formatStory": "Story",
+    "formatPost": "Post"
   },
   "pricing": {
     "heroTitle": "Pricing",
@@ -440,7 +446,84 @@
     "donate": "Support the organizer",
     "externalRegister": "Details on the organizer's site",
     "externalBuy": "Tickets on the organizer's site",
-    "externalHint": "Registration and payment happen on the organizer's side."
+    "externalHint": "Registration and payment happen on the organizer's side.",
+    "state": {
+      "when": "When",
+      "where": "Where",
+      "whereBelow": "See the address and route in the Location block below.",
+      "onlineBelow": "The online link is in the block below.",
+      "reminders": "We'll remind you 24 hours and 1 hour before it starts.",
+      "contact": "Message the organizer",
+      "otherEvents": "Find other events",
+      "payNow": "Go to payment",
+      "markPaid": "I've paid",
+      "noPayLink": "The organizer didn't add a payment link: message them to ask how to pay.",
+      "open": {
+        "title": "You're in 🎉",
+        "body1": "This is an open event: no organizer approval is needed, so you can simply show up.",
+        "body2": "You'll find the date, time and place below. If anything changes we'll tell you right away."
+      },
+      "approved": {
+        "title": "The organizer approved your request",
+        "body1": "Congratulations, you're in. Come at the date and address below.",
+        "body2": "If your plans change, cancel your spot so someone else can take it."
+      },
+      "openPay": {
+        "title": "Your spot is held. Payment left",
+        "body1": "This is an open event, no approval needed. To confirm your place, pay for it using the link.",
+        "body2": "After paying, tap \"I've paid\". The organizer will confirm and we'll let you know."
+      },
+      "approvedPay": {
+        "title": "Request approved. Payment left",
+        "body1": "The organizer approved your request and your spot is held. To confirm your place, pay for it using the link.",
+        "body2": "After paying, tap \"I've paid\". The organizer will confirm and we'll let you know."
+      },
+      "pending": {
+        "title": "Request sent",
+        "body1": "This is a closed event: the organizer approves participants. They have received your request and will reply soon.",
+        "body2": "We'll notify you as soon as there's a decision. Until then the address is hidden: it opens after approval."
+      },
+      "pendingPaid": {
+        "title": "Request sent",
+        "body1": "This is a closed event: the organizer approves participants. They have received your request and will reply soon.",
+        "body2": "The organizer approves first, and only then payment is needed. We'll tell you when that moment comes."
+      },
+      "paymentPending": {
+        "title": "Waiting for payment confirmation",
+        "body1": "You marked the payment as sent. The organizer will check and confirm it, which takes a little time.",
+        "body2": "Your spot is held. If the payment isn't confirmed, the organizer will contact you."
+      },
+      "confirmed": {
+        "title": "Participation confirmed",
+        "body1": "Payment confirmed, you're definitely on the list.",
+        "body2": "We're expecting you at the stated time and place."
+      },
+      "waitlisted": {
+        "title": "You're on the waitlist",
+        "body1": "There are no free spots right now. If someone cancels, the spot goes to you automatically and we'll tell you at once.",
+        "body2": "The address opens when a spot frees up. You can leave the waitlist if your plans change."
+      },
+      "rejected": {
+        "title": "Request not approved",
+        "body1": "The organizer couldn't take you this time. You can message them a question or pick another event."
+      },
+      "cancelled": {
+        "title": "Registration cancelled",
+        "body1": "You're no longer on the list. Changed your mind? Register again if spots are left."
+      },
+      "attended": {
+        "title": "Thanks for coming!",
+        "body1": "Tell us how it went: your review helps others choose where to go."
+      },
+      "noShow": {
+        "title": "You weren't at the event",
+        "body1": "The organizer marked you as not attending. If that's a mistake, message them."
+      },
+      "eventCancelled": {
+        "title": "Event cancelled",
+        "body1": "The organizer cancelled this event; it won't take place. Sorry for the trouble: you can find others below."
+      }
+    }
   },
   "notifications": {
     "markAllRead": "Mark all as read"
@@ -569,7 +652,8 @@
       "audit": "Audit log",
       "reviews": "Reviews",
       "broadcast": "Broadcast",
-      "analytics": "Traffic"
+      "analytics": "Traffic",
+      "referrals": "Referrals"
     },
     "dashboard": {
       "title": "Admin",
@@ -798,7 +882,20 @@
       "externalTotal": "Total taps",
       "externalPeople": "Unique people"
     },
-    "loadingSlow": "Gathering data. This can take a few seconds…"
+    "loadingSlow": "Gathering data. This can take a few seconds…",
+    "referrals": {
+      "referralsTitle": "Referrals",
+      "referralsEmpty": "No claims for credits yet.",
+      "referralsLink": "Post or handle",
+      "referralsApprove": "Approve (+credits)",
+      "referralsReject": "Reject",
+      "referralsFilterPending": "Pending",
+      "referralsFilterAll": "All",
+      "referralsFrom": "From",
+      "referralsEvent": "Event",
+      "referralsRejectedReason": "Rejection reason (optional)",
+      "referralsStats": "Share images generated (30 days)"
+    }
   },
   "reviews": {
     "title": "Reviews",
@@ -1265,5 +1362,27 @@
   },
   "social": {
     "threads": "Follow us on Threads"
+  },
+  "inbox": {
+    "title": "Messages",
+    "subtitle": "Questions to organizers and their replies",
+    "empty": "Your conversations with organizers will appear here.",
+    "writeTitle": "Question for the organizer",
+    "placeholder": "Write your question…",
+    "send": "Send",
+    "sending": "Sending…",
+    "startHint": "Only the organizer will see your question. They'll reply here and we'll notify you.",
+    "contact": "Message the organizer",
+    "askOnSite": "Ask on the organizer's site",
+    "externalHint": "This event is run on the organizer's site. It's best to ask your questions there.",
+    "yourEvent": "This is your event. People's questions show up in Messages.",
+    "aboutEvent": "About the event",
+    "withOrganizer": "Organizer",
+    "withAsker": "Asking",
+    "you": "You",
+    "unread": "new",
+    "failed": "Couldn't send. Try again.",
+    "openEvent": "Open event",
+    "blocked": "You can't message this person."
   }
 }

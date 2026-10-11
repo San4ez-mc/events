@@ -276,6 +276,21 @@ export function EventPage({
               {t("events.page.viewProfile")}
             </Link>
           </div>
+          {event.status === "PUBLISHED" &&
+            (event.registrationMode === "EXTERNAL" && event.externalRegistrationUrl ? (
+              <a
+                href={event.externalRegistrationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex min-h-10 items-center rounded-full border border-border px-4 text-sm font-semibold hover:bg-surface"
+              >
+                {t("inbox.askOnSite")}
+              </a>
+            ) : (
+              <Link href={`/inbox/event/${event.id}`} className="mt-2 inline-flex min-h-10 items-center rounded-full border border-border px-4 text-sm font-semibold hover:bg-surface">
+                {t("inbox.contact")}
+              </Link>
+            ))}
         </section>
       )}
 

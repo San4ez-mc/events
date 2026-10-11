@@ -6,13 +6,23 @@ import type { AuthenticatedUser } from "../../auth/types/authenticated-user";
 import { ReferralsService } from "../../referrals/referrals.service";
 import { ListReferralSubmissionsDto } from "../../referrals/dto/list-referral-submissions.dto";
 import { ResolveReferralSubmissionDto } from "../../referrals/dto/resolve-referral-submission.dto";
+import { PrismaService } from "../../prisma/prisma.service";
+import { referralStats } from "./referrals-stats";
 
 /** §72 — approving a submission grants real credits, same sensitivity as `/admin/credits`, so ADMIN+ (not MODERATOR). */
 @ApiTags("admin")
 @Roles("ADMIN", "SUPER_ADMIN")
 @Controller("admin/referrals")
 export class AdminReferralsController {
-  constructor(private readonly referralsService: ReferralsService) {}
+  constructor(
+    private readonly referralsService: ReferralsService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  @Get("stats")
+  stats() {
+    return referralStats(this.prisma);
+  }
 
   @Get()
   list(@Query() query: ListReferralSubmissionsDto) {

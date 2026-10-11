@@ -10,6 +10,8 @@ import { ApiRequestError } from "@/lib/auth-context";
 import type { EventDetail, Registration } from "@/lib/event-types";
 import { formatCurrency } from "@/lib/format";
 import { Button } from "@/components/ui/button";
+import { describeRegistration } from "@kiro/types";
+import { RegistrationStatusCard } from "./registration-status-card";
 import { RegistrationFieldInput } from "./registration-field-input";
 
 /**
@@ -331,72 +333,22 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
       );
     }
 
-    if (registration.status === "PENDING") {
-      return (
-        <p className="text-center text-sm text-muted">
-          {t("registration.pending")}
-        </p>
-      );
-    }
-    if (registration.status === "WAITLISTED") {
-      return (
-        <p className="text-center text-sm text-muted">
-          {t("registration.waitlisted")}
-        </p>
-      );
-    }
-    if (registration.status === "PAYMENT_PENDING") {
-      return (
-        <p className="text-center text-sm text-muted">
-          {t("registration.paymentPendingConfirmation")}
-        </p>
-      );
-    }
-
-    if (registration.status === "REGISTERED" && event.priceType === "PAID") {
-      return (
-        <div className="flex flex-col gap-2">
-          <p className="text-center text-sm text-muted">
-            {t("registration.registered")}
-          </p>
-          {event.paymentUrl && (
-            <a
-              href={event.paymentUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button variant="secondary" className="w-full">
-                {t("registration.payNow")}
-              </Button>
-            </a>
-          )}
-          <Button
-            onClick={() => void markPaid()}
-            loading={submitting}
-            className="w-full"
-          >
-            {t("registration.markPaid")}
-          </Button>
-        </div>
-      );
-    }
-
+    const state = describeRegistration(
+      { status: event.status, approvalMode: event.approvalMode, priceType: event.priceType, format: event.format, registrationMode: event.registrationMode },
+      registration,
+    );
+    if (!state) return null;
     return (
-      <div className="flex flex-col gap-2">
-        <p className="text-center text-sm text-muted">
-          {registration.status === "CONFIRMED"
-            ? t("registration.confirmed")
-            : t("registration.registered")}
-        </p>
-        <Button
-          variant="secondary"
-          onClick={() => void cancel()}
-          loading={submitting}
-          className="w-full"
-        >
-          {t("registration.cancelRegistration")}
-        </Button>
-      </div>
+      <RegistrationStatusCard
+        state={state}
+        eventId={event.id}
+        startsAt={event.startsAt}
+        paymentUrl={event.paymentUrl ?? null}
+        online={event.format === "ONLINE"}
+        submitting={submitting}
+        onCancel={() => void cancel()}
+        onMarkPaid={() => void markPaid()}
+      />
     );
   }
 }

@@ -121,6 +121,14 @@ export function SiteHeader() {
                     {t("nav.saved")}
                   </Link>
                   <Link
+                    href="/inbox"
+                    role="menuitem"
+                    className="block px-4 py-2 text-sm hover:bg-surface"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {t("inbox.title")}
+                  </Link>
+                  <Link
                     href="/my-registrations"
                     role="menuitem"
                     className="block px-4 py-2 text-sm hover:bg-surface"

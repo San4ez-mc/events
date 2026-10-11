@@ -10,6 +10,7 @@ import type { AuthenticatedUser } from "../auth/types/authenticated-user";
 import { TokenService } from "../auth/token.service";
 import { EventsService } from "./events.service";
 import { ShareImageService } from "./share-image.service";
+import { AnalyticsService } from "../analytics/analytics.service";
 import { CalendarExportService } from "./calendar-export.service";
 import { CreateEventDto } from "./dto/create-event.dto";
 import { UpdateEventDto } from "./dto/update-event.dto";
@@ -29,6 +30,7 @@ export class EventsController {
     private readonly configService: ConfigService<EnvConfig, true>,
     private readonly shareImageService: ShareImageService,
     private readonly calendarExportService: CalendarExportService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   @RateLimit(20)
@@ -116,8 +118,18 @@ export class EventsController {
   @Get(":id/share-image")
   @Header("Content-Type", "image/jpeg")
   @Header("Cache-Control", "public, max-age=3600")
-  async shareImage(@Param("id") id: string) {
-    return new StreamableFile(await this.shareImageService.generate(id));
+  async shareImage(
+    @Param("id") id: string,
+    @Query("variant") variantRaw?: string,
+    @Query("format") formatRaw?: string,
+    @Query("share") share?: string,
+  ) {
+    const variant = (["1", "2", "3"].includes(variantRaw ?? "") ? Number(variantRaw) : 1) as 1 | 2 | 3;
+    const format = formatRaw === "post" ? "post" : "story";
+    const image = await this.shareImageService.generate(id, variant, format);
+    // Only an actual "share" download counts (previews of the three designs don't), so the number means something.
+    if (share === "1") this.analytics.record({ eventId: id, action: "SHARE_IMAGE", metadata: { variant, format } });
+    return new StreamableFile(image);
   }
 
   /** "Add to calendar" — a plain .ics file, same public-visibility rule as share-image/QR. */

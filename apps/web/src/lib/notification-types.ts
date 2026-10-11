@@ -5,7 +5,7 @@ export interface AppNotification {
   type: NotificationType;
   title: string;
   body: string;
-  payloadJson: { eventId?: string; slug?: string; registrationId?: string } | null;
+  payloadJson: { eventId?: string; slug?: string; registrationId?: string; inquiryId?: string } | null;
   readAt: string | null;
   createdAt: string;
 }

@@ -3,3 +3,4 @@ export * from "./errors";
 export * from "./pagination";
 export * from "./system-settings";
 export * from "./discovery-filters";
+export * from "./registration-state";

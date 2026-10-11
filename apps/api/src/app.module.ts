@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { ChatModule } from "./chat/chat.module";
 import { FlagsModule } from "./flags/flags.module";
 import { WaitlistModule } from "./waitlist/waitlist.module";
+import { InquiriesModule } from "./inquiries/inquiries.module";
 import { FeedbackModule } from "./feedback/feedback.module";
 import { ClientErrorsModule } from "./client-errors/client-errors.module";
 import { AnalyticsModule } from "./analytics/analytics.module";
@@ -80,6 +81,7 @@ import { AdminModule } from "./admin/admin.module";
     FlagsModule,
     FeedbackModule,
     WaitlistModule,
+    InquiriesModule,
     ClientErrorsModule,
     ChatModule,
     AnalyticsModule,

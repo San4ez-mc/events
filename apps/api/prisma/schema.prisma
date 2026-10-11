@@ -116,6 +116,9 @@ model User {
   savedEvents              SavedEvent[]
   eventInterests           EventInterest[]
   eventIntents             EventIntent[]
+  inquiriesAsked           EventInquiry[]   @relation("InquiryAsker")
+  inquiriesReceived        EventInquiry[]   @relation("InquiryOrganizer")
+  inquiryMessages          InquiryMessage[]
   registrations            Registration[]
   notifications            Notification[]
   friendshipsSent          Friendship[]             @relation("FriendshipRequester")
@@ -640,6 +643,7 @@ model Event {
   savedBy            SavedEvent[]
   interests          EventInterest[]
   intents            EventIntent[]
+  inquiries          EventInquiry[]
   registrationFields RegistrationField[]
   faqItems           EventFaqItem[]
   priceOptions       EventPriceOption[]
@@ -975,6 +979,45 @@ model EventInteraction {
 
 /// UX §5 — "Save is not a registration." One row per user+event; saving
 /// twice is a no-op (unique constraint), unsaving deletes the row.
+/// A private conversation between one person and the organizer of an event: how someone with a question about an event
+/// registered on Kiro reaches the organizer, and how the organizer answers. External events link to the organizer's site.
+model EventInquiry {
+  id          String @id @default(uuid()) @db.Uuid
+  eventId     String @db.Uuid
+  event       Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  askerId     String @db.Uuid
+  asker       User   @relation("InquiryAsker", fields: [askerId], references: [id], onDelete: Cascade)
+  /// The event owner at the time the question was asked (denormalized so the organizer's inbox is one indexed query).
+  organizerId String @db.Uuid
+  organizer   User   @relation("InquiryOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  lastMessageAt DateTime @default(now())
+
+  messages InquiryMessage[]
+
+  @@unique([eventId, askerId])
+  @@index([askerId, lastMessageAt])
+  @@index([organizerId, lastMessageAt])
+  @@map("event_inquiries")
+}
+
+model InquiryMessage {
+  id        String       @id @default(uuid()) @db.Uuid
+  inquiryId String       @db.Uuid
+  inquiry   EventInquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  senderId  String       @db.Uuid
+  sender    User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  text   String    @db.Text
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([inquiryId, createdAt])
+  @@map("inquiry_messages")
+}
+
 /// "Я піду" on an event whose tickets/registration live elsewhere (EXTERNAL): a public, no-registration way to say you're
 /// going, so those events get the same social proof (a count, avatars, friends going) as events registered on Kiro.
 model EventIntent {
@@ -1535,6 +1578,8 @@ enum AnalyticsAction {
   CANCELLED
   PAYMENT_LINK_CLICK
   SUBSCRIBED
+  /// A ready-made share image (story / post) was downloaded to be shared, not just previewed.
+  SHARE_IMAGE
 }
 
 /// UX §35 traffic sources: Threads / Direct link / Search / Swipe / Profile / Other.

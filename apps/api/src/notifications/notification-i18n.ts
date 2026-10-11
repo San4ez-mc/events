@@ -49,6 +49,8 @@ const RULES: Rule[] = [
   { title: "Account update", ukTitle: "Оновлення акаунта", body: /^Your account was suspended by a moderator\. Contact support: (.*)\.$/s, ukBody: (m) => `Ваш акаунт призупинено модератором. Зверніться в підтримку: ${q(m)}.` },
   { title: "Account update", ukTitle: "Оновлення акаунта", body: /^Your account was blocked\. Contact support: (.*)\.$/s, ukBody: (m) => `Ваш акаунт заблоковано. Зверніться в підтримку: ${q(m)}.` },
   { title: "Message from moderation", ukTitle: "Повідомлення від модерації" },
+  { title: "New question", ukTitle: "Нове запитання", body: /^(.*) asked about "(.*)": (.*)$/s, ukBody: (m) => `${q(m)} запитує про «${q(m, 2)}»: ${q(m, 3)}` },
+  { title: "New reply", ukTitle: "Відповідь організатора", body: /^The organizer replied about "(.*)": (.*)$/s, ukBody: (m) => `Організатор відповів щодо «${q(m)}»: ${q(m, 2)}` },
   { title: "Account update", ukTitle: "Оновлення акаунта", body: /^Your account is active again\.$/s, ukBody: () => "Ваш акаунт знову активний." },
   { title: "Credits updated", ukTitle: "Кредити оновлено", body: /^You received (\d+) listing credits? from the Kiro team\.$/s, ukBody: (m) => `Вам нараховано кредитів на публікацію: ${q(m)}.` },
   { title: "Credits updated", ukTitle: "Кредити оновлено", body: /^(\d+) listing credits? (?:was|were) deducted from your balance\.$/s, ukBody: (m) => `З вашого балансу списано кредитів: ${q(m)}.` },

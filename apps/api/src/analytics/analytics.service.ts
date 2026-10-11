@@ -8,6 +8,7 @@ export interface TrackInput {
   source?: TrafficSource;
   userId?: string;
   sessionId?: string;
+  metadata?: Prisma.InputJsonValue;
 }
 
 /** Which daily-aggregate column each action increments (§46). UNSAVE / SUBSCRIBED are logged but not aggregated. */
@@ -60,6 +61,7 @@ export class AnalyticsService {
         eventId: i.eventId,
         action: i.action,
         source: i.source,
+        metadataJson: i.metadata,
         userId: i.userId,
         sessionId: i.sessionId,
       })),

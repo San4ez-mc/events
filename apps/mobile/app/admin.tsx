@@ -39,6 +39,14 @@ interface ModerationCase {
     ownerCredits: number;
   } | null;
 }
+interface ReferralClaim {
+  id: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  note: string | null;
+  createdAt: string;
+  user: { name: string | null; nickname: string | null; email: string };
+  event: { title: string } | null;
+}
 interface AdminReview {
   id: string;
   rating: number;
@@ -124,7 +132,7 @@ interface AuditEntry {
 }
 
 const MODERATOR_TABS = ["moderation", "reviews", "reports"] as const;
-const ADMIN_TABS = ["analytics", "categories", "districts", "users", "events", "payments", "credits", "audit", "broadcast"] as const;
+const ADMIN_TABS = ["analytics", "categories", "districts", "users", "events", "payments", "credits", "referrals", "audit", "broadcast"] as const;
 type Tab = (typeof MODERATOR_TABS)[number] | (typeof ADMIN_TABS)[number];
 
 const USER_STATUSES = ["ACTIVE", "SUSPENDED", "BLOCKED", "DELETED"] as const;
@@ -201,6 +209,8 @@ export default function AdminScreen() {
   const [creditBusy, setCreditBusy] = useState(false);
   // Audit
   const [audit, setAudit] = useState<AuditEntry[] | null>(null);
+  const [claims, setClaims] = useState<ReferralClaim[] | null>(null);
+  const [refStats, setRefStats] = useState<{ shareImages30d: number; claimsPending: number; claimsApproved: number } | null>(null);
   // Broadcast
   const [bcTitleUk, setBcTitleUk] = useState("");
   const [bcBodyUk, setBcBodyUk] = useState("");
@@ -275,6 +285,26 @@ export default function AdminScreen() {
     setOrders(res.ok ? await res.json() : []);
   }, []);
 
+  const loadReferrals = useCallback(async () => {
+    const [list, st] = await Promise.all([
+      fetch(`${API_URL}/api/v1/admin/referrals`, { headers: headers() }),
+      fetch(`${API_URL}/api/v1/admin/referrals/stats`, { headers: headers() }),
+    ]);
+    setClaims(list.ok ? ((await list.json()) as { items: ReferralClaim[] }).items : []);
+    if (st.ok) setRefStats(await st.json());
+  }, []);
+
+  async function resolveClaim(id: string, status: "APPROVED" | "REJECTED") {
+    setBusy(id);
+    try {
+      const res = await fetch(`${API_URL}/api/v1/admin/referrals/${id}/resolve`, { method: "PATCH", headers: headers(), body: JSON.stringify({ status }) });
+      if (res.ok) await loadReferrals();
+      else Alert.alert(t("common.somethingWentWrong"));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   const loadAudit = useCallback(async () => {
     const res = await fetch(`${API_URL}/api/v1/admin/audit`, { headers: headers() });
     setAudit(res.ok ? (await res.json()).items : []);
@@ -294,8 +324,9 @@ export default function AdminScreen() {
       void loadEvents("ALL");
       void loadOrders();
       void loadAudit();
+      void loadReferrals();
     }
-  }, [authLoading, user, loadModeration, loadReports, loadContent, loadUsers, loadEvents, loadOrders, loadAudit]);
+  }, [authLoading, user, loadModeration, loadReports, loadContent, loadUsers, loadEvents, loadOrders, loadAudit, loadReferrals]);
 
   function openReply(r: AdminReport) {
     setReplyHide(false);
@@ -316,6 +347,7 @@ export default function AdminScreen() {
       else if (tab === "users") await loadUsers(userSearch);
       else if (tab === "events") await loadEvents(eventStatus);
       else if (tab === "payments") await loadOrders();
+      else if (tab === "referrals") await loadReferrals();
       else if (tab === "audit") await loadAudit();
     } finally {
       setRefreshing(false);
@@ -858,6 +890,34 @@ export default function AdminScreen() {
               onPress={() => void submitCreditAdjustment()}
             />
           </View>
+        )}
+
+        {tab === "referrals" && (
+          <>
+            {refStats && (
+              <Text style={styles.muted}>
+                {t("admin.referrals.referralsStats")}: {refStats.shareImages30d} · {t("admin.referrals.referralsFilterPending")}: {refStats.claimsPending} · {t("referral.status.APPROVED")}: {refStats.claimsApproved}
+              </Text>
+            )}
+            {claims === null && <AdminLoader />}
+            {claims?.length === 0 && <Text style={styles.muted}>{t("admin.referrals.referralsEmpty")}</Text>}
+            {claims?.map((c) => (
+              <View key={c.id} style={styles.card}>
+                <Text style={styles.title}>{c.user.name ?? c.user.nickname ?? c.user.email}</Text>
+                {c.event ? <Text style={styles.muted}>{t("admin.referrals.referralsEvent")}: {c.event.title}</Text> : null}
+                <Text style={styles.body} selectable>
+                  {t("admin.referrals.referralsLink")}: {c.note ?? "—"}
+                </Text>
+                <Text style={styles.muted}>{formatShortDateTime(c.createdAt)} · {t(`referral.status.${c.status}`)}</Text>
+                {c.status === "PENDING" && (
+                  <View style={styles.actions}>
+                    <Button title={t("admin.referrals.referralsApprove")} onPress={() => void resolveClaim(c.id, "APPROVED")} loading={busy === c.id} style={styles.small} />
+                    <Button title={t("admin.referrals.referralsReject")} variant="secondary" onPress={() => void resolveClaim(c.id, "REJECTED")} loading={busy === c.id} style={styles.small} />
+                  </View>
+                )}
+              </View>
+            ))}
+          </>
         )}
 
         {tab === "audit" && (

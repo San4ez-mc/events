@@ -346,6 +346,14 @@ export default function ProfileScreen() {
           </Pressable>
         )}
 
+        <Pressable style={styles.row} onPress={() => router.push("/inbox")}>
+          <Ionicons name="chatbubbles" size={22} color={colors.accentFrom} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowText}>{t("inbox.title")}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        </Pressable>
+
         <Pressable style={styles.row} onPress={() => router.push("/friends")}>
           <Ionicons name="people" size={22} color={colors.accentFrom} />
           <View style={{ flex: 1 }}>

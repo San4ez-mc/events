@@ -24,14 +24,15 @@ Notifications.setNotificationHandler({
  * same "works for real once configured" posture as the payment adapters.
  */
 function handlePushTap(response: Notifications.NotificationResponse): void {
-  const data = (response.notification.request.content.data ?? {}) as { notificationId?: string; slug?: string };
+  const data = (response.notification.request.content.data ?? {}) as { notificationId?: string; slug?: string; inquiryId?: string };
   const token = getAccessToken();
   if (data.notificationId && token) {
     // Opening the notification counts as reading it - this is also how we measure whether pushes get opened.
     void fetch(`${API_URL}/api/v1/notifications/${data.notificationId}/read`, { method: "PATCH", headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
   }
   captureEvent("push_open", { has_event: Boolean(data.slug) });
-  if (data.slug) router.push(`/event/${data.slug}`);
+  if (data.inquiryId) router.push(`/inbox/${data.inquiryId}`);
+  else if (data.slug) router.push(`/event/${data.slug}`);
 }
 
 /** Taps on a push (while running, or the one that launched the app) open the event and are recorded. */

@@ -10,6 +10,8 @@ import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { ApiRequestError, useAuth } from "../../src/lib/auth-context";
 import { useTranslations } from "../../src/lib/locale-context";
 import { Button } from "../../src/components/ui/Button";
+import { describeRegistration } from "@kiro/types";
+import { RegistrationStatusCard } from "../../src/components/registration/RegistrationStatusCard";
 import { RegistrationFieldInput } from "../../src/components/registration/RegistrationFieldInput";
 import { EventGallery } from "../../src/components/event/EventGallery";
 import { EventQrModal } from "../../src/components/social/EventQrModal";
@@ -444,6 +446,13 @@ export default function EventDetailScreen() {
               </View>
             </View>
           </Pressable>
+          {event.status === "PUBLISHED" && !isOwner && (
+            <Button
+              title={event.registrationMode === "EXTERNAL" && event.externalRegistrationUrl ? t("inbox.askOnSite") : t("inbox.contact")}
+              variant="secondary"
+              onPress={() => (event.registrationMode === "EXTERNAL" && event.externalRegistrationUrl ? void Linking.openURL(event.externalRegistrationUrl) : router.push(`/inbox/event/${event.id}`))}
+            />
+          )}
         </View>
       )}
 
@@ -718,25 +727,25 @@ export default function EventDetailScreen() {
       );
     }
 
-    if (registration.status === "PENDING") return <Text style={styles.muted}>{t("registration.pending")}</Text>;
-    if (registration.status === "WAITLISTED") return <Text style={styles.muted}>{t("registration.waitlisted")}</Text>;
-    if (registration.status === "PAYMENT_PENDING") return <Text style={styles.muted}>{t("registration.paymentPendingConfirmation")}</Text>;
-
-    if (registration.status === "REGISTERED" && event.priceType === "PAID") {
-      return (
-        <View style={styles.form}>
-          <Text style={styles.muted}>{t("registration.registered")}</Text>
-          {event.paymentUrl ? <Button title={t("registration.payNow")} variant="secondary" onPress={() => void Linking.openURL(event.paymentUrl!)} /> : null}
-          <Button title={t("registration.markPaid")} onPress={() => void markPaid()} loading={submitting} />
-        </View>
-      );
-    }
-
+    const state = describeRegistration(
+      { status: event.status, approvalMode: event.approvalMode, priceType: event.priceType, format: event.format, registrationMode: event.registrationMode },
+      registration,
+    );
+    if (!state) return null;
     return (
-      <View style={styles.form}>
-        <Text style={styles.muted}>{registration.status === "CONFIRMED" ? t("registration.confirmed") : t("registration.registered")}</Text>
-        <Button title={t("registration.cancelRegistration")} variant="secondary" onPress={() => void cancelRegistration()} loading={submitting} />
-      </View>
+      <RegistrationStatusCard
+        state={state}
+        eventId={event.id}
+        startsAt={event.startsAt}
+        addressText={event.addressText}
+        onlineUrl={event.onlineUrl}
+        mapsUrl={mapsUrl}
+        paymentUrl={event.paymentUrl ?? null}
+        submitting={submitting}
+        onCancel={() => void cancelRegistration()}
+        onMarkPaid={() => void markPaid()}
+        onCalendar={() => void addToCalendar()}
+      />
     );
   }
 }

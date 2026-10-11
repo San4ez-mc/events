@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { captureEvent } from "../../src/lib/product-analytics";
 import { router, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { SYSTEM_SETTING_DEFAULTS, SystemSettingKey } from "@kiro/types";
@@ -43,6 +43,8 @@ export default function ShareForCreditsScreen() {
   const { t } = useTranslations();
 
   const [sharing, setSharing] = useState(false);
+  const [variant, setVariant] = useState<1 | 2 | 3>(1);
+  const [format, setFormat] = useState<"story" | "post">("story");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submissions, setSubmissions] = useState<ReferralSubmission[] | null>(null);
@@ -66,7 +68,7 @@ export default function ShareForCreditsScreen() {
   async function shareImage() {
     setSharing(true);
     try {
-      const file = await File.downloadFileAsync(`${API_URL}/api/v1/events/${id}/share-image`, Paths.cache, { idempotent: true });
+      const file = await File.downloadFileAsync(`${API_URL}/api/v1/events/${id}/share-image?variant=${variant}&format=${format}&share=1`, Paths.cache, { idempotent: true });
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(file.uri, { mimeType: "image/jpeg", dialogTitle: t("referral.shareTitle") });
       } else {
@@ -106,7 +108,26 @@ export default function ShareForCreditsScreen() {
     <ScrollView style={styles.flex} contentContainerStyle={styles.content}>
       <ScreenHeader title={t("referral.title")} icon="megaphone" />
 
-      <Image source={{ uri: `${API_URL}/api/v1/events/${id}/share-image` }} style={styles.preview} resizeMode="cover" />
+      <Text style={styles.label}>{t("referral.chooseDesign")}</Text>
+      <View style={styles.formatRow}>
+        {(["story", "post"] as const).map((f) => (
+          <Pressable key={f} style={[styles.formatChip, format === f && styles.formatChipOn]} onPress={() => setFormat(f)}>
+            <Text style={[styles.formatText, format === f && { color: colors.white }]}>{t(f === "story" ? "referral.formatStory" : "referral.formatPost")}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+        {([1, 2, 3] as const).map((v) => (
+          <Pressable key={v} onPress={() => setVariant(v)} style={{ gap: 6 }}>
+            <Image
+              source={{ uri: `${API_URL}/api/v1/events/${id}/share-image?variant=${v}&format=${format}` }}
+              style={[styles.preview, format === "post" && { aspectRatio: 1080 / 1350 }, variant === v && styles.previewOn]}
+              resizeMode="cover"
+            />
+            <Text style={[styles.designName, variant === v && { color: colors.accentFrom }]}>{t(`referral.design${v}`)}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
 
       <View style={styles.card}>
         <Text style={styles.body}>{t("referral.instructions").replace("{count}", String(BONUS_CREDITS))}</Text>
@@ -145,7 +166,13 @@ export default function ShareForCreditsScreen() {
 const makeStyles = (colors: Palette) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
-  preview: { width: "100%", aspectRatio: 1080 / 1920, borderRadius: radius.lg, backgroundColor: colors.surface },
+  preview: { width: 210, aspectRatio: 1080 / 1920, borderRadius: radius.lg, backgroundColor: colors.surface, borderWidth: 3, borderColor: "transparent" },
+  previewOn: { borderColor: colors.accentFrom },
+  designName: { color: colors.muted, fontSize: 14, fontWeight: "700", textAlign: "center" },
+  formatRow: { flexDirection: "row", gap: 8 },
+  formatChip: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingHorizontal: 16, paddingVertical: 7 },
+  formatChipOn: { backgroundColor: colors.accentFrom, borderColor: colors.accentFrom },
+  formatText: { color: colors.foreground, fontSize: 14, fontWeight: "600" },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md },
   label: { color: colors.foreground, fontSize: 13, fontWeight: "600" },
   body: { color: colors.foreground, fontSize: 14, lineHeight: 20 },
