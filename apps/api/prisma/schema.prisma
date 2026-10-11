@@ -1151,6 +1151,8 @@ model Registration {
 
   paymentClickedAt   DateTime?
   paymentConfirmedAt DateTime?
+  /// Set when the attendee answers "Ви ще йдете?" (the day-before prompt) with yes: a cheap no-show signal for the organizer.
+  attendanceConfirmedAt DateTime?
 
   /// Manual attendance check-in by the organizer (no QR scanner — a plain toggle).
   /// Independent of `status`, so checking someone in/out never loses their REGISTERED/CONFIRMED state.

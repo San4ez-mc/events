@@ -259,6 +259,18 @@ export default function EventDetailScreen() {
     }
   }
 
+  async function confirmAttendance() {
+    const token = getAccessToken();
+    if (!token || !registration) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${API_URL}/api/v1/registrations/${registration.id}/confirm-attendance`, { method: "PATCH", headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) setRegistration(await res.json());
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function markPaid() {
     const token = getAccessToken();
     if (!token || !registration) return;
@@ -745,6 +757,8 @@ export default function EventDetailScreen() {
         onCancel={() => void cancelRegistration()}
         onMarkPaid={() => void markPaid()}
         onCalendar={() => void addToCalendar()}
+        attendanceConfirmedAt={registration.attendanceConfirmedAt}
+        onConfirmAttendance={() => void confirmAttendance()}
       />
     );
   }

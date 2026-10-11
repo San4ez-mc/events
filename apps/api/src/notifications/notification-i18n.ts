@@ -29,6 +29,7 @@ const RULES: Rule[] = [
   { title: "Friend request accepted", ukTitle: "Запит у друзі прийнято", body: /^(.*) accepted your friend request\.$/s, ukBody: (m) => `${q(m)} прийняв(-ла) ваш запит у друзі.` },
   { title: "You're invited!", ukTitle: "Вас запрошено!", body: /^You've been invited to "(.*)"\.$/s, ukBody: (m) => `Вас запросили на «${q(m)}».` },
   { title: "Event tomorrow", ukTitle: "Подія вже завтра", body: /^"(.*)" starts in about (\d+) hours?\.$/s, ukBody: (m) => `«${q(m)}» починається приблизно через ${q(m, 2)} год.` },
+  { title: "Event tomorrow", ukTitle: "Подія вже завтра", body: /^"(.*)" is tomorrow\. Are you still going\?$/s, ukBody: (m) => `«${q(m)}» уже завтра. Ви ще йдете? Підтвердіть участь або скасуйте, щоб звільнити місце.` },
   { title: "Event starting soon", ukTitle: "Подія невдовзі почнеться", body: /^"(.*)" starts in about (\d+) hours?\.$/s, ukBody: (m) => `«${q(m)}» починається приблизно через ${q(m, 2)} год.` },
   { title: "How was it?", ukTitle: "Як усе минуло?", body: /^Leave a review for "(.*)"\.$/s, ukBody: (m) => `Залиште відгук про «${q(m)}».` },
   { title: "Not enough registrations yet", ukTitle: "Поки замало реєстрацій", body: /^"(.*)" has (\d+)\/(\d+) of the minimum you set\./s, ukBody: (m) => `На «${q(m)}» зареєстровано ${q(m, 2)}/${q(m, 3)} від вашого мінімуму. Ви можете провести подію або скасувати її — автоматично вона не скасується.` },

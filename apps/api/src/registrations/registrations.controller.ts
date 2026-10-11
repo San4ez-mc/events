@@ -22,6 +22,13 @@ export class RegistrationsController {
     return this.registrationsService.cancel(id, user.id);
   }
 
+  /** The "Ви ще йдете?" answer: yes, I'm still coming. (Saying no is the existing cancel.) */
+  @HttpCode(HttpStatus.OK)
+  @Patch(":id/confirm-attendance")
+  confirmAttendance(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.registrationsService.confirmAttendance(id, user.id);
+  }
+
   @HttpCode(HttpStatus.OK)
   @Patch(":id/mark-paid")
   markPaid(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {

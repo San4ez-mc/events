@@ -58,22 +58,25 @@ export class EventLifecycleScheduler {
       for (const event of events) {
         const registrations = await this.prisma.registration.findMany({
           where: { eventId: event.id, status: { in: [...ACTIVE_REGISTRATION_STATUSES] } },
-          select: { userId: true },
+          select: { userId: true, status: true, id: true },
         });
 
-        for (const { userId } of registrations) {
+        for (const { userId, status, id: registrationId } of registrations) {
           const preferences = await this.prisma.userPreferences.findUnique({ where: { userId } });
           if (preferences && !preferences.allowEventReminderNotifications) continue;
 
           const alreadySent = await this.notifications.existsForPayload(userId, type, "eventId", event.id);
           if (alreadySent) continue;
 
+          // The day-before reminder to someone who is in also asks "are you still going?" - opening it shows the
+          // confirm / cancel buttons on the event page. A request still waiting for approval has nothing to confirm.
+          const asksToConfirm = hour >= 24 && status !== "PENDING";
           await this.notifications.create({
             userId,
             type,
             title: hour >= 24 ? "Event tomorrow" : "Event starting soon",
-            body: `"${event.title}" starts in about ${hour} hour${hour === 1 ? "" : "s"}.`,
-            payloadJson: { eventId: event.id },
+            body: asksToConfirm ? `"${event.title}" is tomorrow. Are you still going?` : `"${event.title}" starts in about ${hour} hour${hour === 1 ? "" : "s"}.`,
+            payloadJson: { eventId: event.id, ...(asksToConfirm ? { registrationId } : {}) },
           });
         }
 

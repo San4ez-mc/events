@@ -98,8 +98,9 @@ export default function OrganizerRegistrationsPage() {
                     {[registration.user.email, registration.user.phone].filter(Boolean).join(" · ")}
                   </p>
                 </div>
-                <span className="whitespace-nowrap text-xs text-muted">
+                <span className="whitespace-nowrap text-right text-xs text-muted">
                   {t(STATUS_LABEL_KEYS[registration.status] ?? registration.status)}
+                  {registration.attendanceConfirmedAt && <span className="block font-semibold text-emerald-600">✓ {t("registration.attend.organizerBadge")}</span>}
                 </span>
               </div>
 

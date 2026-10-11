@@ -523,6 +523,13 @@
         "title": "Event cancelled",
         "body1": "The organizer cancelled this event; it won't take place. Sorry for the trouble: you can find others below."
       }
+    },
+    "attend": {
+      "question": "Are you still going?",
+      "hint": "Confirm so the organizer knows they can count on you. If your plans changed, cancel and the spot goes to someone else.",
+      "yes": "Yes, I'm going",
+      "confirmed": "You've confirmed. See you there!",
+      "organizerBadge": "confirmed attendance"
     }
   },
   "notifications": {

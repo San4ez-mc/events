@@ -13,6 +13,7 @@ interface Reg {
   id: string;
   status: string;
   checkedInAt: string | null;
+  attendanceConfirmedAt?: string | null;
   user: { id: string; name: string | null; nickname: string | null; email: string; phone: string | null };
   answers: { id: string; field: { label: string }; valueJson: unknown }[];
 }
@@ -204,7 +205,10 @@ export default function ManageEventScreen() {
               <Text style={styles.name}>{r.user.name ?? r.user.nickname ?? r.user.email}</Text>
               <Text style={styles.muted}>{[r.user.email, r.user.phone].filter(Boolean).join(" · ")}</Text>
             </View>
-            <Text style={styles.status}>{t(STATUS_KEYS[r.status] ?? r.status)}</Text>
+            <View style={{ alignItems: "flex-end" }}>
+              <Text style={styles.status}>{t(STATUS_KEYS[r.status] ?? r.status)}</Text>
+              {r.attendanceConfirmedAt ? <Text style={[styles.status, { color: "#16a34a" }]}>✓ {t("registration.attend.organizerBadge")}</Text> : null}
+            </View>
           </View>
           {r.answers.map((a) => (
             <Text key={a.id} style={styles.answer}>

@@ -255,6 +255,20 @@ export class RegistrationsService {
     return updated;
   }
 
+  /** Attendee says "yes, I'm still coming" before the event; the organizer sees it next to the registration. */
+  async confirmAttendance(registrationId: string, userId: string) {
+    const registration = await this.prisma.registration.findUnique({ where: { id: registrationId }, include: { event: { select: { status: true, startsAt: true } } } });
+    if (!registration) throw new ResourceNotFoundException("Registration not found");
+    if (registration.userId !== userId) throw new ForbiddenActionException();
+    if (!["REGISTERED", "PAYMENT_PENDING", "CONFIRMED"].includes(registration.status)) {
+      throw new ApiException("VALIDATION_ERROR", "Only someone who is in can confirm attendance", 400);
+    }
+    if (registration.event.status !== "PUBLISHED" || (registration.event.startsAt && registration.event.startsAt.getTime() < Date.now())) {
+      throw new ApiException("REGISTRATION_CLOSED", "This event is no longer upcoming", 400);
+    }
+    return this.prisma.registration.update({ where: { id: registrationId }, data: { attendanceConfirmedAt: new Date() }, include: REGISTRATION_INCLUDE });
+  }
+
   /** Attendee claims they've sent payment (UX §13's "Я оплатив"), for a paid event's REGISTERED registration. */
   async markPaid(registrationId: string, userId: string) {
     const registration = await this.prisma.registration.findUnique({

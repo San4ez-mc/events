@@ -131,6 +131,7 @@ export interface Registration {
     | "ATTENDED"
     | "NO_SHOW"
     | "WAITLISTED";
+  attendanceConfirmedAt?: string | null;
 }
 
 export interface RegistrationWithEvent extends Registration {

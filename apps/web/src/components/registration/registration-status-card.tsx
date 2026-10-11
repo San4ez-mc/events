@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { IoCalendarOutline, IoCheckmarkCircle, IoChatbubbleEllipsesOutline, IoCloseCircle, IoInformationCircle, IoTimeOutline, IoWarning } from "react-icons/io5";
 import type { RegistrationState } from "@kiro/types";
@@ -26,6 +27,8 @@ export function RegistrationStatusCard({
   submitting,
   onCancel,
   onMarkPaid,
+  attendanceConfirmedAt,
+  onConfirmAttendance,
 }: {
   state: RegistrationState;
   eventId: string;
@@ -35,8 +38,11 @@ export function RegistrationStatusCard({
   submitting: boolean;
   onCancel: () => void;
   onMarkPaid: () => void;
+  attendanceConfirmedAt?: string | null;
+  onConfirmAttendance: () => void;
 }) {
   const { t, locale } = useTranslations();
+  const [now] = useState(() => Date.now());
   const tone = TONE_STYLES[state.tone];
   const Icon = state.tone === "info" && state.id === "pending" ? IoInformationCircle : tone.icon;
   const when = startsAt
@@ -81,6 +87,29 @@ export function RegistrationStatusCard({
             {t("registration.state.markPaid")}
           </Button>
         </div>
+      )}
+
+      {/* The day before: "are you still going?" - one tap to confirm, or cancel to free the spot. */}
+      {state.showReminders && startsAt && new Date(startsAt).getTime() - now < 36 * 3600 * 1000 && new Date(startsAt).getTime() > now && (
+        attendanceConfirmedAt ? (
+          <p className="flex items-center gap-2 rounded-[14px] border border-emerald-500/40 bg-emerald-500/10 p-3 font-semibold">
+            <IoCheckmarkCircle className="h-5 w-5 text-emerald-600" aria-hidden="true" />
+            {t("registration.attend.confirmed")}
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2 rounded-[14px] border border-[var(--accent-from)]/40 bg-[var(--accent-from)]/10 p-3.5">
+            <p className="text-base font-bold">{t("registration.attend.question")}</p>
+            <p className="text-muted">{t("registration.attend.hint")}</p>
+            <div className="flex gap-2">
+              <Button onClick={onConfirmAttendance} loading={submitting} className="flex-1">
+                {t("registration.attend.yes")}
+              </Button>
+              <Button variant="secondary" onClick={onCancel} loading={submitting} className="flex-1">
+                {t("registration.cancelRegistration")}
+              </Button>
+            </div>
+          </div>
+        )
       )}
 
       {state.showReminders && <p className="text-xs text-muted">{t("registration.state.reminders")}</p>}

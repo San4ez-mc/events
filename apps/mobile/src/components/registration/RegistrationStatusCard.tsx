@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -25,6 +26,8 @@ export function RegistrationStatusCard({
   onCancel,
   onMarkPaid,
   onCalendar,
+  attendanceConfirmedAt,
+  onConfirmAttendance,
 }: {
   state: RegistrationState;
   eventId: string;
@@ -37,9 +40,12 @@ export function RegistrationStatusCard({
   onCancel: () => void;
   onMarkPaid: () => void;
   onCalendar: () => void;
+  attendanceConfirmedAt?: string | null;
+  onConfirmAttendance: () => void;
 }) {
   const { colors, styles } = useThemedStyles(makeStyles);
   const { t } = useTranslations();
+  const [now] = useState(() => Date.now());
   const key = (suffix: string) => `registration.state.${state.id}.${suffix}`;
   const tone: Record<RegistrationState["tone"], { icon: IconName; color: string }> = {
     success: { icon: "checkmark-circle", color: colors.success },
@@ -87,6 +93,22 @@ export function RegistrationStatusCard({
           <Button title={t("registration.state.markPaid")} onPress={onMarkPaid} loading={submitting} />
         </View>
       )}
+
+      {/* The day before: "are you still going?" - one tap to confirm, or cancel to free the spot. */}
+      {state.showReminders && startsAt && new Date(startsAt).getTime() - now < 36 * 3600 * 1000 && new Date(startsAt).getTime() > now &&
+        (attendanceConfirmedAt ? (
+          <View style={[styles.banner, { borderColor: colors.success }]}>
+            <Ionicons name="checkmark-circle" size={22} color={colors.success} />
+            <Text style={[styles.body, { flex: 1, fontWeight: "700" }]}>{t("registration.attend.confirmed")}</Text>
+          </View>
+        ) : (
+          <View style={[styles.banner, { borderColor: colors.accentFrom, flexDirection: "column" }]}>
+            <Text style={styles.title}>{t("registration.attend.question")}</Text>
+            <Text style={styles.muted}>{t("registration.attend.hint")}</Text>
+            <Button title={t("registration.attend.yes")} onPress={onConfirmAttendance} loading={submitting} />
+            <Button title={t("registration.cancelRegistration")} variant="secondary" onPress={onCancel} loading={submitting} />
+          </View>
+        ))}
 
       {state.showReminders && <Text style={styles.small}>{t("registration.state.reminders")}</Text>}
 

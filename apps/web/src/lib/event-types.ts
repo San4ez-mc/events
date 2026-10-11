@@ -146,6 +146,7 @@ export interface Registration {
   cancelledAt: string | null;
   paymentClickedAt: string | null;
   paymentConfirmedAt: string | null;
+  attendanceConfirmedAt?: string | null;
   organizerPrivateNote: string | null;
   answers: RegistrationAnswer[];
 }

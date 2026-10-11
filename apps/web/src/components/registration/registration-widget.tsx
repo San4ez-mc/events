@@ -109,6 +109,19 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
     }
   }
 
+  async function confirmAttendance() {
+    if (!registration) return;
+    const token = getAccessToken();
+    if (!token) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/v1/registrations/${registration.id}/confirm-attendance`, { method: "PATCH", headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) setRegistration(await res.json());
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function cancel() {
     if (!registration) return;
     const token = getAccessToken();
@@ -348,6 +361,8 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
         submitting={submitting}
         onCancel={() => void cancel()}
         onMarkPaid={() => void markPaid()}
+        attendanceConfirmedAt={registration.attendanceConfirmedAt}
+        onConfirmAttendance={() => void confirmAttendance()}
       />
     );
   }
