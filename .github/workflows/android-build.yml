@@ -1,0 +1,80 @@
+name: Android build (Google Play .aab)
+
+# Builds the Android app on GitHub's own runner with `eas build --local`, so it does not use the Expo free-plan build
+# quota. Run it by hand: Actions -> "Android build" -> Run workflow. The result is a downloadable .aab (production) or
+# .apk (preview) in the run's "Artifacts". Needs two repository secrets: EXPO_TOKEN and GOOGLE_SERVICES_JSON
+# (see docs/ANDROID_BUILD_GITHUB.md). Never runs on pull requests, so the secrets are not reachable from forks.
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "EAS build profile (production = .aab for Google Play, preview = .apk for a quick install)"
+        type: choice
+        options:
+          - production
+          - preview
+        default: production
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm version comes from the `packageManager` field in package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check the secrets are set
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          test -n "$EXPO_TOKEN" || { echo "::error::Repository secret EXPO_TOKEN is not set"; exit 1; }
+          test -n "$GOOGLE_SERVICES_JSON" || { echo "::error::Repository secret GOOGLE_SERVICES_JSON is not set"; exit 1; }
+
+      # google-services.json is gitignored (it is not committed), so it is written from the secret to a path outside the
+      # project; app.config.js reads it from the GOOGLE_SERVICES_JSON path.
+      - name: Write google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: printf '%s' "$GOOGLE_SERVICES_JSON" > "$RUNNER_TEMP/google-services.json"
+
+      - name: Build
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          GOOGLE_SERVICES_JSON: ${{ runner.temp }}/google-services.json
+          EAS_BUILD_PROFILE: ${{ inputs.profile }}
+          CI: "1"
+        run: |
+          EXT=aab
+          if [ "${{ inputs.profile }}" = "preview" ]; then EXT=apk; fi
+          npx --yes eas-cli@latest build --platform android --profile "${{ inputs.profile }}" --local --non-interactive --output "$GITHUB_WORKSPACE/kiro-${{ inputs.profile }}.$EXT"
+
+      - name: Upload the build
+        uses: actions/upload-artifact@v4
+        with:
+          name: kiro-android-${{ inputs.profile }}
+          path: |
+            kiro-${{ inputs.profile }}.aab
+            kiro-${{ inputs.profile }}.apk
+          if-no-files-found: error
+          retention-days: 3
