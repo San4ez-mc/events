@@ -260,7 +260,8 @@
       },
       "follow": "Follow this event",
       "reportCommentPlaceholder": "Describe what's wrong (optional, but it helps the moderator)",
-      "reportSend": "Send report"
+      "reportSend": "Send report",
+      "reportProblem": "Report a problem to the developer"
     }
   },
   "consent": {
@@ -660,7 +661,8 @@
       "reviews": "Reviews",
       "broadcast": "Broadcast",
       "analytics": "Traffic",
-      "referrals": "Referrals"
+      "referrals": "Referrals",
+      "feedback": "Reports"
     },
     "dashboard": {
       "title": "Admin",
@@ -902,6 +904,19 @@
       "referralsEvent": "Event",
       "referralsRejectedReason": "Rejection reason (optional)",
       "referralsStats": "Share images generated (30 days)"
+    },
+    "feedback": {
+      "title": "Messages to the developer",
+      "empty": "No messages.",
+      "from": "From",
+      "anonymous": "No account",
+      "context": "From",
+      "device": "Device",
+      "screenshot": "Screenshot",
+      "filterNew": "New",
+      "filterAll": "All",
+      "resolve": "Resolved",
+      "reopen": "Reopen"
     }
   },
   "reviews": {
@@ -1391,5 +1406,16 @@
     "failed": "Couldn't send. Try again.",
     "openEvent": "Open event",
     "blocked": "You can't message this person."
+  },
+  "feedback": {
+    "title": "Report a problem to the developer",
+    "hint": "Describe what went wrong or what could be better. Add a screenshot if it helps.",
+    "placeholder": "What happened?",
+    "attach": "Add a screenshot",
+    "remove": "Remove screenshot",
+    "send": "Send",
+    "sent": "Thank you! Your message was sent to the developer.",
+    "error": "Couldn't send. Please try again.",
+    "tooShort": "Please describe the problem in a few words."
   }
 }

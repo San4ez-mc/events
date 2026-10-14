@@ -20,6 +20,7 @@ const NAV_ITEMS: { href: string; labelKey: string }[] = [
   { href: "/admin/payments", labelKey: "admin.nav.payments" },
   { href: "/admin/credits", labelKey: "admin.nav.credits" },
   { href: "/admin/referrals", labelKey: "admin.nav.referrals" },
+  { href: "/admin/feedback", labelKey: "admin.nav.feedback" },
   { href: "/admin/broadcast", labelKey: "admin.nav.broadcast" },
   { href: "/admin/audit", labelKey: "admin.nav.audit" },
 ];

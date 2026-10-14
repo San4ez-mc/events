@@ -17,6 +17,7 @@ import { EventGallery } from "../../src/components/event/EventGallery";
 import { EventQrModal } from "../../src/components/social/EventQrModal";
 import { EventChat } from "../../src/components/event/EventChat";
 import { ReviewsSection } from "../../src/components/event/ReviewsSection";
+import { FeedbackModal } from "../../src/components/feedback/FeedbackModal";
 import { sourceFromParam, track } from "../../src/lib/analytics";
 import { formatCurrency, formatPriceLabel, formatShortDateTime } from "../../src/lib/format";
 import type { EventDetail, Registration } from "../../src/lib/event-types";
@@ -52,10 +53,14 @@ export default function EventDetailScreen() {
   const [playingVideo, setPlayingVideo] = useState<VideoSource | null>(null);
   const [reportReason, setReportReason] = useState<string | null>(null);
   const [reportComment, setReportComment] = useState("");
+  // The "Ще" sheet: the main list, or the "Поскаржитись" submenu (reasons, then the comment form).
+  const [menuView, setMenuView] = useState<"main" | "report">("main");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   useEffect(() => {
     if (!reportOpen) {
       setReportReason(null);
       setReportComment("");
+      setMenuView("main");
     }
   }, [reportOpen]);
   const [qrOpen, setQrOpen] = useState(false);
@@ -589,39 +594,62 @@ export default function EventDetailScreen() {
         <Pressable style={styles.reportBackdrop} onPress={() => setReportOpen(false)}>
           <Pressable style={styles.reportSheet} onPress={(e) => e.stopPropagation()}>
             <View style={styles.reportHeader}>
-              <Text style={styles.reportTitle}>{isOwner ? t("common.more") : t("events.actions.report")}</Text>
+              {menuView === "report" ? (
+                <Pressable
+                  onPress={() => (reportReason ? setReportReason(null) : setMenuView("main"))}
+                  hitSlop={10}
+                  accessibilityLabel={t("common.back")}
+                  style={styles.reportBack}
+                >
+                  <Ionicons name="chevron-back" size={22} color={colors.foreground} />
+                </Pressable>
+              ) : null}
+              <Text style={[styles.reportTitle, { flex: 1 }]}>{menuView === "report" ? t("events.actions.report") : t("common.more")}</Text>
               <Pressable onPress={() => setReportOpen(false)} hitSlop={10} accessibilityLabel={t("common.cancel")}>
                 <Ionicons name="close" size={22} color={colors.foreground} />
               </Pressable>
             </View>
-            {isOwner && (
-              <Pressable style={styles.reportRow} onPress={() => { setReportOpen(false); setQrOpen(true); }}>
-                <Text style={styles.reportRowText}>{t("events.actions.qr")}</Text>
-              </Pressable>
+            {menuView === "main" && (
+              <>
+                {isOwner && (
+                  <Pressable style={styles.reportRow} onPress={() => { setReportOpen(false); setQrOpen(true); }}>
+                    <Text style={styles.reportRowText}>{t("events.actions.qr")}</Text>
+                  </Pressable>
+                )}
+                {isOwner && (
+                  <Pressable style={styles.reportRow} onPress={() => { setReportOpen(false); router.push(`/collaborators/${event.id}`); }}>
+                    <Text style={styles.reportRowText}>{t("organizerCollaborators.title")}</Text>
+                  </Pressable>
+                )}
+                {isOwner && (
+                  <Pressable style={styles.reportRow} onPress={() => { setReportOpen(false); router.push(`/invite/${event.id}`); }}>
+                    <Text style={styles.reportRowText}>{t("organizerInvite.title")}</Text>
+                  </Pressable>
+                )}
+                {(event.status === "PUBLISHED" || event.status === "COMPLETED") && (
+                  <Pressable style={styles.reportRow} onPress={() => { setReportOpen(false); router.push(`/share/${event.id}`); }}>
+                    <Text style={styles.reportRowText}>{t("referral.title")}</Text>
+                  </Pressable>
+                )}
+                {!isOwner && (
+                  <Pressable style={[styles.reportRow, styles.reportRowSplit]} onPress={() => setMenuView("report")}>
+                    <Text style={styles.reportRowText}>{t("events.actions.report")}</Text>
+                    <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+                  </Pressable>
+                )}
+                <Pressable style={styles.reportRow} onPress={() => { setReportOpen(false); setFeedbackOpen(true); }}>
+                  <Text style={styles.reportRowText}>{t("events.actions.reportProblem")}</Text>
+                </Pressable>
+              </>
             )}
-            {isOwner && (
-              <Pressable style={styles.reportRow} onPress={() => { setReportOpen(false); router.push(`/collaborators/${event.id}`); }}>
-                <Text style={styles.reportRowText}>{t("organizerCollaborators.title")}</Text>
-              </Pressable>
-            )}
-            {isOwner && (
-              <Pressable style={styles.reportRow} onPress={() => { setReportOpen(false); router.push(`/invite/${event.id}`); }}>
-                <Text style={styles.reportRowText}>{t("organizerInvite.title")}</Text>
-              </Pressable>
-            )}
-            {(event.status === "PUBLISHED" || event.status === "COMPLETED") && (
-              <Pressable style={styles.reportRow} onPress={() => { setReportOpen(false); router.push(`/share/${event.id}`); }}>
-                <Text style={styles.reportRowText}>{t("referral.title")}</Text>
-              </Pressable>
-            )}
-            {!isOwner &&
+            {menuView === "report" &&
               !reportReason &&
               REPORT_REASONS.map((r) => (
                 <Pressable key={r} style={styles.reportRow} onPress={() => setReportReason(t(`events.actions.reasons.${r}`))}>
                   <Text style={styles.reportRowText}>{t(`events.actions.reasons.${r}`)}</Text>
                 </Pressable>
               ))}
-            {!isOwner && reportReason && (
+            {menuView === "report" && reportReason && (
               <View style={{ padding: spacing.lg, gap: spacing.md }}>
                 <Text style={styles.reportRowText}>{reportReason}</Text>
                 <TextInput
@@ -644,6 +672,7 @@ export default function EventDetailScreen() {
         </Pressable>
       </Modal>
       {event && <EventQrModal eventId={event.id} title={event.title} visible={qrOpen} onClose={() => setQrOpen(false)} />}
+      <FeedbackModal visible={feedbackOpen} onClose={() => setFeedbackOpen(false)} context={event ? `event:${event.slug}` : undefined} />
     </>
   );
 
@@ -819,6 +848,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   reportTitle: { color: colors.foreground, fontSize: 16, fontWeight: "700" },
   reportRow: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
   reportRowText: { color: colors.foreground, fontSize: 15 },
+  reportRowSplit: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  reportBack: { marginRight: spacing.sm },
   reportCancel: { marginTop: spacing.md, marginHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.md, backgroundColor: colors.surface, alignItems: "center" },
   reportCancelText: { color: colors.foreground, fontSize: 15, fontWeight: "700" },
 });

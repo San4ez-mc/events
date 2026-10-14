@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, Alert, Image, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Linking, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { API_URL, getAccessToken } from "../src/lib/api-client";
 import { useAuth } from "../src/lib/auth-context";
 import { useTranslations } from "../src/lib/locale-context";
@@ -46,6 +46,19 @@ interface ReferralClaim {
   createdAt: string;
   user: { name: string | null; nickname: string | null; email: string };
   event: { title: string } | null;
+}
+interface FeedbackItem {
+  id: string;
+  status: "NEW" | "RESOLVED";
+  message: string;
+  screenshotUrl: string | null;
+  context: string | null;
+  platform: string | null;
+  appVersion: string | null;
+  buildNumber: number | null;
+  device: string | null;
+  createdAt: string;
+  user: { name: string | null; nickname: string | null; email: string } | null;
 }
 interface AdminReview {
   id: string;
@@ -132,7 +145,7 @@ interface AuditEntry {
 }
 
 const MODERATOR_TABS = ["moderation", "reviews", "reports"] as const;
-const ADMIN_TABS = ["analytics", "categories", "districts", "users", "events", "payments", "credits", "referrals", "audit", "broadcast"] as const;
+const ADMIN_TABS = ["analytics", "categories", "districts", "users", "events", "payments", "credits", "referrals", "feedback", "audit", "broadcast"] as const;
 type Tab = (typeof MODERATOR_TABS)[number] | (typeof ADMIN_TABS)[number];
 
 const USER_STATUSES = ["ACTIVE", "SUSPENDED", "BLOCKED", "DELETED"] as const;
@@ -211,6 +224,10 @@ export default function AdminScreen() {
   const [audit, setAudit] = useState<AuditEntry[] | null>(null);
   const [claims, setClaims] = useState<ReferralClaim[] | null>(null);
   const [refStats, setRefStats] = useState<{ shareImages30d: number; claimsPending: number; claimsApproved: number } | null>(null);
+  // Problem reports from users ("Повідомити про проблему розробнику")
+  const [feedback, setFeedback] = useState<FeedbackItem[] | null>(null);
+  const [feedbackNewCount, setFeedbackNewCount] = useState(0);
+  const [feedbackOnlyNew, setFeedbackOnlyNew] = useState(true);
   // Broadcast
   const [bcTitleUk, setBcTitleUk] = useState("");
   const [bcBodyUk, setBcBodyUk] = useState("");
@@ -305,6 +322,25 @@ export default function AdminScreen() {
     }
   }
 
+  const loadFeedback = useCallback(async (onlyNew: boolean) => {
+    const res = await fetch(`${API_URL}/api/v1/admin/feedback${onlyNew ? "?status=NEW" : ""}`, { headers: headers() });
+    if (!res.ok) return setFeedback([]);
+    const body = (await res.json()) as { items: FeedbackItem[]; newCount: number };
+    setFeedback(body.items);
+    setFeedbackNewCount(body.newCount);
+  }, []);
+
+  async function setFeedbackStatus(id: string, status: "NEW" | "RESOLVED") {
+    setBusy(id);
+    try {
+      const res = await fetch(`${API_URL}/api/v1/admin/feedback/${id}`, { method: "PATCH", headers: headers(), body: JSON.stringify({ status }) });
+      if (res.ok) await loadFeedback(feedbackOnlyNew);
+      else Alert.alert(t("common.somethingWentWrong"));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   const loadAudit = useCallback(async () => {
     const res = await fetch(`${API_URL}/api/v1/admin/audit`, { headers: headers() });
     setAudit(res.ok ? (await res.json()).items : []);
@@ -325,8 +361,9 @@ export default function AdminScreen() {
       void loadOrders();
       void loadAudit();
       void loadReferrals();
+      void loadFeedback(true);
     }
-  }, [authLoading, user, loadModeration, loadReports, loadContent, loadUsers, loadEvents, loadOrders, loadAudit, loadReferrals]);
+  }, [authLoading, user, loadModeration, loadReports, loadContent, loadUsers, loadEvents, loadOrders, loadAudit, loadReferrals, loadFeedback]);
 
   function openReply(r: AdminReport) {
     setReplyHide(false);
@@ -348,6 +385,7 @@ export default function AdminScreen() {
       else if (tab === "events") await loadEvents(eventStatus);
       else if (tab === "payments") await loadOrders();
       else if (tab === "referrals") await loadReferrals();
+      else if (tab === "feedback") await loadFeedback(feedbackOnlyNew);
       else if (tab === "audit") await loadAudit();
     } finally {
       setRefreshing(false);
@@ -920,6 +958,60 @@ export default function AdminScreen() {
           </>
         )}
 
+        {tab === "feedback" && (
+          <>
+            <View style={styles.actions}>
+              {([true, false] as const).map((onlyNew) => (
+                <Pressable
+                  key={String(onlyNew)}
+                  onPress={() => {
+                    setFeedbackOnlyNew(onlyNew);
+                    setFeedback(null);
+                    void loadFeedback(onlyNew);
+                  }}
+                  style={[styles.tab, feedbackOnlyNew === onlyNew && styles.tabOn]}
+                >
+                  <Text style={[styles.tabText, feedbackOnlyNew === onlyNew && { color: colors.white }]}>
+                    {onlyNew ? `${t("admin.feedback.filterNew")} (${feedbackNewCount})` : t("admin.feedback.filterAll")}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            {feedback === null && <AdminLoader />}
+            {feedback?.length === 0 && <Text style={styles.muted}>{t("admin.feedback.empty")}</Text>}
+            {feedback?.map((f) => (
+              <View key={f.id} style={styles.card}>
+                <Text style={styles.title}>
+                  {t("admin.feedback.from")}: {f.user ? (f.user.name ?? f.user.nickname ?? f.user.email) : t("admin.feedback.anonymous")}
+                </Text>
+                <Text style={styles.body} selectable>{f.message}</Text>
+                {f.screenshotUrl ? (
+                  <Pressable onPress={() => void Linking.openURL(f.screenshotUrl!)} accessibilityLabel={t("admin.feedback.screenshot")}>
+                    <Image source={{ uri: f.screenshotUrl }} style={styles.feedbackShot} resizeMode="cover" />
+                  </Pressable>
+                ) : null}
+                <Text style={styles.muted}>
+                  {[
+                    formatShortDateTime(f.createdAt),
+                    f.context ? `${t("admin.feedback.context")}: ${f.context}` : null,
+                    f.appVersion ? `v${f.appVersion}${f.buildNumber ? ` (${f.buildNumber})` : ""}` : null,
+                    f.device ? `${t("admin.feedback.device")}: ${f.device}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </Text>
+                <View style={styles.actions}>
+                  {f.status === "NEW" ? (
+                    <Button title={t("admin.feedback.resolve")} onPress={() => void setFeedbackStatus(f.id, "RESOLVED")} loading={busy === f.id} style={styles.small} />
+                  ) : (
+                    <Button title={t("admin.feedback.reopen")} variant="secondary" onPress={() => void setFeedbackStatus(f.id, "NEW")} loading={busy === f.id} style={styles.small} />
+                  )}
+                </View>
+              </View>
+            ))}
+          </>
+        )}
+
         {tab === "audit" && (
           <>
             {audit === null && <AdminLoader />}
@@ -1053,6 +1145,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   label: { color: colors.foreground, fontSize: 12, fontWeight: "600" },
   error: { color: colors.danger, fontSize: 13 },
   small: { minHeight: 38, paddingHorizontal: spacing.lg },
+  feedbackShot: { width: 160, height: 160, borderRadius: radius.md },
   actions: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
   pillRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
   pill: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border },

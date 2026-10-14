@@ -119,6 +119,7 @@ model User {
   inquiriesAsked           EventInquiry[]   @relation("InquiryAsker")
   inquiriesReceived        EventInquiry[]   @relation("InquiryOrganizer")
   inquiryMessages          InquiryMessage[]
+  feedbackReports          FeedbackReport[]
   registrations            Registration[]
   notifications            Notification[]
   friendshipsSent          Friendship[]             @relation("FriendshipRequester")
@@ -1671,4 +1672,33 @@ model EventPriceOption {
 
   @@index([eventId, sortOrder])
   @@map("event_price_options")
+}
+
+enum FeedbackReportStatus {
+  NEW
+  RESOLVED
+}
+
+/// "Повідомити про проблему розробнику" from the app: free text plus an optional screenshot, read in the admin panel.
+model FeedbackReport {
+  id     String  @id @default(uuid()) @db.Uuid
+  /// Null when sent signed-out, or after the author deleted their account.
+  userId String? @db.Uuid
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  message       String  @db.Text
+  screenshotUrl String?
+  /// Where in the app it was sent from, e.g. "event:<slug>".
+  context       String?
+  platform      String?
+  appVersion    String?
+  buildNumber   Int?
+  device        String?
+
+  status     FeedbackReportStatus @default(NEW)
+  resolvedAt DateTime?
+  createdAt  DateTime             @default(now())
+
+  @@index([status, createdAt])
+  @@map("feedback_reports")
 }

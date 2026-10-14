@@ -16,6 +16,7 @@ import { AdminModerationController } from "./moderation/admin-moderation.control
 import { AdminModerationService } from "./moderation/admin-moderation.service";
 import { AdminReportsController } from "./reports/admin-reports.controller";
 import { AdminReferralsController } from "./referrals/admin-referrals.controller";
+import { AdminFeedbackController } from "./feedback/admin-feedback.controller";
 import { AdminCategoriesController } from "./categories/admin-categories.controller";
 import { AdminDistrictsController } from "./districts/admin-districts.controller";
 import { AdminCreditsController } from "./credits/admin-credits.controller";
@@ -49,6 +50,7 @@ import { AdminSubscriptionsController } from "./subscriptions/admin-subscription
     AdminModerationController,
     AdminReportsController,
     AdminReferralsController,
+    AdminFeedbackController,
     AdminCategoriesController,
     AdminDistrictsController,
     AdminCreditsController,

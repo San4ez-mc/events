@@ -67,6 +67,8 @@ const RULES: Rule[] = [
   { title: "New category to approve", ukTitle: "Нова категорія на схвалення", body: /^"(.*)" is waiting for approval\.$/s, ukBody: (m) => `«${q(m)}» чекає на схвалення.` },
   { title: "New district to approve", ukTitle: "Новий район на схвалення", body: /^"(.*)" is waiting for approval\.$/s, ukBody: (m) => `«${q(m)}» чекає на схвалення.` },
   { title: "Event needs moderation", ukTitle: "Подія на модерації", body: /^"(.*)" was held for review\.$/s, ukBody: (m) => `«${q(m)}» затримано на перевірку.` },
+  // Body is the user's own free-text report — left untranslated, title only.
+  { title: "New problem report", ukTitle: "Нове звернення розробнику" },
   { title: "New referral claim", ukTitle: "Нова реферальна заявка", body: /^(.*) submitted a referral claim\.$/s, ukBody: (m) => `${q(m)} подав(-ла) реферальну заявку.` },
   // Body is the organizer's own free-text message — left untranslated, title only.
   { title: "Message from the organizer", ukTitle: "Повідомлення від організатора" },
