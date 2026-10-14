@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { HttpException, Injectable } from "@nestjs/common";
 import { PAGINATION } from "@kiro/config";
 import type { CursorPage } from "@kiro/types";
 import { REVIEW_ELIGIBLE_REGISTRATION_STATUSES, SYSTEM_SETTING_DEFAULTS, SystemSettingKey } from "@kiro/types";
@@ -22,30 +22,20 @@ const REVIEW_AUTHOR_INCLUDE = {
 export class ReviewsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Whether the viewer may leave a review right now — lets clients hide the form instead of showing it and failing on submit. */
+  async canReview(eventId: string, userId: string): Promise<{ eligible: boolean }> {
+    try {
+      await this.assertCanReview(eventId, userId);
+      return { eligible: true };
+    } catch (err) {
+      if (err instanceof HttpException) return { eligible: false };
+      throw err;
+    }
+  }
+
   /** Create-or-update: a second review from the same author replaces the first, never duplicates (unique eventId+authorUserId). */
   async upsert(eventId: string, authorUserId: string, dto: CreateReviewDto) {
-    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
-    if (!event) throw new ResourceNotFoundException("Event not found");
-
-    if (event.ownerId === authorUserId) {
-      throw new ApiException("VALIDATION_ERROR", "You can't review your own event", 400);
-    }
-    if (event.status !== "COMPLETED") {
-      throw new ApiException("VALIDATION_ERROR", "This event hasn't completed yet", 400);
-    }
-
-    const registration = await this.prisma.registration.findUnique({
-      where: { eventId_userId: { eventId, userId: authorUserId } },
-    });
-    if (!registration || !REVIEW_ELIGIBLE_REGISTRATION_STATUSES.includes(registration.status)) {
-      throw new ForbiddenActionException("You need to have attended this event to review it");
-    }
-
-    const windowDays = await this.getReviewWindowDays();
-    const deadline = event.completedAt ? new Date(event.completedAt.getTime() + windowDays * 86_400_000) : null;
-    if (deadline && new Date() > deadline) {
-      throw new ApiException("VALIDATION_ERROR", "The review window for this event has closed", 400);
-    }
+    await this.assertCanReview(eventId, authorUserId);
 
     return this.prisma.eventReview.upsert({
       where: { eventId_authorUserId: { eventId, authorUserId } },
@@ -76,6 +66,31 @@ export class ReviewsService {
     if (!review) throw new ResourceNotFoundException("Review not found");
     if (review.authorUserId !== userId) throw new ForbiddenActionException();
     await this.prisma.eventReview.delete({ where: { id: reviewId } });
+  }
+
+  private async assertCanReview(eventId: string, authorUserId: string): Promise<void> {
+    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw new ResourceNotFoundException("Event not found");
+
+    if (event.ownerId === authorUserId) {
+      throw new ApiException("VALIDATION_ERROR", "You can't review your own event", 400);
+    }
+    if (event.status !== "COMPLETED") {
+      throw new ApiException("VALIDATION_ERROR", "This event hasn't completed yet", 400);
+    }
+
+    const registration = await this.prisma.registration.findUnique({
+      where: { eventId_userId: { eventId, userId: authorUserId } },
+    });
+    if (!registration || !REVIEW_ELIGIBLE_REGISTRATION_STATUSES.includes(registration.status)) {
+      throw new ForbiddenActionException("You need to have attended this event to review it");
+    }
+
+    const windowDays = await this.getReviewWindowDays();
+    const deadline = event.completedAt ? new Date(event.completedAt.getTime() + windowDays * 86_400_000) : null;
+    if (deadline && new Date() > deadline) {
+      throw new ApiException("VALIDATION_ERROR", "The review window for this event has closed", 400);
+    }
   }
 
   private async getReviewWindowDays(): Promise<number> {

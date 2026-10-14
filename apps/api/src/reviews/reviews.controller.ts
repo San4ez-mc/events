@@ -21,6 +21,11 @@ export class ReviewsController {
     return this.reviewsService.upsert(eventId, user.id, dto);
   }
 
+  @Get("events/:eventId/reviews/eligibility")
+  canReview(@CurrentUser() user: AuthenticatedUser, @Param("eventId") eventId: string) {
+    return this.reviewsService.canReview(eventId, user.id);
+  }
+
   @Public()
   @Get("events/:eventId/reviews")
   listForEvent(@Param("eventId") eventId: string, @Query() query: ListReviewsDto) {

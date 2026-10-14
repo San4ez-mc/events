@@ -39,6 +39,23 @@ export function ReviewsSection({
     queueMicrotask(() => void load());
   }, [load]);
 
+  // Server decides who may review (not the organizer, attended, inside the window), so the form is not shown just to fail on submit.
+  const [eligible, setEligible] = useState(false);
+  useEffect(() => {
+    const token = getAccessToken();
+    if (eventStatus !== "COMPLETED" || !user || !token) return;
+    let cancelled = false;
+    fetch(`/api/v1/events/${eventId}/reviews/eligibility`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => (res.ok ? res.json() : { eligible: false }))
+      .then((body: { eligible?: boolean }) => {
+        if (!cancelled) setEligible(!!body.eligible);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, eventStatus, user]);
+
   const myReview = user ? (reviews?.find((r) => r.authorUserId === user.id) ?? null) : null;
 
   async function submit() {
@@ -79,7 +96,7 @@ export function ReviewsSection({
     }
   }
 
-  const canReview = eventStatus === "COMPLETED" && !authLoading && user;
+  const canReview = eventStatus === "COMPLETED" && !authLoading && user && eligible;
 
   return (
     <section className="mb-8">
