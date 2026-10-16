@@ -10,8 +10,13 @@ interface FeedPage {
   nextCursor: string | null;
 }
 
-/** §63 — public events only (the discovery feed never returns link-only/private ones). Refreshed hourly. */
-export const revalidate = 3600;
+/**
+ * §63 — public events only (the discovery feed never returns link-only/private ones).
+ * Rendered per request: at build time the API is unreachable (API_URL is a runtime variable), so a static sitemap came out
+ * with only the fixed pages and no events at all. The API calls below are cached for an hour by `fetch`, so this stays cheap.
+ */
+export const dynamic = "force-dynamic";
+const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.API_URL ?? "http://localhost:3100";
