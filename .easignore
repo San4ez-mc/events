@@ -3,3 +3,10 @@
 *service-account*.json
 
 .turbo
+
+node_modules
+.next
+.expo
+test-results
+apps/api/dist
+*.log
