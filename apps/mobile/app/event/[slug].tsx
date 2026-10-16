@@ -394,6 +394,18 @@ export default function EventDetailScreen() {
         </Pressable>
       </View>
 
+      {/* The story/post pictures used to sit behind the "…" menu, where most organizers never looked. */}
+      {isOwner && (event.status === "PUBLISHED" || event.status === "COMPLETED") && (
+        <Button
+          title={t("referral.createStory")}
+          onPress={() => {
+            captureEvent("share_prompt_click", { from: "event_page", event_id: event.id });
+            router.push(`/share/${event.id}`);
+          }}
+          style={{ alignSelf: "flex-start" }}
+        />
+      )}
+
       <View style={styles.metaRow}>
         {event.startsAt && <Text style={styles.meta}>{formatShortDateTime(event.startsAt)}</Text>}
         {event.format === "OFFLINE" && event.city && <Text style={styles.meta}>{event.city.nameUk}</Text>}

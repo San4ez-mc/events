@@ -12,7 +12,10 @@ export function EventViewTracker({
   published: boolean;
 }) {
   useEffect(() => {
-    if (published) track(eventId, "VIEW", detectSource());
+    if (!published) return;
+    track(eventId, "VIEW", detectSource());
+    // Lets other components react to "this visitor has now looked at N events" (e.g. the iOS install hint).
+    window.dispatchEvent(new Event("kiro:event-viewed"));
   }, [eventId, published]);
   return null;
 }

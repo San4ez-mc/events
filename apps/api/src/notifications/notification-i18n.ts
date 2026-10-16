@@ -69,6 +69,13 @@ const RULES: Rule[] = [
   { title: "Event needs moderation", ukTitle: "Подія на модерації", body: /^"(.*)" was held for review\.$/s, ukBody: (m) => `«${q(m)}» затримано на перевірку.` },
   // Body is the user's own free-text report — left untranslated, title only.
   { title: "New problem report", ukTitle: "Нове звернення розробнику" },
+  // --- Growth nudges (EngagementScheduler / NotificationsService.notifyOrganizerOfPublication) ---
+  { title: "Event published", ukTitle: "Подію опубліковано", body: /^"(.*)" is live\. Make a story or post for your socials in 10 seconds: more people will see it\.$/s, ukBody: (m) => `«${q(m)}» вже в Кіро. Зробіть сторіз або пост для соцмереж за 10 секунд — так її побачить більше людей.` },
+  { title: "Share your event", ukTitle: "Поділіться подією", body: /^"(.*)" hasn't been shared yet\. Organizers who post a story get more people: it takes 10 seconds\.$/s, ukBody: (m) => `«${q(m)}» ще не поширено. Організатори, які постять сторіз, збирають більше людей: це 10 секунд.` },
+  { title: "Finish your event", ukTitle: "Завершіть створення події", body: /^"(.*)" is still a draft\. Finish it and publish in a minute\.$/s, ukBody: (m) => `«${q(m)}» досі чернетка. Завершіть і опублікуйте за хвилину.` },
+  { title: "Confirm your email", ukTitle: "Підтвердіть пошту", body: /^Confirm your email so you don't lose access and can get reminders\.$/s, ukBody: () => "Підтвердіть пошту, щоб не втратити доступ і отримувати нагадування." },
+  { title: "This weekend on Kiro", ukTitle: "Цього вікенду в Кіро", body: /^(.+): (\d+) events this weekend — (.*)\.$/s, ukBody: (m) => `${q(m)}: подій цього вікенду — ${q(m, 2)}. Серед них: ${q(m, 3)}.` },
+  { title: "This weekend on Kiro", ukTitle: "Цього вікенду в Кіро", body: /^(\d+) events this weekend — (.*)\.$/s, ukBody: (m) => `Подій цього вікенду — ${q(m)}. Серед них: ${q(m, 2)}.` },
   { title: "New referral claim", ukTitle: "Нова реферальна заявка", body: /^(.*) submitted a referral claim\.$/s, ukBody: (m) => `${q(m)} подав(-ла) реферальну заявку.` },
   // Body is the organizer's own free-text message — left untranslated, title only.
   { title: "Message from the organizer", ukTitle: "Повідомлення від організатора" },

@@ -7,6 +7,7 @@ import { captureEvent, getStoredConsent } from "@/lib/product-analytics";
 
 const DISMISSED_KEY = "kiro-pwa-hint-dismissed-at";
 const WAITLIST_KEY = "kiro-ios-waitlist-joined";
+const VIEWS_KEY = "kiro-event-views-session";
 const HIDE_DAYS = 14;
 
 function isStandalone(): boolean {
@@ -65,19 +66,31 @@ export function PwaInstallHint() {
       // ignore
     }
 
-    const timer = window.setTimeout(() => {
-      if (dismissedRecently || !consentSettled) return;
-      // Every iPhone visitor (Safari or an in-app browser such as Threads/Instagram) can leave an email for the iOS app;
-      // only Safari can also add the site to the Home Screen. Half the mobile visitors are on iPhone and have no app.
-      if (isIos && !alreadyJoined) {
-        setSafari(isSafari);
-        setShow(true);
-        captureEvent("pwa_hint_shown", { os: "ios", safari: isSafari });
+    // Shown at a moment of intent instead of on arrival: right after someone saves an event / taps "Я піду", or has looked at a
+    // second event in the same visit. Only then is "add to Home Screen" something they actually want.
+    let shown = false;
+    const showHint = () => {
+      if (shown || dismissedRecently || !consentSettled || !isIos || alreadyJoined) return;
+      shown = true;
+      setSafari(isSafari);
+      setShow(true);
+      captureEvent("pwa_hint_shown", { os: "ios", safari: isSafari, trigger: "intent" });
+    };
+    const onViewed = () => {
+      try {
+        const n = Number(window.sessionStorage.getItem(VIEWS_KEY) ?? 0) + 1;
+        window.sessionStorage.setItem(VIEWS_KEY, String(n));
+        if (n >= 2) showHint();
+      } catch {
+        // Storage blocked — the save/going trigger still works.
       }
-    }, 4000);
+    };
+    window.addEventListener("kiro:intent", showHint);
+    window.addEventListener("kiro:event-viewed", onViewed);
 
     return () => {
-      window.clearTimeout(timer);
+      window.removeEventListener("kiro:intent", showHint);
+      window.removeEventListener("kiro:event-viewed", onViewed);
       window.removeEventListener("appinstalled", onInstalled);
     };
   }, []);

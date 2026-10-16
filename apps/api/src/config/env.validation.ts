@@ -29,6 +29,11 @@ const envSchema = z.object({
   POSTHOG_PROJECT_ID: z.string().optional(),
   POSTHOG_PERSONAL_API_KEY: z.string().optional(),
 
+  // Web Push (VAPID) for people who installed the site as an app; both keys unset = web push disabled.
+  WEB_PUSH_PUBLIC_KEY: z.string().optional(),
+  WEB_PUSH_PRIVATE_KEY: z.string().optional(),
+  WEB_PUSH_SUBJECT: z.string().optional(),
+
   S3_ENDPOINT: z.string().optional(),
   S3_ACCESS_KEY: z.string().optional(),
   S3_SECRET_KEY: z.string().optional(),

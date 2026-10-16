@@ -14,6 +14,7 @@ import { EventChat } from "@/components/event-chat";
 import { EventViewTracker } from "@/components/event-view-tracker";
 import { EventActions } from "@/components/event-actions";
 import { EventCtaBar } from "@/components/event-cta-bar";
+import { GuestReminder } from "@/components/guest-reminder";
 
 /**
  * Shared presentational component for the public event page — used by both
@@ -107,7 +108,7 @@ export function EventPage({
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
         {event.status === "PUBLISHED" && (
-          <EventActions eventId={event.id} slug={event.slug} title={event.title} startsAt={event.startsAt} canGo={event.registrationMode === "EXTERNAL"} />
+          <EventActions eventId={event.id} slug={event.slug} title={event.title} startsAt={event.startsAt} organizerId={organizer?.id} canGo={event.registrationMode === "EXTERNAL"} />
         )}
         <FollowButton eventId={event.id} />
       </div>
@@ -225,6 +226,8 @@ export function EventPage({
             {t("events.page.paidDisclaimer")}
           </p>
         )}
+
+        {event.status === "PUBLISHED" && event.startsAt && <GuestReminder eventId={event.id} startsAt={event.startsAt} />}
       </div>
 
       {event.description && (
@@ -412,6 +415,7 @@ export function EventPage({
           eventId={event.id}
           priceLabel={priceLabel}
           label={ctaLabel}
+          dateLabel={event.startsAt ? formatDateTime(event.startsAt, locale, event.timezone) : null}
           externalUrl={event.registrationMode === "EXTERNAL" ? (event.externalRegistrationUrl ?? null) : null}
         />
       )}

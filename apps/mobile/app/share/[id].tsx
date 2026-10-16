@@ -63,9 +63,11 @@ export default function ShareForCreditsScreen() {
       return;
     }
     void loadMine();
+    captureEvent("share_page_open", { event_id: id });
   }, [authLoading, id, loadMine]);
 
   async function shareImage() {
+    captureEvent("share_image_download", { event_id: id, variant, format });
     setSharing(true);
     try {
       const file = await File.downloadFileAsync(`${API_URL}/api/v1/events/${id}/share-image?variant=${variant}&format=${format}&share=1`, Paths.cache, { idempotent: true });

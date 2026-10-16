@@ -327,7 +327,13 @@
     "design2": "Poster",
     "design3": "Bright",
     "formatStory": "Story",
-    "formatPost": "Post"
+    "formatPost": "Post",
+    "download": "Download",
+    "createStory": "Create a story / post",
+    "publishedBanner": "Your event is live! Below are ready-made story and post pictures: share them on social media to bring more people.",
+    "shareFailed": "Couldn't prepare the image. Please try again.",
+    "loginToClaim": "Sign in to earn credits for your post",
+    "ownerHint": "Your event"
   },
   "pricing": {
     "heroTitle": "Pricing",
@@ -417,7 +423,9 @@
     "empty": "Nothing found",
     "prompt": "Enter a query to start searching",
     "loading": "Searching…",
-    "loadMore": "Show more"
+    "loadMore": "Show more",
+    "suggestionsTitle": "You might like",
+    "nothingTry": "Try another name, city or category. Here is what's coming up:"
   },
   "registration": {
     "noShow": "No-show",
@@ -1380,7 +1388,8 @@
     "waitPlaceholder": "Your email",
     "waitButton": "Notify me",
     "waitThanks": "Thanks! We'll let you know when the app is out.",
-    "waitError": "Couldn't save. Check your email."
+    "waitError": "Couldn't save. Check your email.",
+    "intentTitle": "Add Kiro to your Home Screen"
   },
   "social": {
     "threads": "Follow us on Threads"
@@ -1417,5 +1426,30 @@
     "sent": "Thank you! Your message was sent to the developer.",
     "error": "Couldn't send. Please try again.",
     "tooShort": "Please describe the problem in a few words."
+  },
+  "reminder": {
+    "cta": "Remind me by email",
+    "title": "We'll remind you a day before it starts",
+    "emailPlaceholder": "Your email",
+    "send": "Remind me",
+    "done": "Done! We'll email you a day before it starts.",
+    "error": "Couldn't save. Check the address and try again.",
+    "orSignup": "Or create an account to get reminders in the app",
+    "signup": "Create an account"
+  },
+  "verify": {
+    "title": "Confirm your email",
+    "text": "Confirm your email so you don't lose access and can get reminders.",
+    "resend": "Resend the email",
+    "sent": "Email sent"
+  },
+  "webpush": {
+    "title": "Browser notifications",
+    "text": "Allow notifications so you don't miss event reminders and new suggestions.",
+    "enable": "Turn on",
+    "later": "Later",
+    "on": "Notifications are on",
+    "denied": "Notifications are blocked in your browser settings. Allow them there to get reminders.",
+    "iosInstall": "On iPhone, notifications work once Kiro is added to your Home Screen: Share → Add to Home Screen."
   }
 }

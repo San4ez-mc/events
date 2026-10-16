@@ -28,15 +28,19 @@ export function EventChat({ eventId, refreshKey, onInputFocus }: { eventId: stri
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const lastCount = useRef(0);
+  // After a 401/403 ("not your chat") there is nothing to poll for until the registration changes (refreshKey).
+  const forbidden = useRef(false);
 
   const load = useCallback(async () => {
     const token = getAccessToken();
     if (!token) return;
     const res = await fetch(`${API_URL}/api/v1/events/${eventId}/chat`, { headers: { Authorization: `Bearer ${token}` } });
     if (res.status === 401 || res.status === 403) {
+      forbidden.current = true;
       setAllowed(false);
       return;
     }
+    forbidden.current = false;
     if (!res.ok) return;
     const body = (await res.json()) as { items: Message[]; isModerator: boolean };
     setAllowed(true);
@@ -46,8 +50,11 @@ export function EventChat({ eventId, refreshKey, onInputFocus }: { eventId: stri
 
   // refreshKey changes when the viewer's registration status does, so access appears/disappears immediately.
   useEffect(() => {
+    forbidden.current = false;
     void load();
-    const poll = setInterval(() => void load(), 6000);
+    const poll = setInterval(() => {
+      if (!forbidden.current) void load();
+    }, 6000);
     return () => clearInterval(poll);
   }, [load, refreshKey]);
 

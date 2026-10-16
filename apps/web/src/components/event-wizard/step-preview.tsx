@@ -3,6 +3,7 @@
 import { captureEvent } from "@/lib/product-analytics";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
 import { ApiRequestError } from "@/lib/auth-context";
@@ -23,6 +24,7 @@ export function StepPreview({
   onStatusChange,
 }: StepPreviewProps) {
   const { t } = useTranslations();
+  const router = useRouter();
   const [balance, setBalance] = useState<number | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<{ code: string; message: string } | null>(
@@ -51,6 +53,8 @@ export function StepPreview({
       if (!res.ok) throw new ApiRequestError(body);
       onStatusChange(body.status);
       captureEvent("event_published", { outcome: body.status });
+      // Straight to the story/post pictures: right after publishing is when an organizer is most likely to share.
+      if (body.status === "PUBLISHED") router.push(`/events/${slug}/share?published=1`);
     } catch (err) {
       captureEvent("event_publish_failed", { code: err instanceof ApiRequestError ? err.code : "UNKNOWN" });
       if (err instanceof ApiRequestError) {

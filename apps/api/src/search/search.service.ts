@@ -36,6 +36,11 @@ export class SearchService {
     const cursor = query.cursor ? decodeScoredCursor(query.cursor) : null;
     const now = new Date();
 
+    // LIKE wildcards in the query are plain characters here.
+    const escaped = query.q.trim().replace(/[\\%_]/g, (c) => `\\${c}`);
+    const prefix = `${escaped}%`;
+    const contains = `%${escaped}%`;
+
     const candidateIds = (
       await this.prisma.event.findMany({
         where: buildPublicEventWhere(query, now),
@@ -59,7 +64,14 @@ export class SearchService {
           similarity(coalesce(ci."nameEn", ''), ${query.q}),
           similarity(coalesce(d."nameUk", ''), ${query.q}),
           similarity(coalesce(u.name, ''), ${query.q}),
-          similarity(coalesce(u.nickname, ''), ${query.q})
+          similarity(coalesce(u.nickname, ''), ${query.q}),
+          -- Short / partial words ("оде" for Одеса) are far below the trigram threshold, so also match by prefix:
+          -- cities and categories rank highest, then districts, then a title or organizer containing the text.
+          CASE WHEN ci."nameUk" ILIKE ${prefix} OR ci."nameEn" ILIKE ${prefix} THEN 0.95 ELSE 0 END,
+          CASE WHEN c."nameUk" ILIKE ${prefix} OR c."nameEn" ILIKE ${prefix} THEN 0.85 ELSE 0 END,
+          CASE WHEN d."nameUk" ILIKE ${prefix} THEN 0.8 ELSE 0 END,
+          CASE WHEN e.title ILIKE ${contains} THEN 0.75 ELSE 0 END,
+          CASE WHEN u.name ILIKE ${contains} OR u.nickname ILIKE ${contains} THEN 0.7 ELSE 0 END
         ) AS relevance
       FROM events e
       LEFT JOIN categories c ON c.id = e."categoryId"
@@ -77,7 +89,14 @@ export class SearchService {
           OR d."nameUk" % ${query.q}
           OR u.name % ${query.q}
           OR u.nickname % ${query.q}
-          OR e.title ILIKE ${"%" + query.q + "%"}
+          OR e.title ILIKE ${contains}
+          OR ci."nameUk" ILIKE ${prefix}
+          OR ci."nameEn" ILIKE ${prefix}
+          OR c."nameUk" ILIKE ${prefix}
+          OR c."nameEn" ILIKE ${prefix}
+          OR d."nameUk" ILIKE ${prefix}
+          OR u.name ILIKE ${contains}
+          OR u.nickname ILIKE ${contains}
         )
       ORDER BY relevance DESC, e.id ASC
       LIMIT ${SEARCH_CANDIDATE_CAP}

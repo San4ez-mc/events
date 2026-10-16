@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { IoCalendarOutline, IoCheckmarkCircle, IoEllipsisHorizontal, IoHeart, IoHeartOutline, IoShareSocialOutline } from "react-icons/io5";
+import { IoCalendarOutline, IoCheckmarkCircle, IoEllipsisHorizontal, IoHeart, IoHeartOutline, IoMegaphone, IoShareSocialOutline } from "react-icons/io5";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
@@ -22,12 +23,15 @@ export function EventActions({
   slug,
   title,
   startsAt,
+  organizerId,
   canGo = false,
 }: {
   eventId: string;
   slug: string;
   title: string;
   startsAt?: string | null;
+  /** Lets the organizer see a "Create a story / post" shortcut on their own event. */
+  organizerId?: string;
   /** Events registered on the organizer's site: "Я піду" is how someone says they're going. */
   canGo?: boolean;
 }) {
@@ -38,6 +42,7 @@ export function EventActions({
   const [going, setGoing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [reporting, setReporting] = useState(false);
+  const isOwner = Boolean(user && organizerId && user.id === organizerId);
 
   // The server-rendered page is anonymous, so the viewer's saved state is loaded here.
   useEffect(() => {
@@ -70,6 +75,7 @@ export function EventActions({
     if (requireLogin()) return;
     const next = !saved;
     setSaved(next);
+    if (next) window.dispatchEvent(new Event("kiro:intent"));
     const res = await fetch(`/api/v1/discovery/${eventId}/save`, {
       method: next ? "POST" : "DELETE",
       headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
@@ -81,6 +87,7 @@ export function EventActions({
     if (requireLogin()) return;
     const next = !going;
     setGoing(next);
+    if (next) window.dispatchEvent(new Event("kiro:intent"));
     const res = await fetch(`/api/v1/discovery/${eventId}/going`, {
       method: next ? "POST" : "DELETE",
       headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
@@ -89,7 +96,8 @@ export function EventActions({
   }
 
   async function share() {
-    const url = window.location.href.split("?")[0]!;
+    // utm tags let analytics tell shared links apart from other traffic (who actually brings people in).
+    const url = `${window.location.href.split("?")[0]!}?utm_source=share&utm_medium=event_page`;
     track(eventId, "SHARE");
     try {
       if (navigator.share) await navigator.share({ title, url });
@@ -182,6 +190,15 @@ export function EventActions({
           <IoCheckmarkCircle className="h-5 w-5" aria-hidden="true" />
           {going ? t("events.page.youAreGoing") : t("events.page.imGoing")}
         </button>
+      )}
+      {isOwner && (
+        <Link
+          href={`/events/${slug}/share`}
+          className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full accent-gradient px-5 text-[15px] font-semibold text-white transition active:scale-95"
+        >
+          <IoMegaphone className="h-5 w-5" aria-hidden="true" />
+          {t("referral.createStory")}
+        </Link>
       )}
       {reporting && (
         <ul className="absolute left-0 z-10 mt-2 w-64 overflow-hidden rounded-[14px] border border-border bg-surface shadow-lg">

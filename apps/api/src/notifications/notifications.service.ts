@@ -5,6 +5,7 @@ import type { CursorPage, NotificationType } from "@kiro/types";
 import { PrismaService } from "../prisma/prisma.service";
 import { ResourceNotFoundException, ForbiddenActionException } from "../common/exceptions/common-exceptions";
 import { ExpoPushService } from "./expo-push.service";
+import { WebPushService } from "./web-push.service";
 import { localizeNotification } from "./notification-i18n";
 import type { ListNotificationsDto } from "./dto/list-notifications.dto";
 import type { RegisterDeviceDto } from "./dto/register-device.dto";
@@ -15,7 +16,12 @@ export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly expoPush: ExpoPushService,
+    private readonly webPush: WebPushService,
   ) {}
+
+  webPushPublicKey(): string | null {
+    return this.webPush.publicKey;
+  }
 
   /**
    * Every caller gets an IN_APP notification; PUSH is attempted too unless
@@ -162,6 +168,23 @@ export class NotificationsService {
   }
 
   /**
+   * Right after an event goes live: point the organizer at the story/post pictures. The share screen sits behind a
+   * "…" menu most people never open, so this is the moment (and the push) that makes them find it. Once per event.
+   */
+  async notifyOrganizerOfPublication(eventId: string): Promise<void> {
+    const event = await this.prisma.event.findUnique({ where: { id: eventId }, select: { id: true, title: true, ownerId: true, status: true, isTest: true } });
+    if (!event || event.status !== "PUBLISHED" || event.isTest) return;
+    if (await this.existsForPayload(event.ownerId, "SHARE_PROMPT", "eventId", event.id)) return;
+    await this.create({
+      userId: event.ownerId,
+      type: "SHARE_PROMPT",
+      title: "Event published",
+      body: `"${event.title}" is live. Make a story or post for your socials in 10 seconds: more people will see it.`,
+      payloadJson: { eventId: event.id, screen: "share" },
+    });
+  }
+
+  /**
    * §34 — "your friend is going". Only when the registrant opted in to being
    * shown as a participant (privacy), and only to accepted friends who allow it.
    */
@@ -245,28 +268,56 @@ export class NotificationsService {
     const devices = await this.prisma.userDevice.findMany({ where: { userId, active: true } });
     if (devices.length === 0) return;
 
-    const results = await this.expoPush.send(
-      devices.map((d) => ({ to: d.pushToken, title, body, data: { ...data, notificationId } })),
-    );
+    // Native app tokens go through Expo; a WEB device's token is a browser PushSubscription and goes through Web Push.
+    const appDevices = devices.filter((d) => d.platform !== "WEB");
+    const webDevices = devices.filter((d) => d.platform === "WEB");
 
+    const record = (result: { ok: boolean; error?: string }) =>
+      this.prisma.notificationDelivery.create({
+        data: {
+          notificationId,
+          channel: "PUSH",
+          status: result.ok ? "SENT" : "FAILED",
+          sentAt: result.ok ? new Date() : undefined,
+          failedAt: result.ok ? undefined : new Date(),
+          error: result.error,
+        },
+      });
+
+    const appResults = await this.expoPush.send(appDevices.map((d) => ({ to: d.pushToken, title, body, data: { ...data, notificationId } })));
     await Promise.all(
-      results.map(async (result, i) => {
-        const device = devices[i]!;
-        await this.prisma.notificationDelivery.create({
-          data: {
-            notificationId,
-            channel: "PUSH",
-            status: result.ok ? "SENT" : "FAILED",
-            sentAt: result.ok ? new Date() : undefined,
-            failedAt: result.ok ? undefined : new Date(),
-            error: result.error,
-          },
-        });
+      appResults.map(async (result, i) => {
+        await record(result);
         if (result.deviceNotRegistered) {
-          await this.prisma.userDevice.update({ where: { id: device.id }, data: { active: false } });
+          await this.prisma.userDevice.update({ where: { id: appDevices[i]!.id }, data: { active: false } });
         }
       }),
     );
+
+    if (webDevices.length > 0 && this.webPush.publicKey) {
+      const url = this.webLinkFor(data);
+      await Promise.all(
+        webDevices.map(async (device) => {
+          const result = await this.webPush.send(device.pushToken, { title, body, url });
+          await record(result);
+          if (result.gone) await this.prisma.userDevice.update({ where: { id: device.id }, data: { active: false } });
+        }),
+      );
+    }
+  }
+
+  /** Where tapping a browser notification should land (mirrors the web notification bell's routing). */
+  private webLinkFor(data: Record<string, unknown> | undefined): string {
+    const str = (v: unknown) => (typeof v === "string" && v ? v : undefined);
+    const slug = str(data?.slug);
+    const eventId = str(data?.eventId);
+    const screen = str(data?.screen);
+    if (screen === "share" && slug) return `/events/${slug}/share`;
+    if (screen === "edit" && eventId) return `/organizer/events/${eventId}/edit`;
+    if (screen === "verify") return "/profile";
+    if (str(data?.inquiryId)) return `/inbox/${str(data?.inquiryId)}`;
+    if (slug) return `/events/${slug}`;
+    return "/";
   }
 
   async listMine(userId: string, query: ListNotificationsDto): Promise<CursorPage<unknown>> {

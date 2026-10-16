@@ -645,6 +645,7 @@ model Event {
   interests          EventInterest[]
   intents            EventIntent[]
   inquiries          EventInquiry[]
+  reminderRequests   EventReminderRequest[]
   registrationFields RegistrationField[]
   faqItems           EventFaqItem[]
   priceOptions       EventPriceOption[]
@@ -1222,6 +1223,10 @@ enum NotificationType {
   DISTRICT_MERGED
   ORGANIZER_MESSAGE
   MODERATION_UPDATE
+  SHARE_PROMPT
+  DRAFT_REMINDER
+  WEEKLY_DIGEST
+  ACCOUNT_REMINDER
 }
 
 enum NotificationChannel {
@@ -1701,4 +1706,21 @@ model FeedbackReport {
 
   @@index([status, createdAt])
   @@map("feedback_reports")
+}
+
+/// A signed-out visitor asked to be reminded about an event by email ("Нагадати мені"): one email ~24h before the start,
+/// no account needed. `token` is the unsubscribe handle in that email.
+model EventReminderRequest {
+  id      String @id @default(uuid()) @db.Uuid
+  eventId String @db.Uuid
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  email   String
+  token   String @unique
+
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([eventId, email])
+  @@index([sentAt, createdAt])
+  @@map("event_reminder_requests")
 }

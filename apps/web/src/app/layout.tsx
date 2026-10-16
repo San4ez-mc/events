@@ -13,6 +13,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { AnalyticsProvider } from "@/components/analytics-provider";
 import { PwaInstallHint } from "@/components/pwa-install-hint";
+import { WebPushPrompt } from "@/components/web-push-prompt";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -67,6 +68,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <AnalyticsProvider />
               </Suspense>
               <PwaInstallHint />
+              <WebPushPrompt />
             </AuthProvider>
           </LocaleProvider>
         </ThemeProvider>

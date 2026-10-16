@@ -293,6 +293,10 @@ export const NotificationType = {
   DISTRICT_MERGED: "DISTRICT_MERGED",
   ORGANIZER_MESSAGE: "ORGANIZER_MESSAGE",
   MODERATION_UPDATE: "MODERATION_UPDATE",
+  SHARE_PROMPT: "SHARE_PROMPT",
+  DRAFT_REMINDER: "DRAFT_REMINDER",
+  WEEKLY_DIGEST: "WEEKLY_DIGEST",
+  ACCOUNT_REMINDER: "ACCOUNT_REMINDER",
 } as const;
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType];
 

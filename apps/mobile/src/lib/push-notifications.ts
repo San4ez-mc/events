@@ -24,7 +24,7 @@ Notifications.setNotificationHandler({
  * same "works for real once configured" posture as the payment adapters.
  */
 function handlePushTap(response: Notifications.NotificationResponse): void {
-  const data = (response.notification.request.content.data ?? {}) as { notificationId?: string; slug?: string; inquiryId?: string };
+  const data = (response.notification.request.content.data ?? {}) as { notificationId?: string; slug?: string; inquiryId?: string; eventId?: string; screen?: string };
   const token = getAccessToken();
   if (data.notificationId && token) {
     // Opening the notification counts as reading it - this is also how we measure whether pushes get opened.
@@ -32,6 +32,10 @@ function handlePushTap(response: Notifications.NotificationResponse): void {
   }
   captureEvent("push_open", { has_event: Boolean(data.slug) });
   if (data.inquiryId) router.push(`/inbox/${data.inquiryId}`);
+  else if (data.screen === "share" && data.eventId) router.push(`/share/${data.eventId}`);
+  else if (data.screen === "edit" && data.eventId) router.push(`/edit/${data.eventId}`);
+  else if (data.screen === "verify") router.push("/profile");
+  else if (data.screen === "discover") router.push("/");
   else if (data.slug) router.push(`/event/${data.slug}`);
 }
 

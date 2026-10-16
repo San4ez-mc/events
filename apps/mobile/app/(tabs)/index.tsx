@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useTranslations } from "../../src/lib/locale-context";
+import { useAuth } from "../../src/lib/auth-context";
 import { track } from "../../src/lib/analytics";
 import { SwipeCard } from "../../src/components/discover/SwipeCard";
 import { FiltersSheet } from "../../src/components/discover/FiltersSheet";
@@ -26,6 +27,7 @@ export default function DiscoverScreen() {
   const { colors, styles } = useThemedStyles(makeStyles);
   const { t } = useTranslations();
   const insets = useSafeAreaInsets();
+  const { user: authUser, isLoading: authLoading } = useAuth();
   const [cards, setCards] = useState<EventCard[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [saved, setSaved] = useState<Set<string>>(new Set());
@@ -308,6 +310,12 @@ ${url}`, url, title: event.title }).catch(() => {});
           <Pressable onPress={() => setTutorialOpen(true)} style={styles.headerButton} accessibilityLabel={t("discover.showTips")}>
             <Ionicons name="school-outline" size={22} color={colors.white} />
           </Pressable>
+          {/* Guests had no visible way in (a Play reviewer even typed the login into the search box). */}
+          {!authLoading && !authUser && (
+            <Pressable onPress={() => router.push("/login")} style={styles.loginPill} accessibilityLabel={t("auth.login.title")}>
+              <Text style={styles.loginPillText}>{t("auth.login.title")}</Text>
+            </Pressable>
+          )}
           <Pressable
             onPress={() => {
               router.push("/notifications");
@@ -405,6 +413,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   header: { position: "absolute", top: 0, left: 0, right: 0, paddingHorizontal: spacing.lg, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   headerActions: { flexDirection: "row", gap: spacing.sm },
   headerButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" },
+  loginPill: { height: 42, borderRadius: 21, paddingHorizontal: 16, backgroundColor: colors.accentFrom, alignItems: "center", justifyContent: "center" },
+  loginPillText: { color: colors.white, fontSize: 14, fontWeight: "800" },
   badge: { position: "absolute", top: -2, right: -2, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: colors.accentTo, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
   badgeText: { color: colors.white, fontSize: 11, fontWeight: "800" },
   headerTitle: { color: colors.white, fontSize: 24, fontWeight: "800", textShadowColor: "rgba(0,0,0,0.5)", textShadowRadius: 6 },

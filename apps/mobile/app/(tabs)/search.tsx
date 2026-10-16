@@ -14,6 +14,8 @@ export default function SearchScreen() {
   const { t } = useTranslations();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<EventCard[] | null>(null);
+  // Instead of a dead end when nothing matches: what is coming up (loaded once, on the first empty search).
+  const [suggestions, setSuggestions] = useState<EventCard[] | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const search = useCallback(async (q: string) => {
@@ -28,11 +30,29 @@ export default function SearchScreen() {
     if (res.ok) {
       const items = (await res.json() as CursorPage<EventCard>).items;
       setResults(items);
+      if (items.length === 0 && suggestions === null) {
+        const feed = await fetch(`${API_URL}/api/v1/discovery?limit=5`, { headers: token ? { Authorization: `Bearer ${token}` } : undefined }).catch(() => null);
+        if (feed?.ok) setSuggestions(((await feed.json()) as CursorPage<EventCard>).items);
+      }
       // One event per finished search (not per keystroke): wait for the typing to settle.
       if (searchTimer.current) clearTimeout(searchTimer.current);
       searchTimer.current = setTimeout(() => captureEvent("search", { query: q.trim().toLowerCase().slice(0, 80), results_count: items.length }), 1200);
     }
-  }, []);
+  }, [suggestions]);
+
+  const renderRow = (item: EventCard) => (
+    <Pressable key={item.id} style={styles.row} onPress={() => router.push(`/event/${item.slug}?src=search`)}>
+      {item.media[0] ? <Image source={{ uri: item.media[0].thumbnailUrl }} style={styles.thumb} /> : <View style={[styles.thumb, styles.thumbPlaceholder]} />}
+      <View style={styles.rowText}>
+        <Text style={styles.title} numberOfLines={1}>
+          {item.title}
+        </Text>
+        <Text style={styles.subtitle} numberOfLines={1}>
+          {[item.city?.nameUk, item.category?.nameUk].filter(Boolean).join(" · ")}
+        </Text>
+      </View>
+    </Pressable>
+  );
 
   return (
     <View style={styles.container}>
@@ -69,7 +89,15 @@ export default function SearchScreen() {
         )}
         ListEmptyComponent={
           query.trim() && results !== null ? (
-            <EmptyState icon="sad-outline" text={t("screens.searchNothing")} />
+            <View>
+              <EmptyState icon="sad-outline" text={t("screens.searchNothing")} />
+              {suggestions && suggestions.length > 0 && (
+                <View style={{ gap: spacing.xs }}>
+                  <Text style={styles.empty}>{t("search.nothingTry")}</Text>
+                  {suggestions.map(renderRow)}
+                </View>
+              )}
+            </View>
           ) : (
             <EmptyState icon="sparkles" title={t("screens.searchHintTitle")} text={t("screens.searchHintText")} />
           )

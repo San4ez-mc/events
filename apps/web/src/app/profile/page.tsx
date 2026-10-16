@@ -11,6 +11,8 @@ import { formatPhoneInput } from "@/lib/format";
 import { fieldErrorMessage, readFieldErrors, type FieldErrors } from "@/lib/field-errors";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
+import { VerifyEmailBanner } from "@/components/verify-email-banner";
+import { WebPushToggle } from "@/components/web-push-toggle";
 
 type SocialType =
   "INSTAGRAM" | "TELEGRAM" | "FACEBOOK" | "TIKTOK" | "WEBSITE" | "OTHER";
@@ -260,6 +262,8 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6 px-4 py-10">
       <h1 className="text-2xl font-bold">{t("nav.profile")}</h1>
+      <VerifyEmailBanner />
+      <WebPushToggle />
 
       <div className="flex items-center gap-4">
         <button

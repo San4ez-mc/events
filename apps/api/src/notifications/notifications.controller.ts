@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
+import { Public } from "../common/decorators/public.decorator";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user";
 import { NotificationsService } from "./notifications.service";
@@ -14,6 +15,13 @@ export class NotificationsController {
   @Get()
   listMine(@CurrentUser() user: AuthenticatedUser, @Query() query: ListNotificationsDto) {
     return this.notificationsService.listMine(user.id, query);
+  }
+
+  /** The VAPID public key the browser needs to subscribe; null when web push is not configured. */
+  @Public()
+  @Get("web-push/public-key")
+  webPushKey() {
+    return { key: this.notificationsService.webPushPublicKey() };
   }
 
   @Get("unread-count")

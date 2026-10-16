@@ -29,6 +29,9 @@ export function EventChat({ eventId }: { eventId: string }) {
   const [sending, setSending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const lastCount = useRef(0);
+  // Once the API says "not your chat" there is nothing to poll for: wait for a registration change instead of
+  // hitting a 403 every few seconds for as long as the page stays open.
+  const forbidden = useRef(false);
 
   const load = useCallback(async () => {
     const token = getAccessToken();
@@ -37,9 +40,11 @@ export function EventChat({ eventId }: { eventId: string }) {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (res.status === 403 || res.status === 401) {
+      forbidden.current = true;
       setAllowed(false);
       return;
     }
+    forbidden.current = false;
     if (!res.ok) return;
     const body = (await res.json()) as {
       items: Message[];
@@ -53,7 +58,9 @@ export function EventChat({ eventId }: { eventId: string }) {
   useEffect(() => {
     if (isLoading || !user) return;
     queueMicrotask(() => void load());
-    const poll = window.setInterval(() => void load(), 6000);
+    const poll = window.setInterval(() => {
+      if (!forbidden.current) void load();
+    }, 6000);
     // Access can change the moment a registration does (register -> chat appears, cancel -> gone).
     window.addEventListener("kiro:registration-changed", load);
     return () => {

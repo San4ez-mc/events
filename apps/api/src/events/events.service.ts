@@ -435,6 +435,7 @@ export class EventsService {
       });
     });
     void this.notifications.notifySubscribersOfNewEvent(eventId).catch(() => undefined);
+    void this.notifications.notifyOrganizerOfPublication(eventId).catch(() => undefined);
     return published;
   }
 
@@ -505,6 +506,7 @@ export class EventsService {
     });
 
     void this.notifications.notifySubscribersOfNewEvent(eventId).catch(() => undefined);
+    void this.notifications.notifyOrganizerOfPublication(eventId).catch(() => undefined);
     await this.notifications.create({
       userId: event.ownerId,
       type: "EVENT_CHANGED",

@@ -700,9 +700,19 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
           <Text style={styles.doneText}>
             {ok ? t("events.wizard.publishSuccess") : outcome === "REJECTED" ? t("events.wizard.publishRejected") : t("events.wizard.publishPendingModeration")}
           </Text>
-          {ok && slug && <Button title={t("create.openEvent")} onPress={() => router.push(`/event/${slug}`)} />}
+          {/* Right after publishing is when sharing is most likely: the story/post pictures come first. */}
+          {ok && eventId && (
+            <Button
+              title={t("referral.createStory")}
+              onPress={() => {
+                captureEvent("share_prompt_click", { from: "publish_success", event_id: eventId });
+                router.push(`/share/${eventId}`);
+              }}
+            />
+          )}
+          {ok && slug && <Button title={t("create.openEvent")} variant="secondary" onPress={() => router.push(`/event/${slug}`)} />}
           {ok && slug && (
-            <Button title={t("create.shareEvent")} variant="secondary" onPress={() => void Share.share({ message: `${form.title}\n${API_URL}/events/${slug}` }).catch(() => {})} />
+            <Button title={t("create.shareEvent")} variant="secondary" onPress={() => void Share.share({ message: `${form.title}\n${API_URL}/events/${slug}?utm_source=app_share&utm_medium=publish` }).catch(() => {})} />
           )}
           <Button title={t("create.createAnother")} variant="secondary" onPress={reset} />
         </View>

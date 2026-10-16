@@ -13,6 +13,7 @@ import { ProfileQrModal } from "../../src/components/social/ProfileQrModal";
 import { Button } from "../../src/components/ui/Button";
 import { TextField } from "../../src/components/ui/TextField";
 import { ScreenHeader } from "../../src/components/ui/ScreenHeader";
+import { VerifyEmailBanner } from "../../src/components/auth/VerifyEmailBanner";
 import { radius, spacing, type Palette, useTheme, useThemedStyles } from "../../src/lib/theme";
 import { Chips } from "../../src/components/discover/FiltersSheet";
 
@@ -259,6 +260,7 @@ export default function ProfileScreen() {
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView style={styles.flex} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ScreenHeader title={t("nav.profile")} subtitle={t("screens.profileSubtitle")} icon="person" />
+        <VerifyEmailBanner />
 
         <View style={styles.card}>
           <Pressable onPress={() => void pickAvatar()} disabled={avatarUploading} accessibilityLabel={t("profile.changePhoto")}>

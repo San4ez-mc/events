@@ -93,6 +93,24 @@ export default function NotificationsScreen() {
       router.push("/credits");
       return;
     }
+    // Growth nudges: story/post pictures, finish a draft, confirm the email, this weekend's events.
+    const nudgeEventId = item.payloadJson?.eventId;
+    if (item.payloadJson?.screen === "share" && nudgeEventId) {
+      router.push(`/share/${nudgeEventId}`);
+      return;
+    }
+    if (item.payloadJson?.screen === "edit" && nudgeEventId) {
+      router.push(`/edit/${nudgeEventId}`);
+      return;
+    }
+    if (item.payloadJson?.screen === "verify") {
+      router.push("/profile");
+      return;
+    }
+    if (item.payloadJson?.screen === "discover") {
+      router.push("/");
+      return;
+    }
     const eventId = item.payloadJson?.eventId;
     if (!eventId) return;
     if (item.payloadJson?.slug) {

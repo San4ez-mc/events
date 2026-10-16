@@ -22,6 +22,8 @@ export function SearchPageContent() {
   // empty-query "prompt" state and the empty-results "nothing found" state
   // be derived below instead of imperatively cleared when the box empties.
   const [resultsForQuery, setResultsForQuery] = useState<string | null>(null);
+  // What to show instead of a dead end when a search finds nothing: the next events in the feed.
+  const [suggestions, setSuggestions] = useState<EventCard[] | null>(null);
 
   const trimmedQuery = query.trim();
 
@@ -45,6 +47,10 @@ export function SearchPageContent() {
       setHasMore(body.hasMore);
       setResultsForQuery(q);
       if (reset) captureEvent("search", { query: q.trim().toLowerCase().slice(0, 80), results_count: body.items.length });
+      if (reset && body.items.length === 0 && suggestions === null) {
+        const feed = await fetch("/api/v1/discovery?limit=5").catch(() => null);
+        if (feed?.ok) setSuggestions(((await feed.json()) as CursorPage<EventCard>).items);
+      }
     } finally {
       setLoading(false);
     }
@@ -70,7 +76,17 @@ export function SearchPageContent() {
       )}
 
       {!loading && searched && displayedItems.length === 0 && (
-        <EmptyState Icon={IoSadOutline} text={t("screens.searchNothing")} />
+        <>
+          <EmptyState Icon={IoSadOutline} text={t("screens.searchNothing")} />
+          {suggestions && suggestions.length > 0 && (
+            <div className="flex flex-col gap-2.5">
+              <p className="text-sm text-muted">{t("search.nothingTry")}</p>
+              {suggestions.map((event) => (
+                <EventResultRow key={event.id} event={event} locale={locale} t={t} />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <div className="flex flex-col gap-2.5">
