@@ -4,7 +4,8 @@ import Link from "next/link";
 import { IoCalendarOutline, IoLocationOutline } from "react-icons/io5";
 import type { SupportedLocale } from "@kiro/i18n";
 import type { EventCard } from "@/lib/event-types";
-import { EVENT_TZ, formatCurrency, formatPriceAmount } from "@/lib/format";
+import { formatCurrency, formatPriceAmount } from "@/lib/format";
+import { formatCardDate } from "@/components/discover/event-card";
 
 /** UX §9 — search is a plain list, not the swipe card. Card style matches the app's list rows. */
 export function EventResultRow({
@@ -19,9 +20,7 @@ export function EventResultRow({
   const cover = event.media[0];
   const categoryName = event.category ? (locale === "uk" ? event.category.nameUk : event.category.nameEn) : null;
   const cityName = event.city ? (locale === "uk" ? event.city.nameUk : event.city.nameEn) : null;
-  const when = event.startsAt
-    ? new Date(event.startsAt).toLocaleString(locale === "uk" ? "uk-UA" : "en-GB", { timeZone: EVENT_TZ, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
-    : null;
+  const when = event.startsAt ? formatCardDate(event.startsAt, locale, t) : null;
   const price =
     event.priceType === "FREE"
       ? t("common.free")

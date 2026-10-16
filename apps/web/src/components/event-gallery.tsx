@@ -16,7 +16,7 @@ export function EventGallery({ media }: { media: EventMedia[] }) {
 
   if (media.length === 0) {
     return (
-      <div className="accent-gradient flex aspect-[3/4] w-full items-center justify-center text-white/80 sm:rounded-[28px]">
+      <div className="accent-gradient flex h-[42svh] w-full items-center justify-center text-white/80 sm:aspect-[3/4] sm:h-auto sm:rounded-[28px]">
         <CalendarDays className="h-16 w-16" strokeWidth={1.5} />
       </div>
     );
@@ -40,7 +40,9 @@ export function EventGallery({ media }: { media: EventMedia[] }) {
         className="flex snap-x snap-mandatory overflow-x-auto bg-surface sm:rounded-[28px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {media.map((m) => (
-          <div key={m.id} className="aspect-[3/4] w-full shrink-0 snap-center">
+          // On a phone the photo is capped to under half the screen so title, date, city, price and the main button show
+          // without scrolling; the whole picture stays visible (posters carry text) over a blurred copy of itself.
+          <div key={m.id} className="relative h-[42svh] w-full shrink-0 snap-center overflow-hidden sm:aspect-[3/4] sm:h-auto">
             {m.type === "VIDEO" ? (
               <video
                 src={m.originalUrl}
@@ -51,16 +53,20 @@ export function EventGallery({ media }: { media: EventMedia[] }) {
                 className="h-full w-full bg-black object-contain"
               />
             ) : (
-              // eslint-disable-next-line @next/next/no-img-element -- external MinIO URLs
-              <img
-                src={m.displayUrl}
-                alt=""
-                draggable={false}
-                className="h-full w-full object-cover"
-                style={
-                  m.focalX ? { objectPosition: `${Number(m.focalX) * 100}% ${Number(m.focalY) * 100}%` } : undefined
-                }
-              />
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element -- external MinIO URLs */}
+                <img src={m.displayUrl} alt="" aria-hidden="true" draggable={false} className="absolute inset-0 h-full w-full scale-125 object-cover opacity-70 blur-2xl sm:hidden" />
+                {/* eslint-disable-next-line @next/next/no-img-element -- external MinIO URLs */}
+                <img
+                  src={m.displayUrl}
+                  alt=""
+                  draggable={false}
+                  className="relative h-full w-full object-contain sm:object-cover"
+                  style={
+                    m.focalX ? { objectPosition: `${Number(m.focalX) * 100}% ${Number(m.focalY) * 100}%` } : undefined
+                  }
+                />
+              </>
             )}
           </div>
         ))}

@@ -19,8 +19,16 @@ export async function generateMetadata({ params }: PageProps<"/events/[slug]">):
     return { title: "Кіро", robots: { index: false, follow: false } };
   }
 
-  const description = event.description?.slice(0, 200) ?? undefined;
-  const image = event.media[0]?.displayUrl;
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://kiro.fineko.space";
+  const when = event.startsAt
+    ? new Date(event.startsAt).toLocaleString("uk-UA", { timeZone: "Europe/Kyiv", weekday: "short", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })
+    : null;
+  const where = event.format === "ONLINE" ? "Онлайн" : event.city?.nameUk;
+  const price = event.priceType === "FREE" ? "Безкоштовно" : event.priceType === "PAID" && event.price ? `від ${Number(event.price)} грн` : null;
+  // Date, place and price first: that is what decides a click from a link preview.
+  const lead = [when, where, price].filter(Boolean).join(" · ");
+  const description = [lead, event.description?.replace(/\s+/g, " ").slice(0, 160)].filter(Boolean).join(". ") || undefined;
+  const image = event.media[0] ? `${site}/api/v1/events/${event.id}/share-image?variant=1&format=post` : undefined;
 
   return {
     title: `${event.title} — Кіро`,
@@ -31,8 +39,9 @@ export async function generateMetadata({ params }: PageProps<"/events/[slug]">):
       title: event.title,
       description,
       type: "website",
-      images: image ? [{ url: image }] : undefined,
+      images: image ? [{ url: image, width: 1080, height: 1350 }] : undefined,
     },
+    twitter: { card: "summary_large_image", title: event.title, description, images: image ? [image] : undefined },
   };
 }
 

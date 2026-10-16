@@ -60,7 +60,11 @@
       "noAccount": "Don't have an account?",
       "signUp": "Sign up",
       "forgotPassword": "Forgot password?",
-      "rememberMe": "Remember me"
+      "rememberMe": "Remember me",
+      "or": "or",
+      "reason_save": "Sign in to save this event.",
+      "reason_going": "Sign in to say you are going.",
+      "reason_register": "Sign in to register for this event."
     },
     "register": {
       "title": "Create account",
@@ -416,7 +420,12 @@
       "text": "We'll show nearby events first.",
       "later": "Later",
       "saved": "City saved"
-    }
+    },
+    "viewList": "List",
+    "viewCards": "Cards",
+    "introTitle": "Kiro: your city's event guide",
+    "introText": "Swipe the cards: left to skip, right to open. Sign-up and tickets in one tap. City and filters are at the top.",
+    "introOk": "Got it"
   },
   "search": {
     "placeholder": "Search events, categories, organizers, cities…",
@@ -1451,5 +1460,24 @@
     "on": "Notifications are on",
     "denied": "Notifications are blocked in your browser settings. Allow them there to get reminders.",
     "iosInstall": "On iPhone, notifications work once Kiro is added to your Home Screen: Share → Add to Home Screen."
+  },
+  "afisha": {
+    "all": "All events",
+    "today": "Today",
+    "weekend": "Weekend",
+    "free": "Free",
+    "filters": "Listing filters",
+    "heading": {
+      "all": "Events in {city}",
+      "today": "{city}: events today",
+      "weekend": "{city}: weekend events",
+      "free": "{city}: free events"
+    },
+    "headingCategory": "{city}: {category}",
+    "intro": "Concerts, stand-up, parties, sports and meetups: current events with dates, prices and places. Sign-up and tickets in one tap.",
+    "metaDescription": "{count} events: {titles}. Dates, prices, places, sign-up and tickets.",
+    "empty": "Nothing here yet. Create your own for free and people in your city will see it.",
+    "openSwipe": "Swipe on Kiro",
+    "footerTitle": "Events"
   }
 }

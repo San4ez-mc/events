@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { fetchCitiesWithEvents } from "@/lib/server-api";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://kiro.fineko.space";
 const PAGE_SIZE = 50;
@@ -26,6 +27,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.3,
     },
   ];
+
+  // City landing pages ("афіша") — only cities that have something on, so there are no empty pages in the index.
+  try {
+    for (const city of await fetchCitiesWithEvents()) {
+      entries.push({ url: `${SITE}/afisha/${city.slug}`, changeFrequency: "daily", priority: 0.8 });
+      for (const filter of ["weekend", "free", "today"]) {
+        entries.push({ url: `${SITE}/afisha/${city.slug}/${filter}`, changeFrequency: "daily", priority: 0.7 });
+      }
+    }
+  } catch {
+    // The sitemap is still useful without them.
+  }
 
   let cursor: string | null = null;
   for (let page = 0; page < MAX_PAGES; page++) {

@@ -55,7 +55,7 @@ export function AnalyticsProvider() {
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-16 z-50 mx-auto flex max-w-xl flex-col gap-3 rounded-xl border border-border bg-background p-4 text-sm shadow-lg sm:bottom-4 sm:flex-row sm:items-center">
+    <div className="fixed inset-x-2 top-[62px] z-50 mx-auto flex max-w-xl items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-xs leading-snug shadow-lg sm:inset-x-0 sm:bottom-4 sm:top-auto sm:gap-3 sm:p-4 sm:text-sm">
       <p className="flex-1 text-muted">
         {t("consent.text")}{" "}
         <Link href="/privacy" className="underline">
@@ -63,10 +63,10 @@ export function AnalyticsProvider() {
         </Link>
       </p>
       <div className="flex shrink-0 gap-2">
-        <button type="button" onClick={() => choose("denied")} className="rounded-md border border-border px-3 py-1.5">
+        <button type="button" onClick={() => choose("denied")} className="rounded-md border border-border px-2.5 py-1.5">
           {t("consent.decline")}
         </button>
-        <button type="button" onClick={() => choose("granted")} className="accent-gradient rounded-md px-3 py-1.5 text-white">
+        <button type="button" onClick={() => choose("granted")} className="accent-gradient rounded-md px-2.5 py-1.5 text-white">
           {t("consent.accept")}
         </button>
       </div>

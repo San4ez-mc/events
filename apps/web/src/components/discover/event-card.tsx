@@ -155,7 +155,7 @@ export function EventCard({
   );
 }
 
-function formatCardDate(
+export function formatCardDate(
   iso: string,
   locale: SupportedLocale,
   t: (key: string) => string,

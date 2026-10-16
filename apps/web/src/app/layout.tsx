@@ -32,11 +32,11 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   applicationName: "Кіро",
   appleWebApp: { capable: true, title: "Кіро", statusBarStyle: "default" },
-  title: "Кіро",
-  description: "Платформа пошуку подій та розваг — гортай, обирай, записуйся.",
+  title: "Кіро — афіша подій України: концерти, стендап, вечірки, спорт",
+  description: "Знаходь події у своєму місті: концерти, стендап, вечірки, спорт, зустрічі. Гортай, обирай і реєструйся в один дотик.",
   openGraph: {
-    title: "Кіро",
-    description: "Гортай, обирай, записуйся.",
+    title: "Кіро — афіша подій твого міста",
+    description: "Концерти, стендап, вечірки, спорт. Гортай, обирай, записуйся.",
     images: ["/logo.jpg"],
   },
 };

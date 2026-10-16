@@ -65,14 +65,14 @@ export function EventActions({
     };
   }, [user, slug]);
 
-  function requireLogin(): boolean {
+  function requireLogin(reason?: "save" | "going"): boolean {
     if (user) return false;
-    router.push(`/login?next=${encodeURIComponent(window.location.pathname)}`);
+    router.push(`/login?next=${encodeURIComponent(window.location.pathname)}${reason ? `&reason=${reason}` : ""}`);
     return true;
   }
 
   async function toggleSave() {
-    if (requireLogin()) return;
+    if (requireLogin("save")) return;
     const next = !saved;
     setSaved(next);
     if (next) window.dispatchEvent(new Event("kiro:intent"));
@@ -84,7 +84,7 @@ export function EventActions({
   }
 
   async function toggleGoing() {
-    if (requireLogin()) return;
+    if (requireLogin("going")) return;
     const next = !going;
     setGoing(next);
     if (next) window.dispatchEvent(new Event("kiro:intent"));
@@ -198,6 +198,14 @@ export function EventActions({
         >
           <IoMegaphone className="h-5 w-5" aria-hidden="true" />
           {t("referral.createStory")}
+        </Link>
+      )}
+      {isOwner && (
+        <Link
+          href={`/organizer/events/${eventId}/stats`}
+          className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-5 text-[15px] font-semibold transition hover:bg-surface active:scale-95"
+        >
+          {t("organizerTools.stats")}
         </Link>
       )}
       {reporting && (

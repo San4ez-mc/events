@@ -16,6 +16,9 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const reasonKey = searchParams.get("reason");
+  const reason = reasonKey && ["save", "going", "register"].includes(reasonKey) ? t(`auth.login.reason_${reasonKey}`) : null;
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
@@ -28,7 +31,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await login(email, password, rememberMe);
-      router.push(searchParams.get("next") ?? "/organizer/events");
+      router.push(searchParams.get("next") ?? "/");
     } catch (err) {
       setError(
         err instanceof ApiRequestError
@@ -44,6 +47,11 @@ export default function LoginPage() {
     <AuthShell>
       <div className="flex flex-col gap-6">
         <h1 className="text-2xl font-bold">{t("auth.login.title")}</h1>
+        {reason && <p className="-mt-3 text-sm text-muted">{reason}</p>}
+
+        {/* One tap first: most visitors arrive on a phone with a Google account already signed in. */}
+        <GoogleSignInButton onSuccess={() => router.push(searchParams.get("next") ?? "/")} />
+        <p className="-my-2 text-center text-xs uppercase tracking-wide text-muted">{t("auth.login.or")}</p>
 
         <form
           onSubmit={handleSubmit}
@@ -87,12 +95,6 @@ export default function LoginPage() {
             {t("auth.login.submit")}
           </Button>
         </form>
-
-        <GoogleSignInButton
-          onSuccess={() =>
-            router.push(searchParams.get("next") ?? "/organizer/events")
-          }
-        />
 
         <div className="flex flex-col gap-2 text-sm text-muted">
           <p>

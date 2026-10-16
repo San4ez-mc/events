@@ -8,6 +8,8 @@ import {
   IoClose,
   IoHeart,
   IoHeartOutline,
+  IoListOutline,
+  IoLayersOutline,
   IoOptionsOutline,
   IoRefresh,
   IoShareSocialOutline,
@@ -19,12 +21,15 @@ import { getAccessToken } from "@/lib/api-client";
 import type { CursorPage, EventCard as EventCardData } from "@/lib/event-types";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "./event-card";
+import { EventResultRow } from "@/components/search/event-result-row";
 import { CityPrompt } from "./city-prompt";
 import { DiscoverFilters, type DiscoveryFilters } from "./discover-filters";
 import { track } from "@/lib/analytics";
 import { EMPTY_FILTERS, countActiveFilters, filtersToQuery } from "@kiro/types";
 
 const FILTERS_STORAGE_KEY = "kiro_discover_filters";
+const VIEW_STORAGE_KEY = "kiro_discover_view";
+const INTRO_STORAGE_KEY = "kiro_discover_intro_seen";
 const SWIPE_DISTANCE = 100;
 const TAP_DISTANCE = 6;
 
@@ -47,6 +52,9 @@ export function DiscoverFeed() {
   const router = useRouter();
 
   const [filters, setFilters] = useState<DiscoveryFilters>(EMPTY_FILTERS);
+  // Cards (swipe) or a plain list; remembered per device. First-time visitors get a one-off explanation of the cards.
+  const [view, setView] = useState<"cards" | "list">("cards");
+  const [introSeen, setIntroSeen] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [restarting, setRestarting] = useState(false);
   const [items, setItems] = useState<EventCardData[]>([]);
@@ -114,7 +122,17 @@ export function DiscoverFeed() {
     } catch {
       // Storage blocked or corrupt — fall back to no filters.
     }
+    let savedView: "cards" | "list" = "cards";
+    let intro = true;
+    try {
+      savedView = window.localStorage.getItem(VIEW_STORAGE_KEY) === "list" ? "list" : "cards";
+      intro = window.localStorage.getItem(INTRO_STORAGE_KEY) === "1";
+    } catch {
+      // Storage blocked — defaults are fine.
+    }
     queueMicrotask(() => {
+      setView(savedView);
+      setIntroSeen(intro);
       setFilters(initial);
       void fetchPage(initial, null, true);
     });
@@ -153,6 +171,24 @@ export function DiscoverFeed() {
     }
     setIndex(0);
     void fetchPage(next, null, true);
+  }
+
+  function changeView(next: "cards" | "list") {
+    setView(next);
+    try {
+      window.localStorage.setItem(VIEW_STORAGE_KEY, next);
+    } catch {
+      // Non-critical.
+    }
+  }
+
+  function dismissIntro() {
+    setIntroSeen(true);
+    try {
+      window.localStorage.setItem(INTRO_STORAGE_KEY, "1");
+    } catch {
+      // Non-critical.
+    }
   }
 
   // Seed the star state from the server once logged in, so a previously
@@ -225,6 +261,7 @@ export function DiscoverFeed() {
 
   function handlePass() {
     if (!current) return;
+    if (!introSeen) dismissIntro();
     void recordInteraction(current.id, "PASS");
     const nextIndex = index + 1;
     setIndex(nextIndex);
@@ -263,6 +300,7 @@ export function DiscoverFeed() {
 
   function handleOpen() {
     if (!current) return;
+    if (!introSeen) dismissIntro();
     void recordInteraction(current.id, "OPEN");
     router.push(`/events/${current.slug}?src=swipe`);
   }
@@ -342,13 +380,66 @@ export function DiscoverFeed() {
   const passOpacity = Math.min(1, Math.max(0, -drag.x / SWIPE_DISTANCE));
   const openOpacity = Math.min(1, Math.max(0, drag.x / SWIPE_DISTANCE));
   const hasCards = !loading && !error && items.length > 0;
+  const quickChips = [
+    { key: "today", label: t("filters.dateToday"), on: filters.datePreset === "today", next: { ...filters, datePreset: filters.datePreset === "today" ? ("any" as const) : ("today" as const) } },
+    { key: "weekend", label: t("filters.dateWeekend"), on: filters.datePreset === "weekend", next: { ...filters, datePreset: filters.datePreset === "weekend" ? ("any" as const) : ("weekend" as const) } },
+    { key: "free", label: t("common.free"), on: filters.freeOnly, next: { ...filters, freeOnly: !filters.freeOnly } },
+  ];
 
   return (
     <div className="mx-auto w-full max-w-[460px] sm:px-4 sm:py-5">
       <h1 className="sr-only">{t("nav.discover")}</h1>
 
+      {/* Quick filters and the cards/list switch: what most visitors want first, without opening the filter panel. */}
+      <div className="flex items-center gap-2 overflow-x-auto px-3 py-2 [scrollbar-width:none] sm:px-0 [&::-webkit-scrollbar]:hidden">
+        {quickChips.map((chip) => (
+          <button
+            key={chip.key}
+            type="button"
+            aria-pressed={chip.on}
+            onClick={() => applyFilters(chip.next)}
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition ${chip.on ? "accent-gradient border-transparent text-white" : "border-border bg-surface"}`}
+          >
+            {chip.label}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() => changeView(view === "cards" ? "list" : "cards")}
+          aria-label={view === "cards" ? t("discover.viewList") : t("discover.viewCards")}
+          title={view === "cards" ? t("discover.viewList") : t("discover.viewCards")}
+          className="ml-auto flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-[13px] font-semibold"
+        >
+          {view === "cards" ? <IoListOutline className="h-4 w-4" aria-hidden="true" /> : <IoLayersOutline className="h-4 w-4" aria-hidden="true" />}
+          <span className="hidden min-[420px]:inline">{view === "cards" ? t("discover.viewList") : t("discover.viewCards")}</span>
+        </button>
+      </div>
+
+      {view === "list" && (
+        <div className="flex flex-col gap-2.5 px-3 pb-24 sm:px-0">
+          {loading && items.length === 0 && <div className="h-40 animate-pulse rounded-[14px] bg-surface" aria-label={t("discover.loading")} />}
+          {error && items.length === 0 && (
+            <div className="flex flex-col items-center gap-3 rounded-[14px] bg-surface p-8 text-center text-muted">
+              <p>{t("discover.errorLoading")}</p>
+              <Button variant="secondary" onClick={() => void fetchPage(filters, null, true)}>
+                {t("common.retry")}
+              </Button>
+            </div>
+          )}
+          {!loading && !error && items.length === 0 && <p className="py-10 text-center text-muted">{t("discover.endText")}</p>}
+          {items.map((event) => (
+            <EventResultRow key={event.id} event={event} locale={locale} t={t} />
+          ))}
+          {hasMore && items.length > 0 && (
+            <Button variant="secondary" loading={loading} onClick={() => void fetchPage(filters, cursor, false)}>
+              {t("search.loadMore")}
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* The deck fills the screen between the header and the tab bar on a phone (like the app); on a larger screen it is a tall centred card. */}
-      <div className="relative h-[calc(100dvh-7.5rem)] min-h-[440px] sm:h-[min(calc(100dvh-8rem),760px)]">
+      <div className={`relative h-[calc(100dvh-10.25rem)] min-h-[420px] sm:h-[min(calc(100dvh-10.5rem),740px)] ${view === "list" ? "hidden" : ""}`}>
         {loading && items.length === 0 && (
           <div className="h-full w-full animate-pulse bg-surface sm:rounded-[28px]" aria-label={t("discover.loading")} />
         )}
@@ -467,6 +558,15 @@ export function DiscoverFeed() {
             </span>
           )}
         </div>
+        {hasCards && !introSeen && (
+          <div className="absolute inset-x-4 top-20 z-20 rounded-[18px] border border-border bg-background/95 p-4 text-sm shadow-xl backdrop-blur">
+            <p className="text-[15px] font-extrabold">{t("discover.introTitle")}</p>
+            <p className="mt-1 text-muted">{t("discover.introText")}</p>
+            <button type="button" onClick={dismissIntro} className="accent-gradient mt-3 rounded-[10px] px-4 py-2 text-sm font-semibold text-white">
+              {t("discover.introOk")}
+            </button>
+          </div>
+        )}
         <CityPrompt />
         {filtersOpen && (
           <DiscoverFilters filters={filters} onApply={applyFilters} onClose={() => setFiltersOpen(false)} />

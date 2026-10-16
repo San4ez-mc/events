@@ -274,7 +274,8 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
 
     if (!user) {
       return (
-        <Link href="/login">
+        // Come back to this event after signing in (the default used to be the organizer dashboard).
+        <Link href={`/login?next=${encodeURIComponent(`/events/${event.slug}`)}&reason=register`}>
           <Button className="w-full">
             {t("registration.signInToRegister")}
           </Button>
