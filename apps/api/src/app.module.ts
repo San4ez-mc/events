@@ -50,6 +50,7 @@ import { AuditModule } from "./audit/audit.module";
 import { ReportsModule } from "./reports/reports.module";
 import { ReferralsModule } from "./referrals/referrals.module";
 import { AdminModule } from "./admin/admin.module";
+import { IntegrationsModule } from "./integrations/integrations.module";
 
 @Module({
   imports: [
@@ -114,6 +115,7 @@ import { AdminModule } from "./admin/admin.module";
     ReportsModule,
     ReferralsModule,
     AdminModule,
+    IntegrationsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: ApiExceptionFilter },

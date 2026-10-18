@@ -41,6 +41,9 @@ const envSchema = z.object({
   S3_REGION: z.string().default("us-east-1"),
   S3_PUBLIC_URL: z.string().optional(),
 
+  /** Shared secret for the FINEKO Flows "organizer onboarding" funnel (POST /integrations/bot/event-draft). Unset = endpoint disabled. */
+  BOT_INTEGRATION_KEY: z.string().min(24).optional(),
+
   INITIAL_SUPERADMIN_EMAIL: z.string().email().optional(),
 
   // Optional — falls back to logging emails instead of sending (dev/staging default).
