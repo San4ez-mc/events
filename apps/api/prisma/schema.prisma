@@ -576,6 +576,11 @@ model Event {
   /// event apart from genuine ones. Never settable by the organizer's own self-service update.
   isTest Boolean @default(false)
 
+  /// Where the event came from when it was not created in the app/site ("telegram_bot"); null = created by the organizer themselves.
+  source    String?
+  /// The caller's own id for it (e.g. the chat session), so a retried or edited submission updates the same draft instead of adding another.
+  sourceRef String?
+
   startsAt DateTime?
   endsAt   DateTime?
   timezone String    @default("Europe/Kyiv")
@@ -666,6 +671,7 @@ model Event {
   @@index([districtId])
   @@index([seriesId])
   @@index([status, visibility])
+  @@unique([source, sourceRef])
   @@map("events")
 }
 

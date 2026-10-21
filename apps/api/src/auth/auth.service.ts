@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { CreditsService } from "../credits/credits.service";
 import { ConfigService } from "@nestjs/config";
 import * as argon2 from "argon2";
 import type { EnvConfig } from "../config/env.validation";
@@ -14,6 +15,8 @@ import { randomUUID } from "node:crypto";
 
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000; // 1h
+/** A bot-created organizer gets a longer window: they may only open the email later in the day. */
+const WELCOME_LINK_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** Lifetime of a refresh token when the user did not tick "remember me". */
 const SHORT_SESSION_MS = 24 * 60 * 60 * 1000;
@@ -48,6 +51,7 @@ export class AuthService {
     private readonly configService: ConfigService<EnvConfig, true>,
     private readonly googleTokenVerifier: GoogleTokenVerifier,
     private readonly flags: FeatureFlagsService,
+    private readonly credits: CreditsService,
   ) {}
 
   async register(dto: RegisterDto): Promise<{ user: SafeUser; tokens: AuthTokens }> {
@@ -263,6 +267,20 @@ export class AuthService {
     await this.mailService.sendPasswordResetEmail(user.email, resetUrl);
   }
 
+  /**
+   * A "set your password" link for an account that was created for someone (a chat bot makes the organizer's account from an
+   * email typed in the chat). `next` is where the web app sends them after signing in. Returns the URL, sends nothing.
+   */
+  async issueSetPasswordUrl(userId: string, nextPath?: string): Promise<string> {
+    const { token, hash } = this.tokenService.generateSecureToken();
+    await this.prisma.passwordResetToken.create({
+      data: { userId, tokenHash: hash, expiresAt: new Date(Date.now() + WELCOME_LINK_TTL_MS) },
+    });
+    const appUrl = this.configService.get("APP_URL", { infer: true });
+    const next = nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//") ? `&next=${encodeURIComponent(nextPath)}` : "";
+    return `${appUrl}/auth/reset-password?token=${token}${next}`;
+  }
+
   async resetPassword(rawToken: string, newPassword: string): Promise<void> {
     const tokenHash = this.tokenService.hashToken(rawToken);
     const record = await this.prisma.passwordResetToken.findUnique({ where: { tokenHash } });
@@ -272,6 +290,9 @@ export class AuthService {
     }
 
     const passwordHash = await argon2.hash(newPassword, { type: argon2.argon2id });
+    // Opening a link that was mailed to this address proves the mailbox is theirs.
+    const owner = await this.prisma.user.findUnique({ where: { id: record.userId }, select: { emailVerifiedAt: true } });
+    const wasUnverified = owner !== null && owner.emailVerifiedAt === null;
 
     await this.prisma.$transaction([
       this.prisma.passwordResetToken.update({
@@ -280,7 +301,7 @@ export class AuthService {
       }),
       this.prisma.user.update({
         where: { id: record.userId },
-        data: { passwordHash },
+        data: { passwordHash, ...(wasUnverified ? { emailVerifiedAt: new Date() } : {}) },
       }),
       // Password reset invalidates all existing sessions.
       this.prisma.refreshToken.updateMany({
@@ -288,6 +309,12 @@ export class AuthService {
         data: { revokedAt: new Date() },
       }),
     ]);
+
+    // Organizers created by a bot are not given their welcome credits with the draft (nobody had proved the address yet):
+    // they get them now, the first time the mailbox owner shows up. Idempotent, and only for people who already own an event.
+    if (wasUnverified && (await this.prisma.event.count({ where: { ownerId: record.userId } })) > 0) {
+      await this.credits.claimFreeCredits(record.userId).catch(() => undefined);
+    }
   }
 
   /** Also reused by UsersService.changeEmail to re-verify a user's new address. */

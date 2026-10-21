@@ -113,9 +113,27 @@ export class BotEventDraftDto {
   @Max(1_000_000)
   capacity?: number;
 
+  /**
+   * The funnel's own id for this conversation (session / chat id). Sending the same value again updates the same draft
+   * instead of creating another, so retries and "actually, change the date" are safe.
+   */
+  @IsOptional()
+  @Transform(optStr)
+  @IsString()
+  @MaxLength(120)
+  externalRef?: string;
+
   /** Where people register/buy if the organizer already sells tickets elsewhere. */
   @IsOptional()
   @Transform(optStr)
   @IsUrl({ require_protocol: true, protocols: ["http", "https"] })
   externalRegistrationUrl?: string;
+}
+
+/** Body of the photo endpoint when the funnel passes a link instead of uploading the file. */
+export class BotDraftPhotoDto {
+  @IsOptional()
+  @Transform(optStr)
+  @IsUrl({ require_protocol: true, protocols: ["https"] })
+  imageUrl?: string;
 }

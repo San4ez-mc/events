@@ -9,7 +9,11 @@ import { Button } from "@/components/ui/button";
 
 function ResetPasswordForm() {
   const { t } = useTranslations();
-  const token = useSearchParams().get("token");
+  const params = useSearchParams();
+  const token = params.get("token");
+  // Where to go after signing in (the chat-bot welcome email points at the draft); internal paths only.
+  const rawNext = params.get("next");
+  const next = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -60,7 +64,7 @@ function ResetPasswordForm() {
     return (
       <div className="flex flex-col gap-4">
         <p className="text-sm text-success">{t("auth.resetPassword.success")}</p>
-        <Link href="/login" className="accent-gradient rounded-md px-4 py-2 text-center text-sm font-semibold text-white">
+        <Link href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"} className="accent-gradient rounded-md px-4 py-2 text-center text-sm font-semibold text-white">
           {t("auth.login.title")}
         </Link>
       </div>

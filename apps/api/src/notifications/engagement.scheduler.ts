@@ -1,6 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { Cron } from "@nestjs/schedule";
+import type { EnvConfig } from "../config/env.validation";
 import { PrismaService } from "../prisma/prisma.service";
+import { MailService } from "../mail/mail.service";
 import { kyivDayStart, kyivIsoWeek, kyivWeekday } from "../common/utils/kyiv-time";
 import { NotificationsService } from "./notifications.service";
 import { EventRemindersService } from "./event-reminders.service";
@@ -26,6 +29,8 @@ export class EngagementScheduler {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly guestReminders: EventRemindersService,
+    private readonly mail: MailService,
+    private readonly config: ConfigService<EnvConfig, true>,
   ) {}
 
   @Cron("*/15 * * * *")
@@ -85,7 +90,7 @@ export class EngagementScheduler {
         updatedAt: { gte: new Date(now.getTime() - 14 * DAY), lte: new Date(now.getTime() - DAY) },
         owner: REAL_USER,
       },
-      select: { id: true, title: true, ownerId: true },
+      select: { id: true, title: true, ownerId: true, owner: { select: { email: true } } },
       take: 200,
     });
     for (const draft of drafts) {
@@ -103,6 +108,12 @@ export class EngagementScheduler {
           payloadJson: { draftId: draft.id, eventId: draft.id, screen: "edit" },
         })
         .catch(() => undefined);
+
+      // Organizers who came in through the chat bot or the website have no app, so no push can reach them: use email.
+      if ((await this.prisma.userDevice.count({ where: { userId: draft.ownerId, active: true } })) === 0) {
+        const editUrl = `${this.config.get("APP_URL", { infer: true }).replace(/\/$/, "")}/organizer/events/${draft.id}/edit`;
+        await this.mail.sendDraftReminderEmail(draft.owner.email, { title: draft.title, editUrl }).catch((err) => this.logger.warn(`draft reminder email failed: ${err}`));
+      }
     }
   }
 

@@ -7,15 +7,21 @@ describe("EngagementScheduler", () => {
     eventDailyStat: { groupBy: jest.fn() },
     notification: { count: jest.fn() },
     user: { findMany: jest.fn() },
+    userDevice: { count: jest.fn() },
   };
   const notifications = { existsForPayload: jest.fn(), create: jest.fn() };
   const guest = { sendDue: jest.fn() };
-  const scheduler = new EngagementScheduler(prisma as never, notifications as never, guest as never);
+  const mail = { sendDraftReminderEmail: jest.fn() };
+  const config = { get: jest.fn(() => "https://kiro.test/") };
+  const scheduler = new EngagementScheduler(prisma as never, notifications as never, guest as never, mail as never, config as never);
 
   beforeEach(() => {
     jest.resetAllMocks();
     notifications.existsForPayload.mockResolvedValue(false);
     notifications.create.mockResolvedValue(undefined);
+    prisma.userDevice.count.mockResolvedValue(1);
+    mail.sendDraftReminderEmail.mockResolvedValue(undefined);
+    config.get.mockReturnValue("https://kiro.test/");
   });
 
   describe("weekend digest", () => {
@@ -81,7 +87,7 @@ describe("EngagementScheduler", () => {
     });
 
     it("nudges a stale draft once, and not again within three days for the same person", async () => {
-      prisma.event.findMany.mockImplementation(async (args: { where: { status: string } }) => (args.where.status === "DRAFT" ? [{ id: "d1", title: "Чернетка", ownerId: "o1" }] : []));
+      prisma.event.findMany.mockImplementation(async (args: { where: { status: string } }) => (args.where.status === "DRAFT" ? [{ id: "d1", title: "Чернетка", ownerId: "o1", owner: { email: "o1@example.com" } }] : []));
       prisma.notification.count.mockResolvedValueOnce(0);
       await scheduler.run();
       expect(notifications.create).toHaveBeenCalledWith(expect.objectContaining({ userId: "o1", type: "DRAFT_REMINDER", payloadJson: expect.objectContaining({ draftId: "d1", screen: "edit" }) }));
@@ -90,6 +96,22 @@ describe("EngagementScheduler", () => {
       prisma.notification.count.mockResolvedValue(1);
       await scheduler.run();
       expect(notifications.create).not.toHaveBeenCalled();
+    });
+
+    it("also emails the draft reminder when the organizer has no app (no device to push to)", async () => {
+      prisma.event.findMany.mockImplementation(async (args: { where: { status: string } }) => (args.where.status === "DRAFT" ? [{ id: "d1", title: "Чернетка", ownerId: "o1", owner: { email: "o1@example.com" } }] : []));
+      prisma.notification.count.mockResolvedValue(0);
+      prisma.userDevice.count.mockResolvedValue(0);
+      await scheduler.run();
+      expect(mail.sendDraftReminderEmail).toHaveBeenCalledWith("o1@example.com", { title: "Чернетка", editUrl: "https://kiro.test/organizer/events/d1/edit" });
+    });
+
+    it("does not email someone who has the app (the push already reached them)", async () => {
+      prisma.event.findMany.mockImplementation(async (args: { where: { status: string } }) => (args.where.status === "DRAFT" ? [{ id: "d1", title: "Чернетка", ownerId: "o1", owner: { email: "o1@example.com" } }] : []));
+      prisma.notification.count.mockResolvedValue(0);
+      prisma.userDevice.count.mockResolvedValue(2);
+      await scheduler.run();
+      expect(mail.sendDraftReminderEmail).not.toHaveBeenCalled();
     });
 
     it("nudges an unconfirmed email once", async () => {

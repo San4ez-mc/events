@@ -1,4 +1,6 @@
-import { Body, Controller, Headers, Post } from "@nestjs/common";
+import { Body, Controller, Headers, Param, ParseUUIDPipe, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { DEFAULT_MEDIA_LIMITS } from "@kiro/config";
 import { ApiTags } from "@nestjs/swagger";
 import { ConfigService } from "@nestjs/config";
 import { timingSafeEqual } from "node:crypto";
@@ -7,7 +9,7 @@ import { Public } from "../common/decorators/public.decorator";
 import { RateLimit } from "../common/throttle";
 import { ApiException } from "../common/exceptions/api.exception";
 import { BotIntegrationService } from "./bot-integration.service";
-import { BotEventDraftDto } from "./dto/bot-event-draft.dto";
+import { BotDraftPhotoDto, BotEventDraftDto } from "./dto/bot-event-draft.dto";
 
 /**
  * Server-to-server entry for the FINEKO Flows funnel ("organizer onboarding" Telegram bot).
@@ -28,6 +30,21 @@ export class BotIntegrationController {
   create(@Headers("x-bot-key") key: string | undefined, @Body() dto: BotEventDraftDto) {
     this.assertKey(key);
     return this.service.createDraft(dto);
+  }
+
+  /** Cover photo for a draft this funnel created: multipart `file`, or JSON `{ imageUrl }` (https link to the picture). */
+  @Public()
+  @RateLimit(30)
+  @Post("event-draft/:eventId/photo")
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: DEFAULT_MEDIA_LIMITS.imageMaxBytes } }))
+  photo(
+    @Headers("x-bot-key") key: string | undefined,
+    @Param("eventId", new ParseUUIDPipe()) eventId: string,
+    @Body() dto: BotDraftPhotoDto,
+    @UploadedFile() file: Express.Multer.File | undefined,
+  ) {
+    this.assertKey(key);
+    return this.service.attachPhoto(eventId, dto.imageUrl, file);
   }
 
   private assertKey(provided: string | undefined): void {

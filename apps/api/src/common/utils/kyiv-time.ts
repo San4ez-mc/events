@@ -36,3 +36,22 @@ export function kyivIsoWeek(at: Date): string {
   const week = Math.ceil(((date.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
   return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 }
+
+/** True when an ISO date-time string already says which timezone it is in ("Z" or "+03:00" after a time part). */
+export function hasUtcOffset(iso: string): boolean {
+  return /[T ]\d{2}:\d{2}.*(Z|[+-]\d{2}(:?\d{2})?)$/i.test(iso.trim());
+}
+
+/**
+ * Reads a zone-less ISO date/time ("2026-10-20T19:00", "2026-10-20 19:00:00" or a bare date) as Kyiv wall-clock time.
+ * The server runs in UTC, so `new Date("2026-10-20T19:00")` would silently be 22:00 in Kyiv. Null if it isn't that shape.
+ */
+export function kyivLocalToDate(local: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?$/.exec(local.trim());
+  if (!m) return null;
+  const [y, mo, d, h, mi, s] = [m[1], m[2], m[3], m[4] ?? "0", m[5] ?? "0", m[6] ?? "0"].map(Number) as [number, number, number, number, number, number];
+  const asUtc = Date.UTC(y, mo - 1, d, h, mi, s);
+  // The offset depends on the instant itself (summer/winter time), so settle it in two passes.
+  const first = asUtc - tzOffsetMs(new Date(asUtc));
+  return new Date(asUtc - tzOffsetMs(new Date(first)));
+}

@@ -42,9 +42,9 @@ export class EventsService {
   ) {}
 
   /** §10 — creating a first event is what makes a user an "organizer" (not a role). */
-  async create(ownerId: string, dto: CreateEventDto) {
+  async create(ownerId: string, dto: CreateEventDto, options: { skipWelcomeCredits?: boolean } = {}) {
     const firstEvent = await this.usersService.activateOrganizerIfNeeded(ownerId);
-    if (firstEvent) {
+    if (firstEvent && !options.skipWelcomeCredits) {
       // The welcome credits used to be a button people had to find; two organizers got stuck without credits at the
       // publish step. Hand them over with the first draft instead (idempotent: nobody gets them twice).
       const grant = await this.creditsService.claimFreeCredits(ownerId).catch(() => null);

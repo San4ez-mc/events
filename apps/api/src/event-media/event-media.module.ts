@@ -5,5 +5,6 @@ import { EventMediaService } from "./event-media.service";
 @Module({
   controllers: [EventMediaController],
   providers: [EventMediaService],
+  exports: [EventMediaService],
 })
 export class EventMediaModule {}

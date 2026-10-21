@@ -4,6 +4,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 import type { EnvConfig } from "../config/env.validation";
 import { parseDurationToSeconds } from "../common/utils/duration";
+import { CreditsModule } from "../credits/credits.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { TokenService } from "./token.service";
@@ -12,6 +13,7 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
 
 @Module({
   imports: [
+    CreditsModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
