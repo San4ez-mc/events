@@ -6,6 +6,7 @@ import { ApiException } from "../common/exceptions/api.exception";
 import { ResourceNotFoundException } from "../common/exceptions/common-exceptions";
 import { AuditLogService } from "../audit/audit-log.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { buildPublicEventWhere } from "../common/utils/public-event-filters";
 
 @Injectable()
 export class GeographyService {
@@ -20,6 +21,21 @@ export class GeographyService {
       where: { status: "ACTIVE" },
       orderBy: { nameUk: "asc" },
     });
+  }
+
+  async listCitiesWithEvents() {
+    const grouped = await this.prisma.event.groupBy({
+      by: ["cityId"],
+      where: { ...buildPublicEventWhere({ hideTest: true }, new Date()), cityId: { not: null } },
+      _count: { _all: true },
+    });
+    const counts = new Map(grouped.map((g) => [g.cityId, g._count._all]));
+    const cities = await this.prisma.city.findMany({
+      where: { status: "ACTIVE", id: { in: [...counts.keys()].filter((id): id is string => id !== null) } },
+      select: { id: true, slug: true, nameUk: true, nameEn: true },
+      orderBy: { nameUk: "asc" },
+    });
+    return cities.map((c) => ({ ...c, eventsCount: counts.get(c.id) ?? 0 })).sort((a, b) => b.eventsCount - a.eventsCount);
   }
 
   async listCities(params: { regionId?: string; search?: string }) {

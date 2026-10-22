@@ -59,11 +59,12 @@ export async function fetchPublicEvents(params: Record<string, string>): Promise
   return ((await res.json()) as { items: EventCard[] }).items;
 }
 
-/** Cities that currently have at least one upcoming public event — the ones worth a landing page or a footer link. */
+/**
+ * Cities that currently have at least one upcoming public event — the ones worth a landing page or a footer link.
+ * One cached call: the footer renders on every page, and asking the API once per city from the Next server used to trip
+ * the API's own rate limit (the server counts as a single caller), which silently dropped cities from the list.
+ */
 export async function fetchCitiesWithEvents(): Promise<PublicCity[]> {
-  const cities = await fetchCities();
-  const checks = await Promise.all(
-    cities.map(async (city) => ((await fetchPublicEvents({ cityIds: city.id, limit: "1" })).length > 0 ? city : null)),
-  );
-  return checks.filter((c): c is PublicCity => c !== null);
+  const res = await fetch(apiUrl("/api/v1/geography/cities/with-events"), { next: { revalidate: 600 } });
+  return res.ok ? ((await res.json()) as PublicCity[]) : [];
 }

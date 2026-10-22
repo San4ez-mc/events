@@ -26,6 +26,12 @@ export class GeographyController {
     return this.geographyService.listCities(query);
   }
 
+  /** Cities that have at least one upcoming public event, with the count: one query for landing pages and footer links. */
+  @Get("cities/with-events")
+  listCitiesWithEvents() {
+    return this.geographyService.listCitiesWithEvents();
+  }
+
   @Get("cities/:slug")
   getCity(@Param("slug") slug: string) {
     return this.geographyService.getCityBySlug(slug);
