@@ -1,6 +1,7 @@
 "use client";
 
 import { captureEvent } from "@/lib/product-analytics";
+import { track } from "@/lib/analytics";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -243,13 +244,14 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
             href={event.externalRegistrationUrl}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() =>
+            onClick={() => {
               captureEvent("external_registration_click", {
                 event_id: event.id,
                 category: event.category?.nameUk,
                 city: event.city?.nameUk,
-              })
-            }
+              });
+              track(event.id, "PAYMENT_LINK_CLICK"); // shown to the organizer as "went to tickets"
+            }}
           >
             <Button className="w-full">
               {event.priceType === "PAID"

@@ -245,6 +245,58 @@ export class EventsService {
     };
   }
 
+  /**
+   * The organizer's "how is it doing" numbers for every event they run, in one query set (the "My events" tab shows them
+   * under each card). Lifetime totals. "People" are distinct signed-in users or anonymous sessions, so one person who
+   * scrolled past the card five times counts once; `impressions`/`views` are the raw counts.
+   */
+  async mineAnalytics(userId: string) {
+    const events = await this.prisma.event.findMany({ where: { ownerId: userId, status: { not: "DRAFT" } }, select: { id: true } });
+    const ids = events.map((e) => e.id);
+    if (ids.length === 0) return [];
+
+    const [daily, people, interactions, regs] = await Promise.all([
+      this.prisma.eventDailyStat.findMany({ where: { eventId: { in: ids } } }),
+      this.prisma.$queryRaw<{ eventId: string; seen: bigint; opened: bigint }[]>`
+        SELECT "eventId",
+          COUNT(DISTINCT COALESCE("userId"::text, "sessionId")) FILTER (WHERE action = 'IMPRESSION') AS seen,
+          COUNT(DISTINCT COALESCE("userId"::text, "sessionId")) FILTER (WHERE action = 'VIEW') AS opened
+        FROM event_analytics_events
+        WHERE "eventId" = ANY(${ids}::uuid[])
+        GROUP BY "eventId"`,
+      this.prisma.eventInteraction.groupBy({ by: ["eventId", "interaction"], where: { eventId: { in: ids } }, _count: { _all: true } }),
+      this.prisma.registration.groupBy({ by: ["eventId", "status"], where: { eventId: { in: ids } }, _count: { _all: true } }),
+    ]);
+
+    return ids.map((eventId) => {
+      const rows = daily.filter((r) => r.eventId === eventId);
+      const sum = (pick: (r: (typeof rows)[number]) => number) => rows.reduce((a, r) => a + pick(r), 0);
+      const sources: Record<string, number> = {};
+      for (const r of rows) for (const [k, v] of Object.entries(r.viewsBySource as Record<string, number>)) sources[k] = (sources[k] ?? 0) + v;
+      const p = people.find((x) => x.eventId === eventId);
+      const seen = Number(p?.seen ?? 0);
+      const opened = Number(p?.opened ?? 0);
+      const mine = regs.filter((r) => r.eventId === eventId);
+      return {
+        eventId,
+        impressions: sum((r) => r.impressions),
+        peopleSeen: seen,
+        views: sum((r) => r.views),
+        peopleOpened: opened,
+        viewsFromSwipe: sources.SWIPE ?? 0,
+        viewsFromSearch: sources.SEARCH ?? 0,
+        viewsDirect: (sources.DIRECT ?? 0) + (sources.THREADS ?? 0),
+        passes: interactions.find((i) => i.eventId === eventId && i.interaction === "PASS")?._count._all ?? 0,
+        saves: sum((r) => r.saves),
+        shares: sum((r) => r.shares),
+        ticketClicks: sum((r) => r.paymentClicks),
+        registrations: mine.filter((r) => (ACTIVE_REGISTRATION_STATUSES as readonly string[]).includes(r.status)).reduce((a, r) => a + r._count._all, 0),
+        confirmed: mine.find((r) => r.status === "CONFIRMED")?._count._all ?? 0,
+        openRatePercent: seen > 0 ? Math.round((opened / seen) * 1000) / 10 : null,
+      };
+    });
+  }
+
   async findByIdForOwner(eventId: string, userId: string) {
     await this.getOwnedEvent(eventId, userId);
     // Re-fetch with the same relations the wizard/edit UI needs, rather than

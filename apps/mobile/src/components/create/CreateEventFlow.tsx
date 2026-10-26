@@ -302,6 +302,10 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   const [seriesCreated, setSeriesCreated] = useState(false);
   const [outcome, setOutcome] = useState<null | "PUBLISHED" | "PENDING_MODERATION" | "REJECTED">(null);
   const [publishedAlready, setPublishedAlready] = useState(false);
+  // A finished / cancelled / archived / rejected event can't be published or changed any more: the way forward is a copy.
+  const [lockedStatus, setLockedStatus] = useState<"COMPLETED" | "CANCELLED" | "ARCHIVED" | "REJECTED" | null>(null);
+  // Held for moderation: changes are saved as they are made, there is no second "publish" for it.
+  const [heldForReview, setHeldForReview] = useState(false);
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
   const name = (n: Named) => (locale === "uk" ? n.nameUk : (n.nameEn ?? n.nameUk));
 
@@ -348,6 +352,8 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
         setEventId(e.id);
         setSlug(e.slug);
         setPublishedAlready(e.status === "PUBLISHED");
+        setHeldForReview(e.status === "PENDING_MODERATION");
+        setLockedStatus(e.status === "COMPLETED" || e.status === "CANCELLED" || e.status === "ARCHIVED" || e.status === "REJECTED" ? e.status : null);
         setMedia((e.media ?? []) as MediaItem[]);
         setAdditionalCategoriesEnabled((e.additionalCategories ?? []).length > 0);
         setForm({
@@ -666,6 +672,20 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
     }
   }
 
+  /** Copies a finished event into a new draft (same content, nothing published) and opens it for a new date. */
+  async function duplicateAsNew() {
+    if (!editEventId) return;
+    setBusy(true);
+    try {
+      const created = await authed<{ id: string }>(`/events/${editEventId}/duplicate`, { method: "POST" });
+      router.replace(`/edit/${created.id}`);
+    } catch {
+      setError(t("common.somethingWentWrong"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function reset() {
     setForm({ ...INITIAL, date: addDays(1) });
     setEventId(null);
@@ -715,6 +735,22 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
             <Button title={t("create.shareEvent")} variant="secondary" onPress={() => void Share.share({ message: `${form.title}\n${API_URL}/events/${slug}?utm_source=app_share&utm_medium=publish` }).catch(() => {})} />
           )}
           <Button title={t("create.createAnother")} variant="secondary" onPress={reset} />
+        </View>
+      </View>
+    );
+  }
+
+  if (lockedStatus) {
+    return (
+      <View style={styles.flex}>
+        <ScreenHeader title={t("nav.create")} subtitle={t("create.subtitle")} icon="add-circle" />
+        <View style={styles.center}>
+          <Ionicons name="time-outline" size={64} color={colors.muted} />
+          <Text style={styles.doneText}>{t(`create.locked.${lockedStatus}.title`)}</Text>
+          <Text style={styles.muted}>{t(`create.locked.${lockedStatus}.text`)}</Text>
+          {error && <Text style={styles.error}>{error}</Text>}
+          <Button title={t("create.duplicateAsNew")} onPress={() => void duplicateAsNew()} loading={busy} />
+          <Button title={t("create.back")} variant="secondary" onPress={() => router.back()} />
         </View>
       </View>
     );
@@ -1191,7 +1227,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
           {step > 0 && <Button title={t("create.back")} variant="secondary" onPress={() => setStep((s) => s - 1)} style={{ flex: 1 }} />}
           {step < STEPS - 1 ? (
             <Button title={t("create.next")} onPress={() => void next()} loading={busy} style={{ flex: 2 }} />
-          ) : publishedAlready ? (
+          ) : publishedAlready || heldForReview ? (
             <Button title={t("common.save")} onPress={() => (slug ? router.replace(`/event/${slug}`) : router.back())} style={{ flex: 2 }} />
           ) : (
             <Button title={t("events.wizard.publish")} onPress={() => void publish()} loading={busy} style={{ flex: 2 }} />

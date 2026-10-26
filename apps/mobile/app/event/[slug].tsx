@@ -702,6 +702,7 @@ export default function EventDetailScreen() {
             title={event.priceType === "PAID" ? t("registration.externalBuy") : t("registration.externalRegister")}
             onPress={() => {
               captureEvent("external_registration_click", { event_id: event.id, category: event.category?.nameUk, city: event.city?.nameUk });
+              track(event.id, "PAYMENT_LINK_CLICK"); // counted in the organizer's statistics ("went to tickets")
               void Linking.openURL(url);
             }}
           />

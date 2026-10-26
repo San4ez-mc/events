@@ -5,7 +5,7 @@ import { useTranslations } from "../../src/lib/locale-context";
 import { usePushNotificationRegistration } from "../../src/lib/push-notifications";
 import { useColors } from "../../src/lib/theme";
 
-/** §64 — Expo Router bottom tabs: Discover/Search/Create/Notifications/Profile (My Events lives under Profile). Everything here requires auth. */
+/** §64 — Expo Router bottom tabs: Discover/Search/Create/Notifications/Profile ("My events" — saved + created with analytics — is the 4th tab). Everything here requires auth. */
 export default function TabsLayout() {
   const colors = useColors();
   const { user, isLoading } = useAuth();
@@ -48,8 +48,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="saved"
         options={{
-          title: t("myEvents.saved"),
-          tabBarIcon: ({ color, size }) => <Ionicons name="heart" color={color} size={size} />,
+          title: t("nav.myEvents"),
+          tabBarIcon: ({ color, size }) => <Ionicons name="calendar" color={color} size={size} />,
         }}
       />
       <Tabs.Screen

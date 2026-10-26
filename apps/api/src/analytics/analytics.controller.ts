@@ -26,12 +26,17 @@ import { TokenService } from "../auth/token.service";
 import { AnalyticsService } from "./analytics.service";
 import { FeatureFlagsService } from "../flags/feature-flags.service";
 
-/** Actions a client may report itself; SAVE / REGISTERED / CANCELLED / PAYMENT_LINK_CLICK are recorded server-side. */
+/**
+ * Actions a client may report itself; SAVE / REGISTERED / CANCELLED are recorded server-side. PAYMENT_LINK_CLICK is
+ * recorded server-side for events registered on Kiro; for events whose tickets/registration live on the organizer's
+ * site (EXTERNAL) only the client knows the button was tapped, so it reports it ("went to the organizer's page").
+ */
 const CLIENT_ACTIONS = [
   "IMPRESSION",
   "VIEW",
   "SHARE",
   "REGISTRATION_STARTED",
+  "PAYMENT_LINK_CLICK",
 ] as const;
 const SOURCES = [
   "SWIPE",

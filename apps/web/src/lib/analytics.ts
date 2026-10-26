@@ -2,7 +2,7 @@ import { captureEvent } from "@/lib/product-analytics";
 /** §45 — fire-and-forget event analytics. Never throws and never blocks the UI. */
 
 export type TrackedAction =
-  "IMPRESSION" | "VIEW" | "SHARE" | "REGISTRATION_STARTED";
+  "IMPRESSION" | "VIEW" | "SHARE" | "REGISTRATION_STARTED" | "PAYMENT_LINK_CLICK";
 export type TrafficSource =
   "SWIPE" | "SEARCH" | "DIRECT" | "PROFILE" | "THREADS" | "OTHER";
 

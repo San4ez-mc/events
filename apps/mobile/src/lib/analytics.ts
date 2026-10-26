@@ -2,7 +2,7 @@
 import { API_URL } from "./api-client";
 import { captureEvent } from "./product-analytics";
 
-export type TrackedAction = "IMPRESSION" | "VIEW" | "SHARE" | "REGISTRATION_STARTED";
+export type TrackedAction = "IMPRESSION" | "VIEW" | "SHARE" | "REGISTRATION_STARTED" | "PAYMENT_LINK_CLICK";
 export type TrafficSource = "SWIPE" | "SEARCH" | "DIRECT" | "PROFILE" | "THREADS" | "OTHER";
 
 // One id per app launch, so the funnel can be de-duplicated per session without storing anything.

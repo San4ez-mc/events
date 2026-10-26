@@ -1235,7 +1235,26 @@
     "packages": "Participation packages",
     "packagesHint": "Optional: several participation options with different prices (e.g. “Standard”, “VIP”).",
     "packageName": "Package name",
-    "addPackage": "Add package"
+    "addPackage": "Add package",
+    "duplicateAsNew": "Create a copy with a new date",
+    "locked": {
+      "COMPLETED": {
+        "title": "This event is over",
+        "text": "A past event can't be changed. Create a copy: everything is carried over, you only pick a new date."
+      },
+      "CANCELLED": {
+        "title": "This event was cancelled",
+        "text": "A cancelled event can't be changed. Create a copy and pick a new date."
+      },
+      "ARCHIVED": {
+        "title": "This event is archived",
+        "text": "An archived event can't be changed. Create a copy with a new date."
+      },
+      "REJECTED": {
+        "title": "Rejected by moderation",
+        "text": "This event can't be published. Create a copy, fix what was flagged and publish it as a new one."
+      }
+    }
   },
   "myEvents": {
     "upcoming": "Upcoming",
@@ -1253,7 +1272,30 @@
     },
     "open": "My events",
     "openHint": "Upcoming, pending, saved, past",
-    "edit": "Edit"
+    "edit": "Edit",
+    "status": {
+      "DRAFT": "Draft",
+      "PENDING_MODERATION": "In moderation",
+      "PUBLISHED": "Published",
+      "COMPLETED": "Finished",
+      "CANCELLED": "Cancelled",
+      "REJECTED": "Rejected",
+      "ARCHIVED": "Archived"
+    },
+    "stats": {
+      "seen": "Saw your event",
+      "opened": "Opened details",
+      "passed": "Passed",
+      "saved": "Saved",
+      "shared": "Shared",
+      "registered": "Registrations",
+      "tickets": "Went to tickets",
+      "openRate": "{percent}% of the people who saw it opened the details",
+      "details": "Statistics & attendees",
+      "help": "\"Saw\" is how many different people saw the card in the feed. \"Opened\" is how many swiped right or tapped to read the details. \"Passed\" is how many swiped left."
+    },
+    "continueDraft": "Continue creating",
+    "registrations": "My registrations & tickets"
   },
   "chat": {
     "title": "Event chat",

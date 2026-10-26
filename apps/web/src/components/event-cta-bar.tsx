@@ -1,6 +1,7 @@
 "use client";
 
 import { captureEvent } from "@/lib/product-analytics";
+import { track } from "@/lib/analytics";
 
 /**
  * The main action, always within reach on phones and tablets: price on the left, the button on the right, floating
@@ -35,7 +36,10 @@ export function EventCtaBar({
             href={externalUrl}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => captureEvent("external_registration_click", { event_id: eventId })}
+            onClick={() => {
+              captureEvent("external_registration_click", { event_id: eventId });
+              track(eventId, "PAYMENT_LINK_CLICK"); // shown to the organizer as "went to tickets"
+            }}
             className={classes}
           >
             {label}

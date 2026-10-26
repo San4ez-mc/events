@@ -44,6 +44,12 @@ export class EventsController {
     return this.eventsService.findMine(user.id, query);
   }
 
+  /** One row of lifetime numbers per event I organize (seen / opened / passed / saved / shared / registered...). */
+  @Get("mine/analytics")
+  mineAnalytics(@CurrentUser() user: AuthenticatedUser) {
+    return this.eventsService.mineAnalytics(user.id);
+  }
+
   @Get(":id")
   findOne(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
     return this.eventsService.findByIdForOwner(id, user.id);
