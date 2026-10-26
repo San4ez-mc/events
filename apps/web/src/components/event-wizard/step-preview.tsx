@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
 import { ApiRequestError } from "@/lib/auth-context";
+import { describeApiError } from "@/lib/api-error";
 import { Button } from "@/components/ui/button";
 import type { EventStatus } from "@kiro/types";
 
@@ -58,7 +59,7 @@ export function StepPreview({
     } catch (err) {
       captureEvent("event_publish_failed", { code: err instanceof ApiRequestError ? err.code : "UNKNOWN" });
       if (err instanceof ApiRequestError) {
-        setError({ code: err.code, message: t(`errors.${err.code}`) });
+        setError({ code: err.code, message: describeApiError(err, t) });
       } else {
         setError({ code: "UNKNOWN", message: t("common.somethingWentWrong") });
       }

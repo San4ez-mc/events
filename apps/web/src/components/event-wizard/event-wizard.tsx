@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
 import { ApiRequestError } from "@/lib/auth-context";
+import { describeApiError } from "@/lib/api-error";
 import type { EventDetail, EventMedia } from "@/lib/event-types";
 import type { EventStatus } from "@kiro/types";
 import { Button } from "@/components/ui/button";
@@ -188,6 +189,8 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
   }, []);
 
   async function persist(): Promise<boolean> {
+    // Which block was being saved when a request failed, to name list-type fields the API reports by index.
+    let section: string | null = null;
     setError(null);
     setSaving(true);
     try {
@@ -257,6 +260,7 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
               : undefined,
           sortOrder,
         }));
+      section = t("events.wizard.questions");
       const fieldsRes = await fetch(
         `/api/v1/events/${id}/registrations/fields`,
         {
@@ -272,6 +276,7 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
       );
       if (!fieldsRes.ok) throw new ApiRequestError(await fieldsRes.json());
 
+      section = t("events.wizard.tiers");
       const tiersRes = await fetch(`/api/v1/events/${id}/price-options`, {
         method: "PUT",
         headers: {
@@ -293,6 +298,7 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
       });
       if (!tiersRes.ok) throw new ApiRequestError(await tiersRes.json());
 
+      section = t("events.wizard.faq");
       const faqRes = await fetch(`/api/v1/events/${id}/faq`, {
         method: "PUT",
         headers: {
@@ -307,6 +313,7 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
       });
       if (!faqRes.ok) throw new ApiRequestError(await faqRes.json());
 
+      section = t("events.wizard.additionalCategories");
       const categoriesRes = await fetch(`/api/v1/events/${id}/categories`, {
         method: "PUT",
         headers: {
@@ -322,7 +329,7 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
     } catch (err) {
       setError(
         err instanceof ApiRequestError
-          ? t(`errors.${err.code}`)
+          ? describeApiError(err, t, section ?? undefined)
           : t("common.somethingWentWrong"),
       );
       return false;

@@ -629,7 +629,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
         setMedia((m) => [...m, uploaded]);
       }
     } catch (err) {
-      setError(err instanceof ApiRequestError ? t(`errors.${err.code}`) : t("common.somethingWentWrong"));
+      setError(err instanceof ApiRequestError ? describePublishError(err, t) : t("common.somethingWentWrong"));
     } finally {
       setBusy(false);
     }
