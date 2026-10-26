@@ -228,5 +228,21 @@ describe("Events (e2e)", () => {
         .expect(200);
       expect(new Date(res.body.startsAt).toISOString()).toBe(newDate);
     });
+
+    it("accepts a form that resends the unchanged date, without notifyParticipants", async () => {
+      const startsAt = new Date(Date.now() + 86_400_000).toISOString();
+      const created = await request(app.getHttpServer())
+        .post("/api/v1/events")
+        .set("Authorization", `Bearer ${ownerToken}`)
+        .send({ title: "Published Event Resent" })
+        .expect(201);
+      await prisma.event.update({ where: { id: created.body.id }, data: { status: "PUBLISHED", startsAt } });
+
+      await request(app.getHttpServer())
+        .patch(`/api/v1/events/${created.body.id}`)
+        .set("Authorization", `Bearer ${ownerToken}`)
+        .send({ startsAt, description: "Updated description" })
+        .expect(200);
+    });
   });
 });

@@ -11,9 +11,10 @@ describe("EngagementScheduler", () => {
   };
   const notifications = { existsForPayload: jest.fn(), create: jest.fn() };
   const guest = { sendDue: jest.fn() };
-  const mail = { sendDraftReminderEmail: jest.fn() };
+  const mail = { sendDraftReminderEmail: jest.fn(), sendCityDigestEmail: jest.fn() };
+  const cityAlerts = { sendWeeklyDigests: jest.fn(), sendEventsAppeared: jest.fn() };
   const config = { get: jest.fn(() => "https://kiro.test/") };
-  const scheduler = new EngagementScheduler(prisma as never, notifications as never, guest as never, mail as never, config as never);
+  const scheduler = new EngagementScheduler(prisma as never, notifications as never, guest as never, mail as never, config as never, cityAlerts as never);
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -21,14 +22,17 @@ describe("EngagementScheduler", () => {
     notifications.create.mockResolvedValue(undefined);
     prisma.userDevice.count.mockResolvedValue(1);
     mail.sendDraftReminderEmail.mockResolvedValue(undefined);
+    mail.sendCityDigestEmail.mockResolvedValue(undefined);
+    cityAlerts.sendWeeklyDigests.mockResolvedValue(0);
+    cityAlerts.sendEventsAppeared.mockResolvedValue(0);
     config.get.mockReturnValue("https://kiro.test/");
   });
 
   describe("weekend digest", () => {
     const events = [
-      { id: "e1", title: "Концерт", cityId: "kyiv", city: { nameUk: "Київ" } },
-      { id: "e2", title: "Стендап", cityId: "kyiv", city: { nameUk: "Київ" } },
-      { id: "e3", title: "Виставка", cityId: "lviv", city: { nameUk: "Львів" } },
+      { id: "e1", title: "Концерт", slug: "kontsert", cityId: "kyiv", city: { nameUk: "Київ", slug: "kyiv" } },
+      { id: "e2", title: "Стендап", slug: "stendap", cityId: "kyiv", city: { nameUk: "Київ", slug: "kyiv" } },
+      { id: "e3", title: "Виставка", slug: "vystavka", cityId: "lviv", city: { nameUk: "Львів", slug: "lviv" } },
     ];
 
     beforeEach(() => {
@@ -37,7 +41,7 @@ describe("EngagementScheduler", () => {
     });
 
     it("names the user's own city and leads with the most-viewed events", async () => {
-      prisma.user.findMany.mockResolvedValue([{ id: "u1", preferences: { preferredCityId: "kyiv" } }]);
+      prisma.user.findMany.mockResolvedValue([{ id: "u1", email: "u1@gmail.com", _count: { devices: 1 }, preferences: { preferredCityId: "kyiv" } }]);
       await scheduler.weekendDigest();
       expect(notifications.create).toHaveBeenCalledTimes(1);
       expect(notifications.create).toHaveBeenCalledWith(
@@ -47,16 +51,35 @@ describe("EngagementScheduler", () => {
 
     it("covers every city for people without one, and skips a city with nothing on", async () => {
       prisma.user.findMany.mockResolvedValue([
-        { id: "u2", preferences: null },
-        { id: "u3", preferences: { preferredCityId: "odesa" } },
+        { id: "u2", email: "u2@gmail.com", _count: { devices: 1 }, preferences: null },
+        { id: "u3", email: "u3@gmail.com", _count: { devices: 1 }, preferences: { preferredCityId: "odesa" } },
       ]);
       await scheduler.weekendDigest();
       expect(notifications.create).toHaveBeenCalledTimes(1);
       expect(notifications.create).toHaveBeenCalledWith(expect.objectContaining({ userId: "u2", body: expect.stringMatching(/^3 events this weekend — "Стендап", "Концерт", "Виставка"\.$/) }));
     });
 
+    it("emails the digest to people with no device to push to, and only to them", async () => {
+      prisma.user.findMany.mockResolvedValue([
+        { id: "u1", email: "u1@gmail.com", _count: { devices: 0 }, preferences: { preferredCityId: "kyiv" } },
+        { id: "u2", email: "u2@gmail.com", _count: { devices: 2 }, preferences: { preferredCityId: "kyiv" } },
+      ]);
+      await scheduler.weekendDigest();
+      expect(mail.sendCityDigestEmail).toHaveBeenCalledTimes(1);
+      expect(mail.sendCityDigestEmail).toHaveBeenCalledWith(
+        "u1@gmail.com",
+        expect.objectContaining({ cityName: "Київ", events: [expect.objectContaining({ title: "Стендап" }), expect.objectContaining({ title: "Концерт" })] }),
+      );
+    });
+
+    it("also sends the digest to email-only subscribers", async () => {
+      prisma.user.findMany.mockResolvedValue([]);
+      await scheduler.weekendDigest();
+      expect(cityAlerts.sendWeeklyDigests).toHaveBeenCalledTimes(1);
+    });
+
     it("sends at most one digest per week per person", async () => {
-      prisma.user.findMany.mockResolvedValue([{ id: "u1", preferences: null }]);
+      prisma.user.findMany.mockResolvedValue([{ id: "u1", email: "u1@gmail.com", _count: { devices: 0 }, preferences: null }]);
       notifications.existsForPayload.mockResolvedValue(true);
       await scheduler.weekendDigest();
       expect(notifications.create).not.toHaveBeenCalled();

@@ -1,7 +1,7 @@
 "use client";
 
 import { captureEvent } from "@/lib/product-analytics";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
@@ -130,6 +130,18 @@ function toUpdatePayload(data: WizardData): Record<string, unknown> {
   return payload;
 }
 
+/** Fields whose change on a published event must be confirmed: registered people get notified (mirrors the API). */
+const SIGNIFICANT_FIELDS = ["startsAt", "addressText", "cityId", "districtId", "onlineUrl"] as const;
+
+function changedSignificantFields(next: Record<string, unknown>, saved: Record<string, unknown> | null): boolean {
+  return SIGNIFICANT_FIELDS.some((field) => {
+    const sent = next[field];
+    if (sent === undefined) return false;
+    const before = saved?.[field];
+    return field === "startsAt" && before ? new Date(sent as string).getTime() !== new Date(before as string).getTime() : sent !== before;
+  });
+}
+
 type Step = "basics" | "media" | "datePlace" | "price" | "options" | "preview";
 const STEPS: Step[] = [
   "basics",
@@ -163,6 +175,8 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
     initialEvent ? toWizardData(initialEvent) : EMPTY_WIZARD_DATA,
   );
   const [media, setMedia] = useState<EventMedia[]>(initialEvent?.media ?? []);
+  // What the server holds right now, to tell a real date/place change from a form that resends the same values.
+  const savedPayload = useRef<Record<string, unknown> | null>(initialEvent ? toUpdatePayload(toWizardData(initialEvent)) : null);
   const [stepIndex, setStepIndex] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -205,6 +219,12 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
         router.replace(`/organizer/events/${body.id}/edit`);
       }
 
+      const payload = toUpdatePayload(data);
+      if (status === "PUBLISHED" && changedSignificantFields(payload, savedPayload.current)) {
+        if (!window.confirm(t("events.wizard.confirmNotify"))) return false;
+        payload.notifyParticipants = true;
+      }
+
       const patchRes = await fetch(`/api/v1/events/${id}`, {
         method: "PATCH",
         headers: {
@@ -213,10 +233,11 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
           Authorization: `Bearer ${getAccessToken() ?? ""}`,
         },
         credentials: "include",
-        body: JSON.stringify(toUpdatePayload(data)),
+        body: JSON.stringify(payload),
       });
       const patchBody = await patchRes.json();
       if (!patchRes.ok) throw new ApiRequestError(patchBody);
+      savedPayload.current = payload;
       setSlug((patchBody as EventDetail).slug);
 
       // Custom registration questions are replaced as a whole set (§25).
@@ -316,6 +337,12 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
     if (ok && stepIndex < STEPS.length - 1) setStepIndex((i) => i + 1);
   }
 
+  /** Tabs jump straight to a step (once the event exists), saving what's on the current one first. */
+  async function goTo(index: number) {
+    if (index === stepIndex || !eventId) return;
+    if (await persist()) setStepIndex(index);
+  }
+
   function goBack() {
     setStepIndex((i) => Math.max(0, i - 1));
   }
@@ -324,17 +351,22 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
     <div className="mx-auto max-w-2xl px-4 py-10">
       <ol className="mb-8 flex flex-wrap gap-2 text-xs font-medium">
         {STEPS.map((s, i) => (
-          <li
-            key={s}
-            className={`rounded-full px-3 py-1 ${
-              i === stepIndex
-                ? "accent-gradient text-white"
-                : i < stepIndex
-                  ? "bg-surface text-muted"
-                  : "text-muted"
-            }`}
-          >
-            {t(STEP_LABEL_KEYS[s])}
+          <li key={s}>
+            <button
+              type="button"
+              onClick={() => void goTo(i)}
+              disabled={saving || !eventId}
+              aria-current={i === stepIndex ? "step" : undefined}
+              className={`rounded-full px-3 py-1 ${
+                i === stepIndex
+                  ? "accent-gradient text-white"
+                  : i < stepIndex
+                    ? "bg-surface text-muted"
+                    : "text-muted"
+              }`}
+            >
+              {t(STEP_LABEL_KEYS[s])}
+            </button>
           </li>
         ))}
       </ol>

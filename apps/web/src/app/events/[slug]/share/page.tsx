@@ -29,6 +29,13 @@ interface Claim {
 
 const BONUS_CREDITS = SYSTEM_SETTING_DEFAULTS[SystemSettingKey.REFERRAL_BONUS_CREDITS] as number;
 const VARIANTS = [1, 2, 3] as const;
+/** One tagged link per channel, so analytics can tell which network an organizer's post brought visitors from. */
+const CHANNELS = [
+  { source: "threads", label: "Threads" },
+  { source: "instagram", label: "Instagram" },
+  { source: "telegram", label: "Telegram" },
+  { source: "facebook", label: "Facebook" },
+] as const;
 
 /**
  * Story / post pictures for an event (the same three designs as the app), reachable straight from publishing and from
@@ -45,7 +52,7 @@ export default function ShareEventPage() {
   const [variant, setVariant] = useState<(typeof VARIANTS)[number]>(1);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [claims, setClaims] = useState<Claim[] | null>(null);
@@ -113,11 +120,14 @@ export default function ShareEventPage() {
     }
   }
 
-  async function copyLink() {
+  const linkFor = (source: string) => `${window.location.origin}/events/${event!.slug}?utm_source=${source}&utm_medium=social`;
+
+  async function copyLink(source: string) {
     try {
-      await navigator.clipboard.writeText(eventUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(linkFor(source));
+      captureEvent("share_link_copied", { event_id: event!.id, channel: source });
+      setCopied(source);
+      setTimeout(() => setCopied(null), 2000);
     } catch {
       // clipboard blocked — the link is shown on screen anyway
     }
@@ -191,9 +201,14 @@ export default function ShareEventPage() {
           <Button loading={busy} onClick={() => void shareOrDownload()}>
             {t("referral.download")} / {t("events.actions.share")}
           </Button>
-          <Button variant="secondary" onClick={() => void copyLink()}>
-            {copied ? t("events.actions.linkCopied") : t("events.actions.share")} 🔗
-          </Button>
+        </div>
+        <p className="text-xs font-semibold text-muted">{t("referral.copyLinkFor")}</p>
+        <div className="flex flex-wrap gap-2">
+          {CHANNELS.map((c) => (
+            <Button key={c.source} variant="secondary" onClick={() => void copyLink(c.source)}>
+              {copied === c.source ? t("events.actions.linkCopied") : `🔗 ${c.label}`}
+            </Button>
+          ))}
         </div>
         <p className="break-all text-xs text-muted">{eventUrl}</p>
         {message && <p role="status" className="text-sm text-muted">{message}</p>}

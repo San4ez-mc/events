@@ -243,7 +243,8 @@
       "regExternal": "On the organizer's site",
       "externalUrl": "Registration / tickets link",
       "externalHint": "People tap “Register” and are sent to this link. Capacity is unlimited — Kiro shows ∞.",
-      "priceMax": "Price up to (optional, for a range)"
+      "priceMax": "Price up to (optional, for a range)",
+      "confirmNotify": "You changed the date or place. Everyone who has already registered will be notified. Continue?"
     },
     "actions": {
       "save": "Save",
@@ -337,7 +338,8 @@
     "publishedBanner": "Your event is live! Below are ready-made story and post pictures: share them on social media to bring more people.",
     "shareFailed": "Couldn't prepare the image. Please try again.",
     "loginToClaim": "Sign in to earn credits for your post",
-    "ownerHint": "Your event"
+    "ownerHint": "Your event",
+    "copyLinkFor": "Copy the link for your post:"
   },
   "pricing": {
     "heroTitle": "Pricing",
@@ -1521,5 +1523,16 @@
     "empty": "Nothing here yet. Create your own for free and people in your city will see it.",
     "openSwipe": "Swipe on Kiro",
     "footerTitle": "Events"
+  },
+  "cityAlert": {
+    "digestTitle": "What's on this weekend: {city}",
+    "digestHint": "A weekly pick of events by email, every Thursday. No account needed, unsubscribe in one click.",
+    "noEventsTitle": "We'll tell you when this city gets events",
+    "noEventsHint": "Leave your email and we'll write once, as soon as there's something to go to.",
+    "city": "Choose a city",
+    "subscribe": "Subscribe",
+    "doneDigest": "Done! The first pick arrives next Thursday.",
+    "doneNoEvents": "Done! We'll write as soon as this city has events.",
+    "createPrompt": "Organizing something in this city? Be the first."
   }
 }

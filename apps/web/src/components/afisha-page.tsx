@@ -9,6 +9,7 @@ import { AFISHA_FILTERS, dateWindow, type AfishaFilter } from "@/lib/afisha";
 import { EVENT_TZ, formatCurrency, formatPriceAmount } from "@/lib/format";
 import { fetchCategoriesFlat, fetchCities, fetchPublicEvents, type PublicCategory, type PublicCity } from "@/lib/server-api";
 import type { EventCard } from "@/lib/event-types";
+import { CityAlertForm } from "@/components/city-alert-form";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://kiro.fineko.space";
 /** Category landing pages worth linking from every city page (slugs from the categories table). */
@@ -102,6 +103,9 @@ export async function AfishaPage({ citySlug, filterSlug }: { citySlug: string; f
           <Link href="/organizer/events/new" className="accent-gradient mt-4 inline-flex min-h-11 items-center rounded-full px-5 text-[15px] font-semibold text-white">
             {t("nav.create")}
           </Link>
+          <div className="mt-6 text-left">
+            <CityAlertForm kind="NO_EVENTS" cityId={r.city.id} cityName={name(r.city, locale)} />
+          </div>
         </div>
       ) : (
         <ul className="mt-5 flex flex-col gap-2.5">
@@ -111,6 +115,12 @@ export async function AfishaPage({ citySlug, filterSlug }: { citySlug: string; f
             </li>
           ))}
         </ul>
+      )}
+
+      {r.events.length > 0 && (
+        <div className="mt-8">
+          <CityAlertForm kind="DIGEST" cityId={r.city.id} cityName={name(r.city, locale)} showCreate />
+        </div>
       )}
 
       <div className="mt-8 flex flex-wrap items-center gap-3">

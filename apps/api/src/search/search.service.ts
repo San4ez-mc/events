@@ -6,6 +6,7 @@ import { buildPublicEventWhere } from "../common/utils/public-event-filters";
 import { EVENT_CARD_INCLUDE, type EventCard } from "../common/utils/event-card-include";
 import { SocialProofService, type SocialProof } from "../common/social-proof/social-proof.service";
 import { decodeScoredCursor, encodeScoredCursor, sliceAfterScoredCursor } from "../common/utils/scored-cursor";
+import { fixKeyboardLayout } from "../common/utils/keyboard-layout";
 import type { SearchQueryDto } from "./dto/search-query.dto";
 
 /** Same safety valve as discovery — see DiscoveryService for rationale. */
@@ -32,6 +33,14 @@ export class SearchService {
    * "score" is trigram relevance instead of the rule-based feed score.
    */
   async search(query: SearchQueryDto): Promise<CursorPage<EventCard & { social: SocialProof }>> {
+    const page = await this.runSearch(query);
+    if (page.items.length > 0 || query.cursor) return page;
+    // Typed with the English keyboard layout by mistake ("nthyj" for «терно»): retry once as Ukrainian.
+    const fixed = fixKeyboardLayout(query.q);
+    return fixed ? this.runSearch({ ...query, q: fixed }) : page;
+  }
+
+  private async runSearch(query: SearchQueryDto): Promise<CursorPage<EventCard & { social: SocialProof }>> {
     const limit = Math.min(query.limit ?? PAGINATION.defaultLimit, PAGINATION.maxLimit);
     const cursor = query.cursor ? decodeScoredCursor(query.cursor) : null;
     const now = new Date();

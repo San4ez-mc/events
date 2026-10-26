@@ -206,6 +206,9 @@ export function EventPage({
         </div>
       )}
 
+      {/* Above the (mobile: bottom-of-page) register block, so a visitor who isn't ready to commit still sees it. */}
+      {event.status === "PUBLISHED" && event.startsAt && <GuestReminder eventId={event.id} startsAt={event.startsAt} />}
+
       <div id="register" className="order-last mt-8 scroll-mt-24 lg:order-none lg:mt-6">
         <RegistrationWidget event={event} />
 
@@ -226,8 +229,6 @@ export function EventPage({
             {t("events.page.paidDisclaimer")}
           </p>
         )}
-
-        {event.status === "PUBLISHED" && event.startsAt && <GuestReminder eventId={event.id} startsAt={event.startsAt} />}
       </div>
 
       {event.description && (

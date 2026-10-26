@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState, ScreenHeader } from "@/components/ui/screen-header";
 import { IoSadOutline, IoSearch, IoSparkles } from "react-icons/io5";
 import { EventResultRow } from "./event-result-row";
+import { CityAlertForm } from "@/components/city-alert-form";
 
 /** UX §9/§63 — search is public, list-style, no auth required. */
 export function SearchPageContent() {
@@ -78,6 +79,7 @@ export function SearchPageContent() {
       {!loading && searched && displayedItems.length === 0 && (
         <>
           <EmptyState Icon={IoSadOutline} text={t("screens.searchNothing")} />
+          <CityAlertForm kind="NO_EVENTS" query={trimmedQuery} showCreate />
           {suggestions && suggestions.length > 0 && (
             <div className="flex flex-col gap-2.5">
               <p className="text-sm text-muted">{t("search.nothingTry")}</p>

@@ -361,6 +361,8 @@ model City {
   events      Event[]
   preferredBy UserPreferences[]
 
+  alerts      CityAlert[]
+
   @@index([regionId])
   @@map("cities")
 }
@@ -1729,4 +1731,31 @@ model EventReminderRequest {
   @@unique([eventId, email])
   @@index([sentAt, createdAt])
   @@map("event_reminder_requests")
+}
+
+enum CityAlertKind {
+  /// "Send me what's on in this city every week" (Thursday email).
+  DIGEST
+  /// "I searched for this and there was nothing: tell me when something appears" (sent once).
+  NO_EVENTS
+}
+
+/// An email address (no account needed) that asked to hear about a city: a weekly digest, or a one-off note when the
+/// first events show up where the person searched and found nothing. `token` is the unsubscribe handle in every email.
+model CityAlert {
+  id     String        @id @default(uuid()) @db.Uuid
+  email  String
+  kind   CityAlertKind
+  cityId String?       @db.Uuid
+  city   City?         @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  /// What they typed when nothing was found (NO_EVENTS), kept for demand reporting.
+  query  String?
+  token  String        @unique
+
+  lastSentAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@unique([email, kind, cityId])
+  @@index([kind, lastSentAt])
+  @@map("city_alerts")
 }

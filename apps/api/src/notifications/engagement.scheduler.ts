@@ -7,6 +7,7 @@ import { MailService } from "../mail/mail.service";
 import { kyivDayStart, kyivIsoWeek, kyivWeekday } from "../common/utils/kyiv-time";
 import { NotificationsService } from "./notifications.service";
 import { EventRemindersService } from "./event-reminders.service";
+import { CityAlertsService } from "./city-alerts.service";
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -31,6 +32,7 @@ export class EngagementScheduler {
     private readonly guestReminders: EventRemindersService,
     private readonly mail: MailService,
     private readonly config: ConfigService<EnvConfig, true>,
+    private readonly cityAlerts: CityAlertsService,
   ) {}
 
   @Cron("*/15 * * * *")
@@ -40,6 +42,7 @@ export class EngagementScheduler {
       this.sendDraftReminders().catch((err) => this.logger.error("sendDraftReminders failed", err)),
       this.sendVerifyEmailNudges().catch((err) => this.logger.error("sendVerifyEmailNudges failed", err)),
       this.guestReminders.sendDue().catch((err) => this.logger.error("guest reminders failed", err)),
+      this.cityAlerts.sendEventsAppeared().catch((err) => this.logger.error("city alerts failed", err)),
     ]);
   }
 
@@ -146,9 +149,12 @@ export class EngagementScheduler {
     const to = kyivDayStart(now, daysToFriday + 3);
     const week = kyivIsoWeek(from);
 
+    // Email-only subscribers get their own digest regardless of what the in-app audience looks like.
+    await this.cityAlerts.sendWeeklyDigests(from, to).catch((err) => this.logger.error("city digests failed", err));
+
     const events = await this.prisma.event.findMany({
       where: { status: "PUBLISHED", isTest: false, visibility: "PUBLIC", startsAt: { gte: from, lt: to } },
-      select: { id: true, title: true, cityId: true, city: { select: { nameUk: true } } },
+      select: { id: true, title: true, slug: true, cityId: true, city: { select: { nameUk: true, slug: true } } },
     });
     if (events.length === 0) return;
 
@@ -159,8 +165,14 @@ export class EngagementScheduler {
 
     const users = await this.prisma.user.findMany({
       where: { ...REAL_USER, OR: [{ preferences: { is: null } }, { preferences: { is: { allowSubscriptionNotifications: true } } }] },
-      select: { id: true, preferences: { select: { preferredCityId: true } } },
+      select: {
+        id: true,
+        email: true,
+        preferences: { select: { preferredCityId: true } },
+        _count: { select: { devices: { where: { active: true } } } },
+      },
     });
+    const base = this.config.get("APP_URL", { infer: true }).replace(/\/$/, "");
     for (const user of users) {
       if (await this.notifications.existsForPayload(user.id, "WEEKLY_DIGEST", "week", week)) continue;
       const cityId = user.preferences?.preferredCityId ?? null;
@@ -178,6 +190,20 @@ export class EngagementScheduler {
           payloadJson: { week, screen: "discover" },
         })
         .catch(() => undefined);
+
+      // Nobody to push to (no app / no browser subscription): the same digest goes by email instead.
+      if (user._count.devices === 0 && user.email) {
+        await this.mail
+          .sendCityDigestEmail(user.email, {
+            cityName: city ?? null,
+            events: mine.slice(0, 6).map((e) => ({ title: e.title, url: `${base}/events/${encodeURIComponent(e.slug)}?utm_source=digest&utm_medium=email` })),
+            moreUrl: `${base}/afisha/${mine[0]!.city?.slug ?? "kyiv"}/weekend?utm_source=digest&utm_medium=email`,
+            createUrl: `${base}/organizer/events/new?utm_source=digest&utm_medium=email`,
+            // Account holders switch it off in their profile ("Subscriptions" notifications).
+            unsubscribeUrl: `${base}/profile`,
+          })
+          .catch((err) => this.logger.warn(`Digest email to user ${user.id} failed: ${(err as Error).message}`));
+      }
     }
   }
 }

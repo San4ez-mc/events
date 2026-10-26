@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { IoDesktopOutline, IoGlobeOutline, IoMoon, IoSunny } from "react-icons/io5";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
@@ -13,7 +14,25 @@ export function SiteHeader() {
   const { user, logout, isLoading } = useAuth();
   const { t, locale, setLocale } = useTranslations();
   const { theme, setTheme } = useTheme();
-  const [menuOpen, setMenuOpen] = useState(false);
+  // Open "on" a path: navigating anywhere (menu link, bottom nav, back button) leaves that path and so closes it.
+  const pathname = usePathname();
+  const [openAt, setOpenAt] = useState<string | null>(null);
+  const menuOpen = openAt === pathname;
+  const setMenuOpen = (next: boolean | ((open: boolean) => boolean)) =>
+    setOpenAt((current) => ((typeof next === "function" ? next(current === pathname) : next) ? pathname : null));
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (e: KeyboardEvent | MouseEvent) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !(e.target as Element).closest?.("[data-user-menu]")) setOpenAt(null);
+    };
+    document.addEventListener("keydown", close);
+    document.addEventListener("click", close);
+    return () => {
+      document.removeEventListener("keydown", close);
+      document.removeEventListener("click", close);
+    };
+  }, [menuOpen]);
   const navItems = useNavItems();
 
   return (
@@ -95,7 +114,7 @@ export function SiteHeader() {
           )}
 
           {!isLoading && user && (
-            <div className="relative">
+            <div className="relative" data-user-menu>
               <button
                 type="button"
                 onClick={() => setMenuOpen((open) => !open)}

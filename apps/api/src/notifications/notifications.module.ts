@@ -7,10 +7,12 @@ import { EventLifecycleScheduler } from "./event-lifecycle.scheduler";
 import { EngagementScheduler } from "./engagement.scheduler";
 import { EventRemindersController } from "./event-reminders.controller";
 import { EventRemindersService } from "./event-reminders.service";
+import { CityAlertsController } from "./city-alerts.controller";
+import { CityAlertsService } from "./city-alerts.service";
 
 @Module({
-  controllers: [NotificationsController, EventRemindersController],
-  providers: [NotificationsService, ExpoPushService, WebPushService, EventLifecycleScheduler, EngagementScheduler, EventRemindersService],
-  exports: [NotificationsService],
+  controllers: [NotificationsController, EventRemindersController, CityAlertsController],
+  providers: [NotificationsService, ExpoPushService, WebPushService, EventLifecycleScheduler, EngagementScheduler, EventRemindersService, CityAlertsService],
+  exports: [NotificationsService, CityAlertsService],
 })
 export class NotificationsModule {}

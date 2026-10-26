@@ -97,9 +97,15 @@ export class EventsService {
 
   private async applyUpdate(event: Event, dto: UpdateEventDto) {
     const eventId = event.id;
-    const touchesSignificantField = SIGNIFICANT_PUBLISHED_FIELDS.some(
-      (field) => (dto as Record<string, unknown>)[field] !== undefined,
-    );
+    // Only a value that actually differs counts: edit forms resend the whole event, and an unchanged date or
+    // address must neither be refused on a published event nor notify participants.
+    const touchesSignificantField = SIGNIFICANT_PUBLISHED_FIELDS.some((field) => {
+      const sent = (dto as Record<string, unknown>)[field];
+      if (sent === undefined) return false;
+      const current = (event as Record<string, unknown>)[field];
+      if (field === "startsAt") return !current || new Date(sent as string).getTime() !== (current as Date).getTime();
+      return sent !== current;
+    });
     if (event.status === "PUBLISHED") {
       if (touchesSignificantField && !dto.notifyParticipants) {
         throw new ApiException(

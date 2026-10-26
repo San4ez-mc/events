@@ -88,6 +88,35 @@ export class MailService {
     );
   }
 
+  /** Weekly "куди піти" for an address that subscribed without an account. */
+  async sendCityDigestEmail(
+    to: string,
+    p: { cityName: string | null; events: Array<{ title: string; url: string }>; moreUrl: string; createUrl: string; unsubscribeUrl: string },
+  ): Promise<void> {
+    const where = p.cityName ? ` у місті ${escapeHtml(p.cityName)}` : "";
+    const list = p.events.map((e) => `<li style="margin:6px 0"><a href="${e.url}">${escapeHtml(e.title)}</a></li>`).join("");
+    await this.send(
+      to,
+      `Куди піти на вихідних${p.cityName ? `: ${p.cityName}` : ""} — Кіро`,
+      `<p>Найцікавіше на цих вихідних${where}:</p>
+       <ul style="padding-left:18px">${list}</ul>
+       <p><a href="${p.moreUrl}">Усі події вихідних</a></p>
+       <p>Організовуєте щось самі? <a href="${p.createUrl}">Опублікуйте подію безкоштовно</a>.</p>
+       <p style="color:#888;font-size:12px">Ви отримали цей лист, бо підписались на добірку подій. <a href="${p.unsubscribeUrl}">Відписатися</a></p>`,
+    );
+  }
+
+  /** One-off: someone searched a city that had no events, and now it has some. */
+  async sendCityEventsAppearedEmail(to: string, p: { cityName: string; count: number; url: string; unsubscribeUrl: string }): Promise<void> {
+    await this.send(
+      to,
+      `У місті ${p.cityName} з'явились події — Кіро`,
+      `<p>Ви шукали події у місті <b>${escapeHtml(p.cityName)}</b> і нічого не знайшли. Тепер вони є: <b>${p.count}</b>.</p>
+       <p><a href="${p.url}">Подивитись афішу</a></p>
+       <p style="color:#888;font-size:12px">Це одноразовий лист. <a href="${p.unsubscribeUrl}">Відписатися</a></p>`,
+    );
+  }
+
   async sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
     await this.send(
       to,
