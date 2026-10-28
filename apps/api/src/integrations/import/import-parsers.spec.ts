@@ -97,7 +97,10 @@ describe("JSON-LD parser", () => {
 
   it("skips cancelled and online events", () => {
     expect(parseJsonLdEvent(ldPage({ eventStatus: "https://schema.org/EventCancelled" }), "https://x.ua/e", "s")).toEqual({ skip: "cancelled or postponed" });
-    expect(parseJsonLdEvent(ldPage({ eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode" }), "https://x.ua/e", "s")).toEqual({ skip: "online event" });
+    const online = { eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode" };
+    expect(parseJsonLdEvent(ldPage({ ...online, location: { "@type": "VirtualLocation", name: "Zoom" } }), "https://x.ua/e", "s")).toEqual({ skip: "online event" });
+    // A street address wins over a wrong "online" flag (kontramarka marks everything online).
+    expect(parseJsonLdEvent(ldPage(online), "https://x.ua/e", "s")).toHaveProperty("event");
   });
 
   it("survives a broken block next to a good one and finds events inside @graph", () => {
@@ -115,6 +118,7 @@ describe("city and category helpers", () => {
   it("matches city names the way sources write them", () => {
     expect(matchCity("м. Київ", cities)?.id).toBe("1");
     expect(matchCity("kyiv", cities)?.id).toBe("1");
+    expect(matchCity("Киев", cities)?.id).toBe("1");
     expect(matchCity("Ковель", cities)).toBeNull();
   });
 

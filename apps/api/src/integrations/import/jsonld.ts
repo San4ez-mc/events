@@ -76,8 +76,6 @@ export function parseJsonLdEvent(html: string, url: string, source: string): Par
   const status = str(node.eventStatus) ?? "";
   if (/Cancelled|Postponed/i.test(status)) return { skip: "cancelled or postponed" };
   const mode = str(node.eventAttendanceMode) ?? "";
-  if (/Online/i.test(mode) && !/Mixed|Offline/i.test(mode)) return { skip: "online event" };
-
   const title = str(node.name);
   if (!title) return { skip: "no title" };
   if (EXCLUDE_TITLE.test(title)) return { skip: "not for a general audience" };
@@ -92,6 +90,8 @@ export function parseJsonLdEvent(html: string, url: string, source: string): Par
   const city = typeof addr === "object" && addr ? str(addr.addressLocality) : null;
   const venue = str(place?.name);
   if (!venue && !street) return { skip: "no venue" };
+  // Some sites (kontramarka) mark every event Online; a street address means it is a real place.
+  if (/Online/i.test(mode) && !/Mixed|Offline/i.test(mode) && !street) return { skip: "online event" };
 
   const { min, max } = prices(node);
   const description = stripTags(str(node.description) ?? "").slice(0, 6000);

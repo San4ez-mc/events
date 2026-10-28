@@ -6,11 +6,17 @@ export interface CityRow {
 
 const norm = (s: string) => s.toLowerCase().replace(/[’'`ʼ]/g, "'").replace(/^м\.\s*/, "").replace(/\s+/g, " ").trim();
 
+/** Russian spellings that Ukrainian ticket sites still put in addressLocality (normalised, see norm). */
+const RU_NAMES: Record<string, string> = {
+  киев: "київ", одесса: "одеса", харьков: "харків", днепр: "дніпро", львов: "львів", винница: "вінниця", запорожье: "запоріжжя", николаев: "миколаїв", черкассы: "черкаси", луцк: "луцьк", ровно: "рівне", тернополь: "тернопіль", чернигов: "чернігів", сумы: "суми", хмельницкий: "хмельницький", кропивницкий: "кропивницький",
+};
+
 /** Exact (case/prefix-insensitive) match of a city name from a source against the cities we run. */
 export function matchCity(name: string | null | undefined, cities: CityRow[]): CityRow | null {
   if (!name) return null;
   const n = norm(name);
-  return cities.find((c) => norm(c.nameUk) === n || norm(c.nameEn) === n) ?? null;
+  const ru = RU_NAMES[n];
+  return cities.find((c) => norm(c.nameUk) === n || norm(c.nameEn) === n || (ru !== undefined && norm(c.nameUk) === ru)) ?? null;
 }
 
 /**
