@@ -6,10 +6,13 @@ import { BotIntegrationController } from "./bot-integration.controller";
 import { BotIntegrationService } from "./bot-integration.service";
 import { BotKeyGuard } from "./bot-key.guard";
 import { BotDraftsScheduler } from "./bot-drafts.scheduler";
+import { EventImportController } from "./import/event-import.controller";
+import { EventImportService } from "./import/event-import.service";
 
 @Module({
   imports: [AuthModule, EventsModule, EventMediaModule],
-  controllers: [BotIntegrationController],
-  providers: [BotIntegrationService, BotDraftsScheduler, BotKeyGuard],
+  controllers: [BotIntegrationController, EventImportController],
+  providers: [BotIntegrationService, BotDraftsScheduler, BotKeyGuard, EventImportService],
+  exports: [EventImportService],
 })
 export class IntegrationsModule {}
