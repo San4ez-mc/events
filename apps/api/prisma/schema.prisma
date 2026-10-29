@@ -642,10 +642,13 @@ model Event {
   /// Optional organizer-given reason (§79), shown to registrants in the (Phase 5) cancellation notification.
   cancellationReason String?
   completedAt        DateTime?
+  /// When the organizer was asked to mark who came and leave feedback (one nudge per event, see EngagementScheduler).
+  reportPromptedAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  organizerReport    EventOrganizerReport?
   media              EventMedia[]
   interactions       EventInteraction[]
   savedBy            SavedEvent[]
@@ -1139,6 +1142,23 @@ enum RegistrationStatus {
   WAITLISTED
 }
 
+/// Post-event summary from the organizer: who actually came (stored on Registration.checkedInAt) + optional free-form
+/// feedback to us (missing features, wishes). One per event; attendance % in the admin dashboard is attendedCount / registeredCount.
+model EventOrganizerReport {
+  id              String   @id @default(uuid()) @db.Uuid
+  eventId         String   @unique @db.Uuid
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  authorId        String   @db.Uuid
+  comment         String?
+  registeredCount Int
+  attendedCount   Int
+  submittedAt     DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([submittedAt])
+  @@map("event_organizer_reports")
+}
+
 /// §26's `event_registrations`. The state machine (§27) is driven by
 /// `Event.approvalMode` + `Event.priceType` — see RegistrationsService.
 model Registration {
@@ -1235,6 +1255,7 @@ enum NotificationType {
   DRAFT_REMINDER
   WEEKLY_DIGEST
   ACCOUNT_REMINDER
+  EVENT_REPORT_REQUEST
 }
 
 enum NotificationChannel {

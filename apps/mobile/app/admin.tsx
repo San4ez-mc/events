@@ -10,6 +10,8 @@ import { TextField } from "../src/components/ui/TextField";
 import { formatShortDateTime } from "../src/lib/format";
 import { TrafficPanel } from "../src/components/admin/TrafficPanel";
 import { InsightsPanel } from "../src/components/admin/InsightsPanel";
+import { PeriodFilter, presetPeriod, type Period } from "../src/components/admin/PeriodFilter";
+import { GrowthPanel } from "../src/components/admin/GrowthPanel";
 import { AdminLoader } from "../src/components/admin/AdminLoader";
 import { radius, spacing, type Palette, useThemedStyles } from "../src/lib/theme";
 
@@ -145,8 +147,8 @@ interface AuditEntry {
 }
 
 const MODERATOR_TABS = ["moderation", "reviews", "reports"] as const;
-const ADMIN_TABS = ["analytics", "categories", "districts", "users", "events", "payments", "credits", "referrals", "feedback", "audit", "broadcast"] as const;
-type Tab = (typeof MODERATOR_TABS)[number] | (typeof ADMIN_TABS)[number];
+const ADMIN_TABS = ["categories", "districts", "users", "events", "payments", "credits", "referrals", "feedback", "audit", "broadcast"] as const;
+type Tab = "analytics" | (typeof MODERATOR_TABS)[number] | (typeof ADMIN_TABS)[number];
 
 const USER_STATUSES = ["ACTIVE", "SUSPENDED", "BLOCKED", "DELETED"] as const;
 const USER_ROLES = ["USER", "MODERATOR", "ADMIN", "SUPER_ADMIN"] as const;
@@ -172,9 +174,12 @@ export default function AdminScreen() {
   const { user, isLoading: authLoading } = useAuth();
   const { t } = useTranslations();
   const isAdmin = !!user && ADMIN_ROLES.includes(user.role);
-  const tabs: Tab[] = isAdmin ? [...MODERATOR_TABS, ...ADMIN_TABS] : [...MODERATOR_TABS];
+  // Analytics is the first tab for admins (and their landing tab); moderators start on the queue.
+  const tabs: Tab[] = isAdmin ? ["analytics", ...MODERATOR_TABS, ...ADMIN_TABS] : [...MODERATOR_TABS];
   const params = useLocalSearchParams<{ tab?: string }>();
-  const [tab, setTab] = useState<Tab>("moderation");
+  const [pickedTab, setTab] = useState<Tab | null>(null);
+  const tab: Tab = pickedTab && tabs.includes(pickedTab) ? pickedTab : tabs[0]!;
+  const [period, setPeriod] = useState<Period>(() => presetPeriod("month"));
   useEffect(() => {
     const wanted = params.tab as Tab | undefined;
     if (wanted && tabs.includes(wanted)) setTab(wanted);
@@ -599,18 +604,17 @@ export default function AdminScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: t("nav.admin"), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.foreground }} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hScroll} contentContainerStyle={styles.tabsRow}>
-        {tabs.map((key) => (
-          <Pressable key={key} onPress={() => setTab(key)} style={[styles.tab, tab === key && styles.tabOn]}>
-            <Text style={[styles.tabText, tab === key && { color: colors.white }]}>{t(`admin.nav.${key}`)}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={colors.accentFrom} colors={[colors.accentFrom]} />}
       >
+        <View style={styles.tabsRow}>
+          {tabs.map((key) => (
+            <Pressable key={key} onPress={() => setTab(key)} style={[styles.tab, tab === key && styles.tabOn]}>
+              <Text style={[styles.tabText, tab === key && { color: colors.white }]}>{t(`admin.nav.${key}`)}</Text>
+            </Pressable>
+          ))}
+        </View>
         {tab === "moderation" && (
           <>
             <Text style={styles.muted}>{t("admin.moderation.hint")}</Text>
@@ -1033,8 +1037,10 @@ export default function AdminScreen() {
 
         {tab === "analytics" && (
           <>
-            <TrafficPanel refreshKey={refreshKey} />
-            <InsightsPanel refreshKey={refreshKey} />
+            <PeriodFilter period={period} onChange={setPeriod} />
+            <GrowthPanel period={period} refreshKey={refreshKey} />
+            <TrafficPanel period={period} refreshKey={refreshKey} />
+            <InsightsPanel period={period} refreshKey={refreshKey} />
           </>
         )}
 
@@ -1129,7 +1135,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   userRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   userAvatar: { width: 78, height: 78, borderRadius: 39, backgroundColor: colors.background },
   userAvatarEmpty: { alignItems: "center", justifyContent: "center" },
-  tabsRow: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  // Wrapped inside the page scroll: with a dozen tabs the last ones used to sit half off-screen with cut-off labels.
+  tabsRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   tab: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border },
   tabOn: { backgroundColor: colors.accentFrom, borderColor: "transparent" },
   // Explicit lineHeight: with the default, Android clipped the bottom ~2px of these labels.

@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { API_URL, getAccessToken } from "../../lib/api-client";
 import { useTranslations } from "../../lib/locale-context";
 import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
+import { periodQuery, type Period } from "./PeriodFilter";
 
 interface Insights {
   posthogConfigured: boolean;
@@ -33,27 +34,28 @@ interface Section {
   rows: Row[];
 }
 
-const DAYS = 30;
 const pct = (part: number, whole: number) => (whole > 0 ? ` (${Math.round((part / whole) * 100)}%)` : "");
 
 /** Funnels, activation, retention, search terms (PostHog) and supply/demand, payments, referrals, delivery (our DB) — mobile twin of the web admin block. */
-export function InsightsPanel({ refreshKey = 0 }: { refreshKey?: number }) {
+export function InsightsPanel({ period, refreshKey = 0 }: { period: Period; refreshKey?: number }) {
   const { styles } = useThemedStyles(makeStyles);
   const { t } = useTranslations();
   const [data, setData] = useState<Insights | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    setData(null);
+    setFailed(false);
     void (async () => {
       try {
-        const res = await fetch(`${API_URL}/api/v1/admin/analytics/insights?days=${DAYS}`, { headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` } });
+        const res = await fetch(`${API_URL}/api/v1/admin/analytics/insights?${periodQuery(period)}`, { headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` } });
         if (res.ok) setData((await res.json()) as Insights);
         else setFailed(true);
       } catch {
         setFailed(true);
       }
     })();
-  }, [refreshKey]);
+  }, [refreshKey, period.from, period.to]);
 
   if (failed) return <Text style={styles.error}>{t("common.somethingWentWrong")}</Text>;
   if (!data) return null;

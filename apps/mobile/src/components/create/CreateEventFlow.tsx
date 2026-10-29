@@ -17,6 +17,7 @@ import { ScreenHeader } from "../ui/ScreenHeader";
 import { Chips, SearchPicker, Section, type Option } from "../discover/FiltersSheet";
 import { CalendarPicker } from "../discover/CalendarPicker";
 import { AddressAutocomplete } from "./AddressAutocomplete";
+import { EventReportCard } from "./EventReportCard";
 import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
 interface Named {
@@ -743,17 +744,30 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   }
 
   if (lockedStatus) {
+    const lockedBody = (
+      <>
+        <Ionicons name="time-outline" size={64} color={colors.muted} />
+        <Text style={styles.doneText}>{t(`create.locked.${lockedStatus}.title`)}</Text>
+        <Text style={styles.muted}>{t(`create.locked.${lockedStatus}.text`)}</Text>
+        {error && <Text style={styles.error}>{error}</Text>}
+        <Button title={t("create.duplicateAsNew")} onPress={() => void duplicateAsNew()} loading={busy} />
+        <Button title={t("create.back")} variant="secondary" onPress={() => router.back()} />
+      </>
+    );
     return (
       <View style={styles.flex}>
         <ScreenHeader title={t("nav.create")} subtitle={t("create.subtitle")} icon="add-circle" />
-        <View style={styles.center}>
-          <Ionicons name="time-outline" size={64} color={colors.muted} />
-          <Text style={styles.doneText}>{t(`create.locked.${lockedStatus}.title`)}</Text>
-          <Text style={styles.muted}>{t(`create.locked.${lockedStatus}.text`)}</Text>
-          {error && <Text style={styles.error}>{error}</Text>}
-          <Button title={t("create.duplicateAsNew")} onPress={() => void duplicateAsNew()} loading={busy} />
-          <Button title={t("create.back")} variant="secondary" onPress={() => router.back()} />
-        </View>
+        {lockedStatus === "COMPLETED" && editEventId ? (
+          // The post-event report (who came + feedback) lives here: the notification opens this screen for finished events.
+          <ScrollView contentContainerStyle={[styles.center, styles.lockedScroll]} keyboardShouldPersistTaps="handled">
+            <View style={styles.reportWrap}>
+              <EventReportCard eventId={editEventId} />
+            </View>
+            {lockedBody}
+          </ScrollView>
+        ) : (
+          <View style={styles.center}>{lockedBody}</View>
+        )}
       </View>
     );
   }
@@ -784,6 +798,8 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView style={styles.flex} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ScreenHeader title={t("nav.create")} subtitle={t("create.subtitle")} icon="add-circle" />
+
+        {editEventId && <EventReportCard eventId={editEventId} />}
 
         <View style={styles.progress}>
           <Text style={styles.stepLabel}>
@@ -1272,6 +1288,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl * 2, gap: spacing.lg },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.md, padding: spacing.xl },
+  lockedScroll: { flexGrow: 1, justifyContent: "flex-start" },
+  reportWrap: { alignSelf: "stretch" },
   muted: { color: colors.muted, fontSize: 14, textAlign: "center" },
   progress: { gap: 8 },
   stepLabel: { color: colors.muted, fontSize: 13, fontWeight: "600" },

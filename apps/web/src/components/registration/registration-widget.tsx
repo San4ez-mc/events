@@ -68,6 +68,7 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
   async function submit() {
     const token = getAccessToken();
     if (!token) return;
+    captureEvent("event_registration_started", { event_id: event.id });
     setSubmitting(true);
     setError(null);
     try {

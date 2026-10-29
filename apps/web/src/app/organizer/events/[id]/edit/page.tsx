@@ -7,6 +7,7 @@ import { useTranslations } from "@/lib/locale-context";
 import { api } from "@/lib/api-client";
 import type { EventDetail } from "@/lib/event-types";
 import { EventWizard } from "@/components/event-wizard/event-wizard";
+import { EventReportCard } from "@/components/event-wizard/event-report-card";
 import { Button } from "@/components/ui/button";
 
 export default function EditEventPage() {
@@ -61,5 +62,13 @@ export default function EditEventPage() {
     return <div className="mx-auto max-w-2xl px-4 py-10 text-muted">{t("common.loading")}</div>;
   }
 
-  return <EventWizard initialEvent={event} />;
+  return (
+    <>
+      {/* After the event: who came + optional feedback; the "How did your event go?" notification lands here. */}
+      <div className="px-4 pt-6">
+        <EventReportCard eventId={event.id} />
+      </div>
+      <EventWizard initialEvent={event} />
+    </>
+  );
 }

@@ -39,6 +39,7 @@ export class EngagementScheduler {
   async run(): Promise<void> {
     await Promise.all([
       this.sendShareReminders().catch((err) => this.logger.error("sendShareReminders failed", err)),
+      this.sendReportPrompts().catch((err) => this.logger.error("sendReportPrompts failed", err)),
       this.sendDraftReminders().catch((err) => this.logger.error("sendDraftReminders failed", err)),
       this.sendVerifyEmailNudges().catch((err) => this.logger.error("sendVerifyEmailNudges failed", err)),
       this.guestReminders.sendDue().catch((err) => this.logger.error("guest reminders failed", err)),
@@ -77,6 +78,42 @@ export class EngagementScheduler {
           title: "Share your event",
           body: `"${event.title}" hasn't been shared yet. Organizers who post a story get more people: it takes 10 seconds.`,
           payloadJson: { eventId: event.id, reminderEventId: event.id, screen: "share" },
+        })
+        .catch(() => undefined);
+    }
+  }
+
+  /**
+   * A few hours after an event ends, one nudge to the organizer: mark who came and (optionally) tell us what was missing.
+   * Only events people registered for on Kiro (nothing to mark otherwise); events imported from other sites have no real organizer.
+   */
+  private async sendReportPrompts(): Promise<void> {
+    const now = new Date();
+    const events = await this.prisma.event.findMany({
+      where: {
+        isTest: false,
+        source: null,
+        status: { in: ["PUBLISHED", "COMPLETED"] },
+        reportPromptedAt: null,
+        organizerReport: null,
+        startsAt: { gt: new Date(now.getTime() - 14 * DAY) },
+        owner: REAL_USER,
+        // Prompt 3h after the end (or 6h after the start when no end is set).
+        OR: [{ endsAt: { lte: new Date(now.getTime() - 3 * HOUR) } }, { endsAt: null, startsAt: { lte: new Date(now.getTime() - 6 * HOUR) } }],
+        registrations: { some: { status: { in: ["REGISTERED", "CONFIRMED"] } } },
+      },
+      select: { id: true, title: true, ownerId: true },
+      take: 200,
+    });
+    for (const event of events) {
+      await this.prisma.event.update({ where: { id: event.id }, data: { reportPromptedAt: now } });
+      await this.notifications
+        .create({
+          userId: event.ownerId,
+          type: "EVENT_REPORT_REQUEST",
+          title: "How did your event go?",
+          body: `Mark who came to "${event.title}" and tell us what was missing in Kiro. It takes a minute and the feedback part is optional.`,
+          payloadJson: { eventId: event.id, screen: "edit", report: true },
         })
         .catch(() => undefined);
     }

@@ -2,10 +2,13 @@ import { Injectable, Logger, type OnApplicationBootstrap } from "@nestjs/common"
 import { Cron } from "@nestjs/schedule";
 import { ConfigService } from "@nestjs/config";
 import type { EnvConfig } from "../../config/env.validation";
+import { hogqlWindow, rangeKey, resolveRange, type DateRange } from "./date-range";
 
 export interface TrafficReport {
   configured: boolean;
   days: number;
+  from?: string;
+  to?: string;
   totals?: { visitors: number; views: number; sessions: number; avgSessionSeconds: number };
   daily?: { date: string; visitors: number; views: number }[];
   topPages?: { page: string; views: number; visitors: number; avgSeconds: number | null }[];
@@ -26,26 +29,28 @@ const CACHE_MS = 5 * 60 * 1000;
 @Injectable()
 export class TrafficService implements OnApplicationBootstrap {
   private readonly logger = new Logger(TrafficService.name);
-  private readonly cache = new Map<number, { at: number; report: TrafficReport }>();
+  private readonly cache = new Map<string, { at: number; report: TrafficReport }>();
 
   constructor(private readonly config: ConfigService<EnvConfig, true>) {}
 
   /** Keeps the default 30-day report hot, so opening the admin page doesn't wait for the analytics queries (≈5 s cold). */
   @Cron("*/4 * * * *")
   async warmCache(): Promise<void> {
-    await this.getReport(30, true).catch(() => undefined);
+    await this.getReport(resolveRange({ days: "30" }), true).catch(() => undefined);
   }
 
   onApplicationBootstrap(): void {
     void this.warmCache();
   }
 
-  async getReport(days: number, force = false): Promise<TrafficReport> {
+  async getReport(range: DateRange, force = false): Promise<TrafficReport> {
+    const days = range.days;
     const projectId = this.config.get("POSTHOG_PROJECT_ID", { infer: true });
     const apiKey = this.config.get("POSTHOG_PERSONAL_API_KEY", { infer: true });
     if (!projectId || !apiKey) return { configured: false, days };
 
-    const hit = this.cache.get(days);
+    const key = rangeKey(range);
+    const hit = this.cache.get(key);
     if (!force && hit && Date.now() - hit.at < CACHE_MS) return hit.report;
 
     try {
@@ -60,8 +65,8 @@ export class TrafficService implements OnApplicationBootstrap {
         return ((await res.json()) as { results?: unknown[][] }).results ?? [];
       };
 
-      // `days` is a validated integer (see controller), so interpolating it into HogQL is safe.
-      const since = `timestamp >= now() - INTERVAL ${days} DAY`;
+      // The window comes from resolveRange(), which validates the dates, so interpolating them into HogQL is safe.
+      const since = hogqlWindow(range);
       const pageEvents = `event IN ('$pageview', '$screen')`;
       // A session with one event has no measurable length, so only sessions with 2+ events count towards averages.
       const sessionLengths = `SELECT any(properties.platform) AS platform, dateDiff('second', min(timestamp), max(timestamp)) AS d FROM events WHERE ${since} AND properties.$session_id IS NOT NULL AND properties.$session_id != '' GROUP BY properties.$session_id HAVING count() > 1`;
@@ -83,6 +88,8 @@ export class TrafficService implements OnApplicationBootstrap {
       const report: TrafficReport = {
         configured: true,
         days,
+        from: range.from,
+        to: range.to,
         totals: { visitors: Number(totals[0]?.[0] ?? 0), views: Number(totals[0]?.[1] ?? 0), sessions: Number(totals[0]?.[2] ?? 0), avgSessionSeconds: Math.round(Number(avgSession[0]?.[0] ?? 0)) },
         daily: daily.map((r) => ({ date: String(r[0]), visitors: Number(r[1]), views: Number(r[2]) })),
         topPages: pages.map((r) => ({ page: String(r[0]), views: Number(r[1]), visitors: Number(r[2]), avgSeconds: timeByPage.has(String(r[0])) ? Math.round(timeByPage.get(String(r[0]))!) : null })),
@@ -90,7 +97,7 @@ export class TrafficService implements OnApplicationBootstrap {
         webOs: webOs.map((r) => ({ os: String(r[0]), visitors: Number(r[1]) })),
         referrers: referrers.map((r) => ({ source: String(r[0]), visitors: Number(r[1]) })),
       };
-      this.cache.set(days, { at: Date.now(), report });
+      this.cache.set(key, { at: Date.now(), report });
       return report;
     } catch (err) {
       this.logger.warn(`Traffic report failed: ${err instanceof Error ? err.message : String(err)}`);

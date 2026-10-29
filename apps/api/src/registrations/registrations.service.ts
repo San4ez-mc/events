@@ -5,7 +5,7 @@ import type { CursorPage } from "@kiro/types";
 import { PrismaService } from "../prisma/prisma.service";
 import { ApiException } from "../common/exceptions/api.exception";
 import { ForbiddenActionException, ResourceNotFoundException } from "../common/exceptions/common-exceptions";
-import { ACTIVE_REGISTRATION_STATUSES as ACTIVE_STATUSES } from "../common/constants/registration-active-statuses";
+import { ACTIVE_REGISTRATION_STATUSES as ACTIVE_STATUSES, ATTENDANCE_REGISTRATION_STATUSES as ATTENDANCE_STATUSES } from "../common/constants/registration-active-statuses";
 import { NotificationsService } from "../notifications/notifications.service";
 import { AnalyticsService } from "../analytics/analytics.service";
 import { EventAccessService } from "../organizer/event-access.service";
@@ -13,6 +13,7 @@ import type { CreateRegistrationDto, RegistrationAnswerDto } from "./dto/create-
 import type { ListRegistrationsDto } from "./dto/list-registrations.dto";
 import type { MessageParticipantsDto } from "./dto/message-participants.dto";
 import type { RejectRegistrationDto } from "./dto/reject-registration.dto";
+import type { SubmitEventReportDto } from "./dto/submit-event-report.dto";
 import type { SetRegistrationFieldsDto } from "./dto/set-registration-fields.dto";
 
 /** RFC 4180: wrap in quotes (doubling any embedded quote) whenever the field contains a comma, quote, or newline. */
@@ -442,6 +443,67 @@ export class RegistrationsService {
       where: { id: registrationId },
       data: { checkedInAt: registration.checkedInAt ? null : new Date() },
     });
+  }
+
+  /**
+   * Post-event summary (organizer or a collaborator who manages registrations): who was registered, who is marked as having come,
+   * and the feedback already sent. Until the organizer ticks anyone themselves, everybody defaults to "came" so they only
+   * have to untick the no-shows.
+   */
+  async getEventReport(eventId: string, userId: string) {
+    const event = await this.eventAccess.assertPermission(eventId, userId, "MANAGE_REGISTRATIONS");
+    const [registrations, report] = await Promise.all([
+      this.prisma.registration.findMany({
+        where: { eventId, status: { in: [...ATTENDANCE_STATUSES] } },
+        orderBy: { createdAt: "asc" },
+        select: { id: true, checkedInAt: true, user: { select: { name: true, nickname: true, avatarUrl: true } } },
+      }),
+      this.prisma.eventOrganizerReport.findUnique({ where: { eventId } }),
+    ]);
+    const decided = report !== null || registrations.some((r) => r.checkedInAt);
+    return {
+      eventEnded: event.startsAt !== null && event.startsAt <= new Date(),
+      report: report
+        ? { comment: report.comment, submittedAt: report.submittedAt.toISOString(), attendedCount: report.attendedCount, registeredCount: report.registeredCount }
+        : null,
+      participants: registrations.map((r) => ({
+        registrationId: r.id,
+        name: r.user.name ?? r.user.nickname ?? null,
+        nickname: r.user.nickname,
+        avatarUrl: r.user.avatarUrl,
+        attended: decided ? r.checkedInAt !== null : true,
+      })),
+    };
+  }
+
+  /** Saves the attendance marks (everyone not listed is a no-show) and the optional feedback; can be re-sent to correct it. */
+  async submitEventReport(eventId: string, userId: string, dto: SubmitEventReportDto) {
+    const event = await this.eventAccess.assertPermission(eventId, userId, "MANAGE_REGISTRATIONS");
+    if (!event.startsAt || event.startsAt > new Date()) throw new ApiException("EVENT_NOT_STARTED", "The event has not started yet", 409);
+
+    const registrations = await this.prisma.registration.findMany({
+      where: { eventId, status: { in: [...ATTENDANCE_STATUSES] } },
+      select: { id: true, checkedInAt: true },
+    });
+    const came = new Set(dto.attendedIds);
+    const counts = { registeredCount: registrations.length, attendedCount: registrations.filter((r) => came.has(r.id)).length };
+    const comment = dto.comment?.trim() || null;
+    const now = new Date();
+    await this.prisma.$transaction([
+      ...registrations.map((r) =>
+        this.prisma.registration.update({
+          where: { id: r.id },
+          // People who stay ticked keep their original check-in time.
+          data: { checkedInAt: came.has(r.id) ? (r.checkedInAt ?? now) : null },
+        }),
+      ),
+      this.prisma.eventOrganizerReport.upsert({
+        where: { eventId },
+        create: { eventId, authorId: userId, comment, ...counts },
+        update: { authorId: userId, comment, ...counts },
+      }),
+    ]);
+    return this.getEventReport(eventId, userId);
   }
 
   /** Organizer-only CSV export of everyone currently registered (active statuses only — not cancelled/rejected). */

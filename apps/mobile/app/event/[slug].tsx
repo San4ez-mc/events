@@ -96,7 +96,11 @@ export default function EventDetailScreen() {
   const eventId = event?.id;
   const eventStatus = event?.status;
   useEffect(() => {
-    if (eventId && eventStatus === "PUBLISHED") track(eventId, "VIEW", sourceFromParam(src));
+    if (eventId && eventStatus === "PUBLISHED") {
+      track(eventId, "VIEW", sourceFromParam(src));
+      // The admin funnel (views -> registration started -> registered) reads PostHog, not our own view counter.
+      captureEvent("event_view", { event_id: eventId, source: src ?? "direct" });
+    }
   }, [eventId, eventStatus, src]);
 
   useEffect(() => {
@@ -221,6 +225,7 @@ export default function EventDetailScreen() {
   async function submit() {
     const token = getAccessToken();
     if (!token || !event) return;
+    captureEvent("event_registration_started", { event_id: event.id });
     setSubmitting(true);
     setError(null);
     try {

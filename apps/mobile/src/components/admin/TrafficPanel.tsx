@@ -4,6 +4,7 @@ import { API_URL, getAccessToken } from "../../lib/api-client";
 import { useTranslations } from "../../lib/locale-context";
 import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 import { AdminLoader } from "./AdminLoader";
+import { periodQuery, type Period } from "./PeriodFilter";
 
 interface TrafficReport {
   configured: boolean;
@@ -17,8 +18,6 @@ interface TrafficReport {
   error?: string;
 }
 
-const DAYS = 30;
-
 /** 95 → "1:35", 3700 → "1:01:40". */
 function formatDuration(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600);
@@ -29,21 +28,22 @@ function formatDuration(totalSeconds: number): string {
 }
 
 /** Site + app visitors from PostHog, via the API's /admin/analytics/traffic (the personal API key stays on the server). */
-export function TrafficPanel({ refreshKey = 0 }: { refreshKey?: number }) {
+export function TrafficPanel({ period, refreshKey = 0 }: { period: Period; refreshKey?: number }) {
   const { styles } = useThemedStyles(makeStyles);
   const { t } = useTranslations();
   const [report, setReport] = useState<TrafficReport | null>(null);
 
   useEffect(() => {
+    setReport(null);
     void (async () => {
       try {
-        const res = await fetch(`${API_URL}/api/v1/admin/analytics/traffic?days=${DAYS}`, { headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` } });
-        setReport(res.ok ? ((await res.json()) as TrafficReport) : { configured: true, days: DAYS, error: "TRAFFIC_UNAVAILABLE" });
+        const res = await fetch(`${API_URL}/api/v1/admin/analytics/traffic?${periodQuery(period)}`, { headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` } });
+        setReport(res.ok ? ((await res.json()) as TrafficReport) : { configured: true, days: 0, error: "TRAFFIC_UNAVAILABLE" });
       } catch {
-        setReport({ configured: true, days: DAYS, error: "TRAFFIC_UNAVAILABLE" });
+        setReport({ configured: true, days: 0, error: "TRAFFIC_UNAVAILABLE" });
       }
     })();
-  }, [refreshKey]);
+  }, [refreshKey, period.from, period.to]);
 
   if (report === null) return <AdminLoader />;
   if (!report.configured) return <Text style={styles.muted}>{t("admin.traffic.notConfigured")}</Text>;
@@ -53,7 +53,6 @@ export function TrafficPanel({ refreshKey = 0 }: { refreshKey?: number }) {
 
   return (
     <View style={{ gap: spacing.md }}>
-      <Text style={styles.muted}>{t("admin.traffic.period").replace("{days}", String(DAYS))}</Text>
       <View style={styles.tiles}>
         <Tile label={t("admin.traffic.visitors")} value={String(report.totals.visitors)} />
         <Tile label={t("admin.traffic.views")} value={String(report.totals.views)} />

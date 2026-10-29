@@ -436,7 +436,10 @@
     "loading": "Searching…",
     "loadMore": "Show more",
     "suggestionsTitle": "You might like",
-    "nothingTry": "Try another name, city or category. Here is what's coming up:"
+    "nothingTry": "Try another name, city or category. Here is what's coming up:",
+    "weekend": "Weekend",
+    "free": "Free",
+    "clearFilters": "Clear"
   },
   "registration": {
     "noShow": "No-show",
@@ -936,6 +939,25 @@
       "filterAll": "All",
       "resolve": "Resolved",
       "reopen": "Reopen"
+    },
+    "period": {
+      "day": "Today",
+      "week": "Week",
+      "month": "Month",
+      "custom": "Custom",
+      "showing": "Showing: {period}"
+    },
+    "growth": {
+      "newUsers": "New users",
+      "newRegistrations": "Event registrations",
+      "people": "people: {n}",
+      "turnout": "Turnout",
+      "turnoutOf": "{attended} of {registered}",
+      "noReports": "no reports yet",
+      "reports": "Organizer reports",
+      "reportsHint": "submitted / events with registrations",
+      "feedbackTitle": "Organizer feedback",
+      "feedbackEmpty": "Nothing yet"
     }
   },
   "reviews": {
@@ -1534,5 +1556,16 @@
     "doneDigest": "Done! The first pick arrives next Thursday.",
     "doneNoEvents": "Done! We'll write as soon as this city has events.",
     "createPrompt": "Organizing something in this city? Be the first."
+  },
+  "eventReport": {
+    "title": "Event wrap-up",
+    "hint": "Untick the people who didn't come.",
+    "count": "Came: {came} of {total}",
+    "anonymous": "Participant",
+    "feedbackLabel": "What was missing in Kiro? (optional)",
+    "feedbackPlaceholder": "Wishes, ideas, what was inconvenient…",
+    "send": "Send",
+    "update": "Save changes",
+    "saved": "Thank you! Saved."
   }
 }

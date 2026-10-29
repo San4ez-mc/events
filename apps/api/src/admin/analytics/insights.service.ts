@@ -4,9 +4,12 @@ import { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { EnvConfig } from "../../config/env.validation";
+import { hogqlWindow, rangeKey, resolveRange, type DateRange } from "./date-range";
 
 export interface InsightsReport {
   days: number;
+  from?: string;
+  to?: string;
   /** PostHog-backed sections are absent (and this is false) until the PostHog env vars are set. */
   posthogConfigured: boolean;
   posthogError?: boolean;
@@ -38,7 +41,7 @@ const FIRST_ACTIONS = `'event_save', 'registration_completed', 'event_published'
 @Injectable()
 export class InsightsService implements OnApplicationBootstrap {
   private readonly logger = new Logger(InsightsService.name);
-  private readonly cache = new Map<number, { at: number; report: InsightsReport }>();
+  private readonly cache = new Map<string, { at: number; report: InsightsReport }>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -48,28 +51,33 @@ export class InsightsService implements OnApplicationBootstrap {
   /** Keeps the default 30-day report hot, so opening the admin page doesn't wait for the analytics queries (≈5 s cold). */
   @Cron("*/4 * * * *")
   async warmCache(): Promise<void> {
-    await this.getReport(30, true).catch(() => undefined);
+    await this.getReport(resolveRange({ days: "30" }), true).catch(() => undefined);
   }
 
   onApplicationBootstrap(): void {
     void this.warmCache();
   }
 
-  async getReport(days: number, force = false): Promise<InsightsReport> {
-    const hit = this.cache.get(days);
+  async getReport(range: DateRange, force = false): Promise<InsightsReport> {
+    const days = range.days;
+    const key = rangeKey(range);
+    const hit = this.cache.get(key);
     if (!force && hit && Date.now() - hit.at < CACHE_MS) return hit.report;
 
-    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const since = range.start;
+    const until = range.end;
     const [supplyDemand, supplyDemandByCity, payments, referrals, notifications] = await Promise.all([
-      this.supplyDemandBy("category", since),
-      this.supplyDemandBy("city", since),
-      this.paymentConversion(since),
-      this.referralCounts(since),
-      this.notificationDelivery(since),
+      this.supplyDemandBy("category", since, until),
+      this.supplyDemandBy("city", since, until),
+      this.paymentConversion(since, until),
+      this.referralCounts(since, until),
+      this.notificationDelivery(since, until),
     ]);
 
     const report: InsightsReport = {
       days,
+      from: range.from,
+      to: range.to,
       posthogConfigured: false,
       supplyDemand: supplyDemand.map((r) => ({ category: r.name, ...r.nums })),
       supplyDemandByCity: supplyDemandByCity.map((r) => ({ city: r.name, ...r.nums })),
@@ -83,18 +91,18 @@ export class InsightsService implements OnApplicationBootstrap {
     if (projectId && apiKey) {
       report.posthogConfigured = true;
       try {
-        Object.assign(report, await this.posthogSections(days, projectId, apiKey));
+        Object.assign(report, await this.posthogSections(range, projectId, apiKey));
       } catch (err) {
         this.logger.warn(`PostHog insights failed: ${err instanceof Error ? err.message : String(err)}`);
         report.posthogError = true;
       }
     }
 
-    this.cache.set(days, { at: Date.now(), report });
+    this.cache.set(key, { at: Date.now(), report });
     return report;
   }
 
-  private async posthogSections(days: number, projectId: string, apiKey: string): Promise<Partial<InsightsReport>> {
+  private async posthogSections(range: DateRange, projectId: string, apiKey: string): Promise<Partial<InsightsReport>> {
     const host = this.config.get("POSTHOG_HOST", { infer: true }).replace(/\/$/, "");
     const run = async (query: string): Promise<unknown[][]> => {
       const res = await fetch(`${host}/api/projects/${encodeURIComponent(projectId)}/query/`, {
@@ -106,8 +114,8 @@ export class InsightsService implements OnApplicationBootstrap {
       return ((await res.json()) as { results?: unknown[][] }).results ?? [];
     };
     const n = (v: unknown) => Number(v ?? 0);
-    // `days` is a validated integer (see controller), so interpolating it into HogQL is safe.
-    const since = `timestamp >= now() - INTERVAL ${days} DAY`;
+    // The window comes from resolveRange(), which validates the dates, so interpolating them into HogQL is safe.
+    const since = hogqlWindow(range);
     const distinct = (event: string, extra = "") => `SELECT count(DISTINCT person_id) FROM events WHERE event = '${event}' ${extra} AND ${since}`;
 
     const [views, started, registered, s1, s2, s3, published, activation, retention, swipes, top, noResults, extTotals, extTop] = await Promise.all([
@@ -154,16 +162,16 @@ export class InsightsService implements OnApplicationBootstrap {
   }
 
   /** Published events (supply) next to what people did with them in the window (demand), grouped by category or city. */
-  private async supplyDemandBy(kind: "category" | "city", since: Date) {
+  private async supplyDemandBy(kind: "category" | "city", since: Date, until: Date) {
     const rows =
       kind === "category"
         ? await this.prisma.$queryRaw<{ name: string | null; events: bigint; views: bigint; saves: bigint; registrations: bigint }[]>(Prisma.sql`
             SELECT c."nameUk" AS name, count(DISTINCT e.id) AS events, coalesce(sum(s.views), 0) AS views, coalesce(sum(s.saves), 0) AS saves, coalesce(sum(s.registrations), 0) AS registrations
-            FROM events e LEFT JOIN categories c ON c.id = e."categoryId" LEFT JOIN event_daily_stats s ON s."eventId" = e.id AND s.date >= ${since}
+            FROM events e LEFT JOIN categories c ON c.id = e."categoryId" LEFT JOIN event_daily_stats s ON s."eventId" = e.id AND s.date >= ${since} AND s.date < ${until}
             WHERE e.status = 'PUBLISHED' GROUP BY c."nameUk" ORDER BY views DESC LIMIT 12`)
         : await this.prisma.$queryRaw<{ name: string | null; events: bigint; views: bigint; saves: bigint; registrations: bigint }[]>(Prisma.sql`
             SELECT c."nameUk" AS name, count(DISTINCT e.id) AS events, coalesce(sum(s.views), 0) AS views, coalesce(sum(s.saves), 0) AS saves, coalesce(sum(s.registrations), 0) AS registrations
-            FROM events e LEFT JOIN cities c ON c.id = e."cityId" LEFT JOIN event_daily_stats s ON s."eventId" = e.id AND s.date >= ${since}
+            FROM events e LEFT JOIN cities c ON c.id = e."cityId" LEFT JOIN event_daily_stats s ON s."eventId" = e.id AND s.date >= ${since} AND s.date < ${until}
             WHERE e.status = 'PUBLISHED' GROUP BY c."nameUk" ORDER BY views DESC LIMIT 12`);
     return rows.map((r) => ({
       name: r.name ?? "—",
@@ -171,10 +179,10 @@ export class InsightsService implements OnApplicationBootstrap {
     }));
   }
 
-  private async paymentConversion(since: Date) {
+  private async paymentConversion(since: Date, until: Date) {
     const rows = await this.prisma.platformPaymentOrder.groupBy({
       by: ["provider", "status"],
-      where: { createdAt: { gte: since } },
+      where: { createdAt: { gte: since, lt: until } },
       _count: true,
     });
     const byProvider = new Map<string, { created: number; paid: number }>();
@@ -187,15 +195,15 @@ export class InsightsService implements OnApplicationBootstrap {
     return [...byProvider.entries()].map(([provider, v]) => ({ provider, ...v }));
   }
 
-  private async referralCounts(since: Date) {
-    const rows = await this.prisma.referralSubmission.groupBy({ by: ["status"], where: { createdAt: { gte: since } }, _count: true });
+  private async referralCounts(since: Date, until: Date) {
+    const rows = await this.prisma.referralSubmission.groupBy({ by: ["status"], where: { createdAt: { gte: since, lt: until } }, _count: true });
     const get = (s: string) => rows.find((r) => r.status === s)?._count ?? 0;
     return { pending: get("PENDING"), approved: get("APPROVED"), rejected: get("REJECTED") };
   }
 
   /** Push vs in-app delivery results — a PUSH row that's all FAILED is how a missing FCM key shows up. */
-  private async notificationDelivery(since: Date) {
-    const rows = await this.prisma.notificationDelivery.groupBy({ by: ["channel", "status"], where: { createdAt: { gte: since } }, _count: true });
+  private async notificationDelivery(since: Date, until: Date) {
+    const rows = await this.prisma.notificationDelivery.groupBy({ by: ["channel", "status"], where: { createdAt: { gte: since, lt: until } }, _count: true });
     return rows.map((r) => ({ channel: r.channel, status: r.status, count: r._count }));
   }
 }

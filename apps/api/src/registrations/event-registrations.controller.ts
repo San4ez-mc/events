@@ -9,6 +9,7 @@ import { ListRegistrationsDto } from "./dto/list-registrations.dto";
 import { MessageParticipantsDto } from "./dto/message-participants.dto";
 import { RejectRegistrationDto } from "./dto/reject-registration.dto";
 import { SetRegistrationFieldsDto } from "./dto/set-registration-fields.dto";
+import { SubmitEventReportDto } from "./dto/submit-event-report.dto";
 
 /** The event-scoped half of the registration flow: attendee sign-up + organizer management. */
 @ApiTags("registrations")
@@ -35,6 +36,17 @@ export class EventRegistrationsController {
   @Get("me")
   async getMine(@CurrentUser() user: AuthenticatedUser, @Param("eventId") eventId: string) {
     return { registration: await this.registrationsService.getMine(eventId, user.id) };
+  }
+
+  /** Post-event summary: who came, plus the organizer's optional feedback. */
+  @Get("report")
+  getReport(@CurrentUser() user: AuthenticatedUser, @Param("eventId") eventId: string) {
+    return this.registrationsService.getEventReport(eventId, user.id);
+  }
+
+  @Put("report")
+  submitReport(@CurrentUser() user: AuthenticatedUser, @Param("eventId") eventId: string, @Body() dto: SubmitEventReportDto) {
+    return this.registrationsService.submitEventReport(eventId, user.id, dto);
   }
 
   @Get()
