@@ -9,6 +9,7 @@ import { router } from "expo-router";
 import { API_URL, getAccessToken, refreshAccessToken } from "../../lib/api-client";
 import { ApiRequestError, useAuth } from "../../lib/auth-context";
 import { reportClientError } from "../../lib/crash-reporter";
+import { markFeedStale } from "../../lib/feed-refresh";
 import { useTranslations } from "../../lib/locale-context";
 import { formatDateInput, formatPriceLabel, formatShortDateTime } from "../../lib/format";
 import { Button } from "../ui/Button";
@@ -663,6 +664,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
       });
       setSlug(published.slug ?? slug);
       setOutcome(published.status);
+      if (published.status === "PUBLISHED") markFeedStale();
       captureEvent("event_published", { outcome: published.status });
     } catch (err) {
       captureEvent("event_publish_failed", { code: err instanceof ApiRequestError ? err.code : "UNKNOWN" });

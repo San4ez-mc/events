@@ -5,9 +5,10 @@ import * as SecureStore from "expo-secure-store";
 import { EMPTY_FILTERS, countActiveFilters, filtersToQuery, type DiscoveryFilters } from "@kiro/types";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useTranslations } from "../../src/lib/locale-context";
+import { consumeFeedStale } from "../../src/lib/feed-refresh";
 import { useAuth } from "../../src/lib/auth-context";
 import { track } from "../../src/lib/analytics";
 import { SwipeCard } from "../../src/components/discover/SwipeCard";
@@ -108,6 +109,17 @@ export default function DiscoverScreen() {
       await loadPage(initial);
     })();
   }, [loadPage]);
+
+  // A new event published from the Create tab: reload the stack when the user comes back, instead of only on "Look again".
+  // Skipped until the first load has finished, so it never races the initial fetch.
+  useFocusEffect(
+    useCallback(() => {
+      if (cards !== null && consumeFeedStale()) {
+        historyRef.current = [];
+        void loadPage(filtersRef.current);
+      }
+    }, [cards, loadPage]),
+  );
 
   /** End-of-feed "Look again": forget the skipped events server-side, then reload from the top. */
   async function seeAgain() {
