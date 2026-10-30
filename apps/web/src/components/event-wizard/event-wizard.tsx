@@ -378,6 +378,26 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
         ))}
       </ol>
 
+      {/* Abandoned drafts most often lack a cover: remind gently, and offer a shortcut once the draft exists. */}
+      {step !== "media" && media.length === 0 && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-border bg-surface p-3 text-sm">
+          <span>{step === "basics" ? t("events.wizard.coverNudgeNext") : t("events.wizard.coverNudge")}</span>
+          {step !== "basics" && eventId && (
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => {
+                captureEvent("cover_nudge_click", { from: step });
+                void goTo(STEPS.indexOf("media"));
+              }}
+              className="accent-gradient rounded-[10px] px-3 py-1.5 text-xs font-semibold text-white"
+            >
+              {t("events.wizard.coverAdd")}
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="mb-8">
         {step === "basics" && (
           <StepBasics data={data} onChange={handleChange} />

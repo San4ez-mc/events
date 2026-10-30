@@ -810,6 +810,25 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
           </View>
         </View>
 
+        {/* Abandoned drafts most often lack a cover: remind gently, and offer a shortcut from the later steps. */}
+        {media.length === 0 && (
+          <View style={styles.costBanner}>
+            <Ionicons name="image-outline" size={16} color={colors.accentFrom} />
+            <Text style={styles.costBannerText}>{step === 0 ? t("events.wizard.coverNudgeNext") : t("events.wizard.coverNudge")}</Text>
+            {step === 2 && (
+              <Pressable
+                onPress={() => {
+                  captureEvent("cover_nudge_click", { from: "preview" });
+                  setStep(1);
+                }}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.costBannerText, { color: colors.accentFrom, fontWeight: "800" }]}>{t("events.wizard.coverAdd")}</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
         {step === 0 && (
           <>
             {balance !== null && (

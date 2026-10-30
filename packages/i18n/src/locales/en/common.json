@@ -244,7 +244,10 @@
       "externalUrl": "Registration / tickets link",
       "externalHint": "People tap “Register” and are sent to this link. Capacity is unlimited — Kiro shows ∞.",
       "priceMax": "Price up to (optional, for a range)",
-      "confirmNotify": "You changed the date or place. Everyone who has already registered will be notified. Continue?"
+      "confirmNotify": "You changed the date or place. Everyone who has already registered will be notified. Continue?",
+      "coverNudgeNext": "Add a cover on the next step: events with a photo get opened and registered for more often.",
+      "coverNudge": "This event has no cover yet. With one it gets opened and registered for more often.",
+      "coverAdd": "Add a cover"
     },
     "actions": {
       "save": "Save",
