@@ -666,7 +666,9 @@
         "android": "Додаток Android",
         "ios": "Додаток iOS",
         "unknown": "Не визначено"
-      }
+      },
+      "utm": "Джерела за мітками (UTM)",
+      "utmHint": "з яких посилань прийшли: Instagram, Telegram, розсилки"
     },
     "accessDenied": "У вас немає доступу до адмін-панелі",
     "nav": {
@@ -911,7 +913,20 @@
       "externalClicks": "Переходи на реєстрацію організатора",
       "externalClicksHint": "Скільки разів натиснули «Зареєструватись / Купити квиток» на подіях із зовнішньою реєстрацією, і які події збирають найбільше переходів.",
       "externalTotal": "Усього переходів",
-      "externalPeople": "Унікальних людей"
+      "externalPeople": "Унікальних людей",
+      "signupsByPlatform": "Нові акаунти за платформою",
+      "channels": "Канали: переглянули · почали · зареєструвались",
+      "channelsHint": "унікальні люди за способом переходу на подію",
+      "channelNames": {
+        "SWIPE": "Свайп у стрічці",
+        "SEARCH": "Пошук",
+        "DIRECT": "Пряме посилання",
+        "PROFILE": "Профіль організатора",
+        "THREADS": "Threads",
+        "OTHER": "Інше"
+      },
+      "publishFailures": "Чому не вдалось опублікувати",
+      "publishFailuresHint": "коди помилок при публікації: де застрягають організатори"
     },
     "loadingSlow": "Збираємо дані. Це може тривати кілька секунд…",
     "referrals": {
@@ -957,7 +972,52 @@
       "reports": "Звіти організаторів",
       "reportsHint": "подали / подій із реєстраціями",
       "feedbackTitle": "Побажання організаторів",
-      "feedbackEmpty": "Поки що порожньо"
+      "feedbackEmpty": "Поки що порожньо",
+      "empty": "Поки порожньо",
+      "repeat": "Прийшли на 2+ події",
+      "repeatHint": "повторні відвідувачі / усі, хто був",
+      "sourcesTitle": "Звідки події",
+      "sourcesHint": "нових · переглядів · збережень · реєстрацій · кліків «Квитки»",
+      "sourceNames": {
+        "app": "Створені в Кіро",
+        "telegram_bot": "Telegram-бот",
+        "ottry": "ottry.com",
+        "concert_ua": "concert.ua",
+        "kontramarka": "kontramarka.ua"
+      },
+      "funnelTitle": "Воронка організатора",
+      "funnelHint": "чернетки, створені за період, і чого не вистачало покинутим",
+      "funnelOrganizers": "Організаторів із чернеткою",
+      "funnelOrganizersPublished": "з них опублікували",
+      "funnelCreated": "Чернеток створено",
+      "funnelPublished": "Опубліковано",
+      "funnelAbandoned": "Покинуто (старше доби)",
+      "missingDate": "покинуті без дати",
+      "missingPlace": "покинуті без міста",
+      "missingCategory": "покинуті без категорії",
+      "missingCover": "покинуті без обкладинки",
+      "missingDescription": "покинуті без опису",
+      "turnoutCity": "Явка за містами",
+      "turnoutCategory": "Явка за категоріями",
+      "turnoutOrganizer": "Явка за організаторами",
+      "turnoutHint": "прийшло/зареєстровано · відсоток",
+      "notifTitle": "Відкриття сповіщень",
+      "notifHint": "надіслано · відкрито",
+      "notifNames": {
+        "EVENT_REMINDER_24H": "Нагадування за добу",
+        "EVENT_REMINDER_1H": "Нагадування за годину",
+        "ADMIN_BROADCAST": "Розсилка від адміна",
+        "WEEKLY_DIGEST": "Тижневий дайджест",
+        "REGISTRATION_RECEIVED": "Нова реєстрація (організатору)",
+        "REGISTRATION_APPROVED": "Реєстрацію підтверджено",
+        "REVIEW_REQUEST": "Прохання про відгук",
+        "SHARE_PROMPT": "Поділіться подією",
+        "DRAFT_REMINDER": "Дороби чернетку",
+        "EVENT_REPORT_REQUEST": "Підсумок події",
+        "ORGANIZER_NEW_EVENT": "Нова подія організатора",
+        "FRIEND_EVENT_REGISTERED": "Друг іде на подію",
+        "ACCOUNT_REMINDER": "Підтвердіть пошту"
+      }
     }
   },
   "reviews": {

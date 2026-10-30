@@ -11,6 +11,9 @@ interface Insights {
   eventFunnel?: { views: number; registrationStarted: number; registered: number };
   creationFunnel?: { step1: number; step2: number; step3: number; published: number };
   activation?: { signups: number; activated24h: number; avgMinutesToFirstAction: number | null };
+  signupsByPlatform?: { platform: string; signups: number; activated24h: number }[];
+  channels?: { source: string; viewers: number; started: number; registered: number }[];
+  publishFailures?: { code: string; count: number }[];
   retention?: { cohort: number; d1: number; d7: number };
   swipes?: { right: number; left: number };
   externalRegistrations?: { clicks: number; people: number; top: { eventId: string; title: string; clicks: number }[] };
@@ -103,6 +106,30 @@ export function InsightsPanel({ period, refreshKey = 0 }: { period: Period; refr
         { key: "t", label: i("avgFirstAction"), value: a.avgMinutesToFirstAction === null ? "—" : `${a.avgMinutesToFirstAction} ${i("minutes")}` },
       ],
     });
+  }
+  if (data.signupsByPlatform) {
+    sections.push({
+      id: "signupsByPlatform",
+      title: i("signupsByPlatform"),
+      rows: data.signupsByPlatform.map((p) => {
+        const label = t(`admin.traffic.platformNames.${p.platform}`);
+        return { key: p.platform, label: label === `admin.traffic.platformNames.${p.platform}` ? p.platform : label, value: `${p.signups} · ${p.activated24h}${pct(p.activated24h, p.signups)}` };
+      }),
+    });
+  }
+  if (data.channels) {
+    sections.push({
+      id: "channels",
+      title: i("channels"),
+      hint: i("channelsHint"),
+      rows: data.channels.map((c) => {
+        const label = t(`admin.insights.channelNames.${c.source}`);
+        return { key: c.source, label: label === `admin.insights.channelNames.${c.source}` ? c.source : label, value: `${c.viewers} · ${c.started}${pct(c.started, c.viewers)} · ${c.registered}${pct(c.registered, c.viewers)}` };
+      }),
+    });
+  }
+  if (data.publishFailures) {
+    sections.push({ id: "publishFailures", title: i("publishFailures"), hint: i("publishFailuresHint"), rows: data.publishFailures.map((f) => ({ key: f.code, label: f.code, value: String(f.count) })) });
   }
   if (data.retention) {
     const r = data.retention;

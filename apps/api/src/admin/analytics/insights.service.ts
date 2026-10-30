@@ -4,7 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { EnvConfig } from "../../config/env.validation";
-import { hogqlWindow, rangeKey, resolveRange, type DateRange } from "./date-range";
+import { HOGQL_NOT_INTERNAL, hogqlScope, rangeKey, resolveRange, type DateRange } from "./date-range";
 
 export interface InsightsReport {
   days: number;
@@ -16,6 +16,12 @@ export interface InsightsReport {
   eventFunnel?: { views: number; registrationStarted: number; registered: number };
   creationFunnel?: { step1: number; step2: number; step3: number; published: number };
   activation?: { signups: number; activated24h: number; avgMinutesToFirstAction: number | null };
+  /** Sign-ups and who did something real within a day, per platform (web / android / ios). */
+  signupsByPlatform?: { platform: string; signups: number; activated24h: number }[];
+  /** Per traffic source: people who viewed an event, started and finished a registration. */
+  channels?: { source: string; viewers: number; started: number; registered: number }[];
+  /** Why publishing failed (API error codes) — where organizers get stuck. */
+  publishFailures?: { code: string; count: number }[];
   retention?: { cohort: number; d1: number; d7: number };
   swipes?: { right: number; left: number };
   /** Taps on "register / buy a ticket" for events whose registration happens on the organizer's own site. */
@@ -115,10 +121,10 @@ export class InsightsService implements OnApplicationBootstrap {
     };
     const n = (v: unknown) => Number(v ?? 0);
     // The window comes from resolveRange(), which validates the dates, so interpolating them into HogQL is safe.
-    const since = hogqlWindow(range);
+    const since = hogqlScope(range);
     const distinct = (event: string, extra = "") => `SELECT count(DISTINCT person_id) FROM events WHERE event = '${event}' ${extra} AND ${since}`;
 
-    const [views, started, registered, s1, s2, s3, published, activation, retention, swipes, top, noResults, extTotals, extTop] = await Promise.all([
+    const [views, started, registered, s1, s2, s3, published, activation, retention, swipes, top, noResults, extTotals, extTop, platformRows, channelRows, failureRows] = await Promise.all([
       run(distinct("event_view")),
       run(distinct("event_registration_started")),
       run(distinct("registration_completed")),
@@ -129,12 +135,15 @@ export class InsightsService implements OnApplicationBootstrap {
       // Per person: when they signed up and when they first did something real afterwards.
       run(`SELECT count(), countIf(fa > su AND dateDiff('hour', su, fa) <= 24), avgIf(dateDiff('minute', su, fa), fa > su AND dateDiff('hour', su, fa) <= 24) FROM (SELECT person_id, minIf(timestamp, event = 'sign_up') AS su, minIf(timestamp, event IN (${FIRST_ACTIONS})) AS fa FROM events WHERE ${since} GROUP BY person_id HAVING su > toDateTime('2000-01-01'))`),
       // Cohort = everyone first seen 7+ days ago (within 60 days); D1/D7 = came back exactly 1/7 days after their first day.
-      run(`SELECT count(), countIf(has(days, arrayMin(days) + 1)), countIf(has(days, arrayMin(days) + 7)) FROM (SELECT person_id, groupUniqArray(toDate(timestamp)) AS days FROM events WHERE timestamp >= now() - INTERVAL 60 DAY GROUP BY person_id) WHERE arrayMin(days) <= today() - 7`),
+      run(`SELECT count(), countIf(has(days, arrayMin(days) + 1)), countIf(has(days, arrayMin(days) + 7)) FROM (SELECT person_id, groupUniqArray(toDate(timestamp)) AS days FROM events WHERE timestamp >= now() - INTERVAL 60 DAY AND ${HOGQL_NOT_INTERNAL} GROUP BY person_id) WHERE arrayMin(days) <= today() - 7`),
       run(`SELECT countIf(properties.direction = 'right'), countIf(properties.direction = 'left') FROM events WHERE event = 'swipe' AND ${since}`),
       run(`SELECT properties.query AS q, count() FROM events WHERE event = 'search' AND properties.query != '' AND ${since} GROUP BY q ORDER BY count() DESC LIMIT 10`),
       run(`SELECT properties.query AS q, count() FROM events WHERE event = 'search' AND properties.query != '' AND toString(properties.results_count) = '0' AND ${since} GROUP BY q ORDER BY count() DESC LIMIT 10`),
       run(`SELECT count(), count(DISTINCT person_id) FROM events WHERE event = 'external_registration_click' AND ${since}`),
       run(`SELECT toString(properties.event_id) AS id, count() FROM events WHERE event = 'external_registration_click' AND ${since} GROUP BY id ORDER BY count() DESC LIMIT 10`),
+      run(`SELECT platform, count(), countIf(fa > su AND dateDiff('hour', su, fa) <= 24) FROM (SELECT person_id, argMinIf(coalesce(nullIf(toString(properties.platform), ''), 'web'), timestamp, event = 'sign_up') AS platform, minIf(timestamp, event = 'sign_up') AS su, minIf(timestamp, event IN (${FIRST_ACTIONS})) AS fa FROM events WHERE ${since} GROUP BY person_id HAVING su > toDateTime('2000-01-01')) GROUP BY platform ORDER BY 2 DESC`),
+      run(`SELECT coalesce(nullIf(toString(properties.source), ''), 'DIRECT') AS src, countDistinctIf(person_id, event = 'event_view'), countDistinctIf(person_id, event = 'event_registration_started'), countDistinctIf(person_id, event = 'registration_completed') FROM events WHERE event IN ('event_view', 'event_registration_started', 'registration_completed') AND ${since} GROUP BY src ORDER BY 2 DESC`),
+      run(`SELECT coalesce(nullIf(toString(properties.code), ''), 'UNKNOWN') AS c, count() FROM events WHERE event = 'event_publish_failed' AND ${since} GROUP BY c ORDER BY 2 DESC LIMIT 8`),
     ]);
     const extIds = extTop.map((r) => String(r[0])).filter((id) => /^[0-9a-f-]{36}$/i.test(id));
     const extTitles = new Map((await this.prisma.event.findMany({ where: { id: { in: extIds } }, select: { id: true, title: true } })).map((e) => [e.id, e.title]));
@@ -147,6 +156,9 @@ export class InsightsService implements OnApplicationBootstrap {
         activated24h: n(activation[0]?.[1]),
         avgMinutesToFirstAction: activation[0]?.[2] == null || Number.isNaN(Number(activation[0][2])) ? null : Math.round(n(activation[0][2])),
       },
+      signupsByPlatform: platformRows.map((r) => ({ platform: String(r[0]), signups: n(r[1]), activated24h: n(r[2]) })),
+      channels: channelRows.map((r) => ({ source: String(r[0]), viewers: n(r[1]), started: n(r[2]), registered: n(r[3]) })),
+      publishFailures: failureRows.map((r) => ({ code: String(r[0]), count: n(r[1]) })),
       retention: { cohort: n(retention[0]?.[0]), d1: n(retention[0]?.[1]), d7: n(retention[0]?.[2]) },
       swipes: { right: n(swipes[0]?.[0]), left: n(swipes[0]?.[1]) },
       externalRegistrations: {

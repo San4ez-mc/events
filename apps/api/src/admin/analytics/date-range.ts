@@ -63,4 +63,12 @@ export function hogqlWindow(range: DateRange): string {
   return `timestamp >= toDateTime('${range.from} 00:00:00') AND timestamp < toDateTime('${range.toExclusive} 00:00:00')`;
 }
 
+/** Visits marked `internal` by the apps (staff, review account, listing profiles) are left out of every PostHog report. */
+export const HOGQL_NOT_INTERNAL = "coalesce(toString(properties.internal), '') != 'true'";
+
+/** The window plus the internal-traffic filter: what every PostHog report in the admin uses. */
+export function hogqlScope(range: DateRange): string {
+  return `${hogqlWindow(range)} AND ${HOGQL_NOT_INTERNAL}`;
+}
+
 export const rangeKey = (r: DateRange): string => `${r.from}|${r.to}`;

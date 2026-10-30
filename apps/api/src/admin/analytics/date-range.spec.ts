@@ -1,4 +1,4 @@
-import { hogqlWindow, resolveRange } from "./date-range";
+import { hogqlScope, hogqlWindow, resolveRange } from "./date-range";
 
 describe("resolveRange", () => {
   it("covers both ends of an explicit period, in Kyiv days", () => {
@@ -7,6 +7,11 @@ describe("resolveRange", () => {
     expect(r.toExclusive).toBe("2026-10-08");
     expect(r.start.toISOString()).toBe("2026-09-30T21:00:00.000Z");
     expect(hogqlWindow(r)).toBe("timestamp >= toDateTime('2026-10-01 00:00:00') AND timestamp < toDateTime('2026-10-08 00:00:00')");
+  });
+
+  it("adds the internal-traffic filter to the scope", () => {
+    const r = resolveRange({ from: "2026-10-01", to: "2026-10-01" });
+    expect(hogqlScope(r)).toBe(`${hogqlWindow(r)} AND coalesce(toString(properties.internal), '') != 'true'`);
   });
 
   it("treats a single day (from = to) as one day and swaps reversed dates", () => {

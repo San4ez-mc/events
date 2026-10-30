@@ -111,7 +111,7 @@ function enqueue(event: string, properties: Record<string, unknown> = {}): void 
   if (!enabled) return;
   try {
     touchSession();
-    queue.push({ event, properties: { ...properties, $session_id: sessionId }, timestamp: new Date().toISOString() });
+    queue.push({ event, properties: { ...properties, $session_id: sessionId, ...(internalAccount ? { internal: true } : {}) }, timestamp: new Date().toISOString() });
     if (queue.length >= MAX_BATCH) void flush();
     else if (!timer) timer = setTimeout(() => void flush(), FLUSH_MS);
   } catch {
@@ -154,7 +154,19 @@ export function captureEvent(name: string, props?: Record<string, unknown>): voi
 }
 
 /** Tie future events to the signed-in user id (not email); `null` on logout goes back to the anonymous device id. */
-export function identifyUser(id: string | null): void {
+/**
+ * Staff, the Google Play review account and our own listing profiles: their visits are marked `internal` so the admin
+ * dashboards can leave them out (they used to show up as top pages, e.g. /admin with 120 views from one person).
+ */
+export function isInternalAccount(user: { role: string; email: string } | null): boolean {
+  if (!user) return false;
+  return user.role !== "USER" || user.email.endsWith("@kiro.fineko.space") || user.email.endsWith("@listings.kiro.invalid");
+}
+
+let internalAccount = false;
+
+export function identifyUser(id: string | null, internal = false): void {
+  internalAccount = internal;
   if (!enabled || id === userId) return;
   userId = id;
   if (id && POSTHOG_KEY) {

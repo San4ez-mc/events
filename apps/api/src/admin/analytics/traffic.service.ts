@@ -2,7 +2,7 @@ import { Injectable, Logger, type OnApplicationBootstrap } from "@nestjs/common"
 import { Cron } from "@nestjs/schedule";
 import { ConfigService } from "@nestjs/config";
 import type { EnvConfig } from "../../config/env.validation";
-import { hogqlWindow, rangeKey, resolveRange, type DateRange } from "./date-range";
+import { hogqlScope, rangeKey, resolveRange, type DateRange } from "./date-range";
 
 export interface TrafficReport {
   configured: boolean;
@@ -14,6 +14,8 @@ export interface TrafficReport {
   topPages?: { page: string; views: number; visitors: number; avgSeconds: number | null }[];
   platforms?: { platform: string; visitors: number; avgSessionSeconds: number | null }[];
   referrers?: { source: string; visitors: number }[];
+  /** `utm_source` of the links people arrived by (Instagram stories, Telegram, newsletters...). */
+  utmSources?: { source: string; visitors: number }[];
   /** Website visitors by operating system (iOS / Android / Windows / macOS...) — a stand-in for "how many iPhone users do we have" before there is an iOS app. */
   webOs?: { os: string; visitors: number }[];
   error?: string;
@@ -66,14 +68,14 @@ export class TrafficService implements OnApplicationBootstrap {
       };
 
       // The window comes from resolveRange(), which validates the dates, so interpolating them into HogQL is safe.
-      const since = hogqlWindow(range);
+      const since = hogqlScope(range);
       const pageEvents = `event IN ('$pageview', '$screen')`;
       // A session with one event has no measurable length, so only sessions with 2+ events count towards averages.
       const sessionLengths = `SELECT any(properties.platform) AS platform, dateDiff('second', min(timestamp), max(timestamp)) AS d FROM events WHERE ${since} AND properties.$session_id IS NOT NULL AND properties.$session_id != '' GROUP BY properties.$session_id HAVING count() > 1`;
-      const [totals, daily, pages, platforms, referrers, avgSession, avgSessionByPlatform, pageTimes, webOs] = await Promise.all([
+      const [totals, daily, pages, platforms, referrers, avgSession, avgSessionByPlatform, pageTimes, webOs, utm] = await Promise.all([
         run(`SELECT count(DISTINCT person_id), countIf(${pageEvents}), count(DISTINCT properties.$session_id) FROM events WHERE ${since}`),
         run(`SELECT toString(toDate(timestamp)) AS d, count(DISTINCT person_id), countIf(${pageEvents}) FROM events WHERE ${since} GROUP BY d ORDER BY d`),
-        run(`SELECT coalesce(properties.$pathname, properties.$screen_name, '?') AS page, count(), count(DISTINCT person_id) FROM events WHERE ${pageEvents} AND ${since} GROUP BY page ORDER BY count() DESC LIMIT 15`),
+        run(`SELECT coalesce(properties.$pathname, properties.$screen_name, '?') AS page, count(), count(DISTINCT person_id) FROM events WHERE ${pageEvents} AND ${since} AND coalesce(properties.$pathname, properties.$screen_name, '?') NOT LIKE '/admin%' GROUP BY page ORDER BY count() DESC LIMIT 15`),
         run(`SELECT coalesce(properties.platform, 'unknown') AS platform, count(DISTINCT person_id) FROM events WHERE ${since} GROUP BY platform ORDER BY 2 DESC`),
         run(`SELECT coalesce(nullIf(properties.$referring_domain, ''), '$direct') AS src, count(DISTINCT person_id) FROM events WHERE event = '$pageview' AND ${since} GROUP BY src ORDER BY 2 DESC LIMIT 10`),
         run(`SELECT avg(d) FROM (${sessionLengths})`),
@@ -81,6 +83,7 @@ export class TrafficService implements OnApplicationBootstrap {
         // Web sends $pageleave (with $prev_pageview_duration), the app sends screen_leave (with duration_seconds).
         run(`SELECT page, avg(dur) FROM (SELECT coalesce(properties.$prev_pageview_pathname, properties.$pathname, properties.$screen_name) AS page, coalesce(toFloat(properties.$prev_pageview_duration), toFloat(properties.duration_seconds)) AS dur FROM events WHERE event IN ('$pageleave', 'screen_leave') AND ${since}) WHERE dur > 0 AND dur < 1800 GROUP BY page`),
         run(`SELECT coalesce(nullIf(properties.$os, ''), 'unknown') AS os, count(DISTINCT person_id) FROM events WHERE properties.platform = 'web' AND ${since} GROUP BY os ORDER BY 2 DESC`),
+        run(`SELECT coalesce(nullIf(properties.utm_source, ''), nullIf(properties.$initial_utm_source, '')) AS src, count(DISTINCT person_id) FROM events WHERE event = '$pageview' AND ${since} GROUP BY src HAVING src IS NOT NULL ORDER BY 2 DESC LIMIT 10`),
       ]);
       const timeByPage = new Map(pageTimes.map((r) => [String(r[0]), Number(r[1])]));
       const sessionByPlatform = new Map(avgSessionByPlatform.map((r) => [String(r[0]), Number(r[1])]));
@@ -96,6 +99,7 @@ export class TrafficService implements OnApplicationBootstrap {
         platforms: this.withAllPlatforms(platforms.map((r) => ({ platform: String(r[0]), visitors: Number(r[1]), avgSessionSeconds: sessionByPlatform.has(String(r[0])) ? Math.round(sessionByPlatform.get(String(r[0]))!) : null }))),
         webOs: webOs.map((r) => ({ os: String(r[0]), visitors: Number(r[1]) })),
         referrers: referrers.map((r) => ({ source: String(r[0]), visitors: Number(r[1]) })),
+        utmSources: utm.map((r) => ({ source: String(r[0]), visitors: Number(r[1]) })),
       };
       this.cache.set(key, { at: Date.now(), report });
       return report;

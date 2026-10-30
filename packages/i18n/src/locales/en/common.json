@@ -666,7 +666,9 @@
         "android": "Android app",
         "ios": "iOS app",
         "unknown": "Unknown"
-      }
+      },
+      "utm": "Sources by UTM tag",
+      "utmHint": "which links people came from: Instagram, Telegram, newsletters"
     },
     "accessDenied": "You don't have access to the admin panel",
     "nav": {
@@ -911,7 +913,20 @@
       "externalClicks": "Taps to the organizer's registration",
       "externalClicksHint": "How often people tapped Register / Buy ticket on events with external registration, and which events get the most taps.",
       "externalTotal": "Total taps",
-      "externalPeople": "Unique people"
+      "externalPeople": "Unique people",
+      "signupsByPlatform": "New accounts by platform",
+      "channels": "Channels: viewed · started · registered",
+      "channelsHint": "unique people by how they reached the event",
+      "channelNames": {
+        "SWIPE": "Feed swipe",
+        "SEARCH": "Search",
+        "DIRECT": "Direct link",
+        "PROFILE": "Organizer profile",
+        "THREADS": "Threads",
+        "OTHER": "Other"
+      },
+      "publishFailures": "Why publishing failed",
+      "publishFailuresHint": "error codes on publish: where organizers get stuck"
     },
     "loadingSlow": "Gathering data. This can take a few seconds…",
     "referrals": {
@@ -957,7 +972,52 @@
       "reports": "Organizer reports",
       "reportsHint": "submitted / events with registrations",
       "feedbackTitle": "Organizer feedback",
-      "feedbackEmpty": "Nothing yet"
+      "feedbackEmpty": "Nothing yet",
+      "empty": "Nothing yet",
+      "repeat": "Came to 2+ events",
+      "repeatHint": "repeat attendees / everyone who came",
+      "sourcesTitle": "Where events come from",
+      "sourcesHint": "new · views · saves · registrations · ticket clicks",
+      "sourceNames": {
+        "app": "Created in Kiro",
+        "telegram_bot": "Telegram bot",
+        "ottry": "ottry.com",
+        "concert_ua": "concert.ua",
+        "kontramarka": "kontramarka.ua"
+      },
+      "funnelTitle": "Organizer funnel",
+      "funnelHint": "drafts created in the period and what the abandoned ones lack",
+      "funnelOrganizers": "Organizers with a draft",
+      "funnelOrganizersPublished": "of them published",
+      "funnelCreated": "Drafts created",
+      "funnelPublished": "Published",
+      "funnelAbandoned": "Abandoned (older than a day)",
+      "missingDate": "abandoned without a date",
+      "missingPlace": "abandoned without a city",
+      "missingCategory": "abandoned without a category",
+      "missingCover": "abandoned without a cover",
+      "missingDescription": "abandoned without a description",
+      "turnoutCity": "Turnout by city",
+      "turnoutCategory": "Turnout by category",
+      "turnoutOrganizer": "Turnout by organizer",
+      "turnoutHint": "came/registered · percent",
+      "notifTitle": "Notification opens",
+      "notifHint": "sent · opened",
+      "notifNames": {
+        "EVENT_REMINDER_24H": "24h reminder",
+        "EVENT_REMINDER_1H": "1h reminder",
+        "ADMIN_BROADCAST": "Admin broadcast",
+        "WEEKLY_DIGEST": "Weekly digest",
+        "REGISTRATION_RECEIVED": "New registration (to organizer)",
+        "REGISTRATION_APPROVED": "Registration approved",
+        "REVIEW_REQUEST": "Review request",
+        "SHARE_PROMPT": "Share your event",
+        "DRAFT_REMINDER": "Finish your draft",
+        "EVENT_REPORT_REQUEST": "Event wrap-up",
+        "ORGANIZER_NEW_EVENT": "New event from organizer",
+        "FRIEND_EVENT_REGISTERED": "Friend is going",
+        "ACCOUNT_REMINDER": "Confirm your email"
+      }
     }
   },
   "reviews": {

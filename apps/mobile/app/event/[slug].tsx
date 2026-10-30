@@ -96,11 +96,7 @@ export default function EventDetailScreen() {
   const eventId = event?.id;
   const eventStatus = event?.status;
   useEffect(() => {
-    if (eventId && eventStatus === "PUBLISHED") {
-      track(eventId, "VIEW", sourceFromParam(src));
-      // The admin funnel (views -> registration started -> registered) reads PostHog, not our own view counter.
-      captureEvent("event_view", { event_id: eventId, source: src ?? "direct" });
-    }
+    if (eventId && eventStatus === "PUBLISHED") track(eventId, "VIEW", sourceFromParam(src));
   }, [eventId, eventStatus, src]);
 
   useEffect(() => {
@@ -225,7 +221,8 @@ export default function EventDetailScreen() {
   async function submit() {
     const token = getAccessToken();
     if (!token || !event) return;
-    captureEvent("event_registration_started", { event_id: event.id });
+    // Also reaches PostHog as `event_registration_started` (see track()); the channel lets the admin compare conversion per source.
+    track(event.id, "REGISTRATION_STARTED", sourceFromParam(src));
     setSubmitting(true);
     setError(null);
     try {
@@ -243,7 +240,7 @@ export default function EventDetailScreen() {
       if (!res.ok) throw new ApiRequestError(body);
       setRegistration(body);
       setShowForm(false);
-      captureEvent("registration_completed", { event_id: event.id, category: event.category?.nameUk, city: event.city?.nameUk, paid: event.priceType === "PAID", status: body.status });
+      captureEvent("registration_completed", { source: sourceFromParam(src), event_id: event.id, category: event.category?.nameUk, city: event.city?.nameUk, paid: event.priceType === "PAID", status: body.status });
       void loadEvent(); // the exact address is only sent to registered users (§10)
     } catch (err) {
       if (err instanceof ApiRequestError && err.code === "EVENT_CAPACITY_REACHED") setJoinWaitlist(true);

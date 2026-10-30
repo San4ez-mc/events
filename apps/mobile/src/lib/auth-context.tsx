@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { UserRole } from "@kiro/types";
 import { API_URL, getAccessToken, refreshAccessToken, setAccessToken } from "./api-client";
-import { captureEvent, identifyUser } from "./product-analytics";
+import { captureEvent, identifyUser, isInternalAccount } from "./product-analytics";
 import { setStoredRefreshToken } from "./token-storage";
 
 export interface SessionUser {
@@ -28,8 +28,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   useEffect(() => {
-    identifyUser(user?.id ?? null);
-  }, [user?.id]);
+    identifyUser(user?.id ?? null, isInternalAccount(user));
+  }, [user?.id, user?.role, user?.email]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Same silent-restore idea as web's AuthProvider, just from SecureStore instead of an httpOnly cookie.

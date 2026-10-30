@@ -14,6 +14,7 @@ interface TrafficReport {
   topPages?: { page: string; views: number; visitors: number; avgSeconds: number | null }[];
   platforms?: { platform: string; visitors: number; avgSessionSeconds: number | null }[];
   referrers?: { source: string; visitors: number }[];
+  utmSources?: { source: string; visitors: number }[];
   webOs?: { os: string; visitors: number }[];
   error?: string;
 }
@@ -89,6 +90,14 @@ export function TrafficPanel({ period, refreshKey = 0 }: { period: Period; refre
         empty={t("admin.traffic.empty")}
         rows={(report.webOs ?? []).map((o) => ({ key: o.os, label: o.os, value: String(o.visitors) }))}
       />
+      {(report.utmSources ?? []).length > 0 && (
+        <Section
+          title={t("admin.traffic.utm")}
+          hint={t("admin.traffic.utmHint")}
+          empty={t("admin.traffic.empty")}
+          rows={(report.utmSources ?? []).map((r) => ({ key: r.source, label: r.source, value: String(r.visitors) }))}
+        />
+      )}
       <Section
         title={t("admin.traffic.sources")}
         empty={t("admin.traffic.empty")}

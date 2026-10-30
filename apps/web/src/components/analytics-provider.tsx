@@ -10,6 +10,7 @@ import {
   capturePageview,
   getStoredConsent,
   identifyUser,
+  isInternalAccount,
   startAnalytics,
   storeConsent,
 } from "@/lib/product-analytics";
@@ -43,8 +44,9 @@ export function AnalyticsProvider() {
   }, [ready, pathname, searchParams]);
 
   useEffect(() => {
-    if (ready) identifyUser(user?.id ?? null);
-  }, [ready, user?.id, consentTick]);
+    if (ready) identifyUser(user?.id ?? null, isInternalAccount(user));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only the id, role and email matter here
+  }, [ready, user?.id, user?.role, user?.email, consentTick]);
 
   if (!analyticsConfigured || !needsChoice) return null;
 

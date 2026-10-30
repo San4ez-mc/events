@@ -1,7 +1,7 @@
 "use client";
 
 import { captureEvent } from "@/lib/product-analytics";
-import { track } from "@/lib/analytics";
+import { detectSource, track } from "@/lib/analytics";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -68,7 +68,8 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
   async function submit() {
     const token = getAccessToken();
     if (!token) return;
-    captureEvent("event_registration_started", { event_id: event.id });
+    // Also reaches PostHog as `event_registration_started` (see track()); the channel lets the admin compare conversion per source.
+    track(event.id, "REGISTRATION_STARTED", detectSource());
     setSubmitting(true);
     setError(null);
     try {
@@ -93,7 +94,7 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
       if (!res.ok) throw new ApiRequestError(body);
       setRegistration(body as Registration);
       setShowForm(false);
-      captureEvent("registration_completed", { event_id: event.id, category: event.category?.nameUk, city: event.city?.nameUk, paid: event.priceType === "PAID", status: (body as Registration).status });
+      captureEvent("registration_completed", { source: detectSource(), event_id: event.id, category: event.category?.nameUk, city: event.city?.nameUk, paid: event.priceType === "PAID", status: (body as Registration).status });
     } catch (err) {
       if (
         err instanceof ApiRequestError &&

@@ -99,10 +99,23 @@ export function captureEvent(name: string, props?: Record<string, unknown>): voi
   if (gaLoaded) (window as unknown as { gtag: Gtag }).gtag("event", name, props);
 }
 
-export function identifyUser(userId: string | null): void {
+/**
+ * Staff, the Google Play review account and our own listing profiles: their visits are marked `internal` so the admin
+ * dashboards can leave them out (they used to show up as top pages, e.g. /admin with 120 views from one person).
+ */
+export function isInternalAccount(user: { role: string; email: string } | null): boolean {
+  if (!user) return false;
+  return user.role !== "USER" || user.email.endsWith("@kiro.fineko.space") || user.email.endsWith("@listings.kiro.invalid");
+}
+
+export function identifyUser(userId: string | null, internal = false): void {
   // Without consent PostHog runs memory-only and mints a new anonymous id on every page load — identifying then would
   // merge a fresh id into the person each time. Stay anonymous until the visitor accepts.
   if (!posthog || getStoredConsent() !== "granted") return;
-  if (userId) posthog.identify(userId);
-  else posthog.reset();
+  if (userId) {
+    posthog.identify(userId);
+    // Super property: attached to every later event of this browser until logout (reset() below clears it).
+    if (internal) posthog.register({ internal: true });
+    else posthog.unregister("internal");
+  } else posthog.reset();
 }
