@@ -67,6 +67,7 @@ export function DiscoverFeed() {
   const fetchingRef = useRef(false);
 
   const [drag, setDrag] = useState({ x: 0, y: 0, active: false });
+  const dragRef = useRef({ x: 0, y: 0 });
   const [flyOut, setFlyOut] = useState<null | "left" | "right">(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -338,6 +339,7 @@ export function DiscoverFeed() {
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (flyOut) return;
     startRef.current = { x: e.clientX, y: e.clientY };
+    dragRef.current = { x: 0, y: 0 };
     e.currentTarget.setPointerCapture(e.pointerId);
     setDrag({ x: 0, y: 0, active: true });
   }
@@ -345,21 +347,25 @@ export function DiscoverFeed() {
   function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
     const start = startRef.current;
     if (!start) return;
-    setDrag({
-      x: e.clientX - start.x,
-      y: (e.clientY - start.y) * 0.3,
-      active: true,
-    });
+    const next = { x: e.clientX - start.x, y: (e.clientY - start.y) * 0.3 };
+    dragRef.current = next;
+    setDrag({ ...next, active: true });
   }
 
-  function onPointerUp() {
+  /**
+   * End of a gesture. `cancelled` = the browser took the touch over (iOS Safari does this mid-swipe): the card used to snap back
+   * whatever the distance, which looked like a swipe that "didn't take". A cancelled gesture that already went past the swipe
+   * distance now counts as a swipe; a short one just resets and never counts as a tap.
+   * The offsets come from a ref, not from state: on iOS pointerup can arrive before React re-rendered with the last move.
+   */
+  function finishGesture(cancelled: boolean) {
     const start = startRef.current;
     startRef.current = null;
     if (!start) return;
-    const { x, y } = drag;
+    const { x, y } = dragRef.current;
     if (Math.abs(x) < TAP_DISTANCE && Math.abs(y) < TAP_DISTANCE) {
       setDrag({ x: 0, y: 0, active: false });
-      handleOpen();
+      if (!cancelled) handleOpen();
       return;
     }
     if (Math.abs(x) >= SWIPE_DISTANCE) {
@@ -376,6 +382,8 @@ export function DiscoverFeed() {
     }
     setDrag({ x: 0, y: 0, active: false });
   }
+
+  const onPointerUp = () => finishGesture(false);
 
   const passOpacity = Math.min(1, Math.max(0, -drag.x / SWIPE_DISTANCE));
   const openOpacity = Math.min(1, Math.max(0, drag.x / SWIPE_DISTANCE));
@@ -496,11 +504,8 @@ export function DiscoverFeed() {
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
-              onPointerCancel={() => {
-                startRef.current = null;
-                setDrag({ x: 0, y: 0, active: false });
-              }}
-              className="absolute inset-0 cursor-grab touch-pan-y select-none active:cursor-grabbing"
+              onPointerCancel={() => finishGesture(true)}
+              className="absolute inset-0 cursor-grab touch-none select-none active:cursor-grabbing"
               style={{
                 transform: `translate(${drag.x}px, ${drag.y}px) rotate(${drag.x / 25}deg)`,
                 transition: drag.active ? "none" : "transform 220ms ease-out",
