@@ -8,7 +8,7 @@ import { EventsService } from "../../events/events.service";
 import { EventMediaService } from "../../event-media/event-media.service";
 import { matchCity, hintCity, type CityRow } from "./cities";
 import { OTTRY_SOURCE, ottryUrls, parseOttryEvent } from "./ottry";
-import { parseJsonLdEvent, sitemapLocs } from "./jsonld";
+import { parseJsonLdEvent, parseKontramarkaEvent, sitemapLocs } from "./jsonld";
 import type { ExternalEvent, ParseResult } from "./types";
 
 /** The one profile every imported event is published under, so we never create a profile per organizer. */
@@ -47,7 +47,7 @@ export const SOURCES: Record<string, SourceConfig> = {
     id: "kontramarka",
     sitemaps: ["https://kontramarka.ua/uk/sitemap.xml"],
     listUrls: (xml) => sitemapLocs(xml).filter((u) => /^https:\/\/kontramarka\.ua\/uk\/[^/?#]+\.html$/.test(u)),
-    parse: (html, url) => parseJsonLdEvent(html, url, "kontramarka"),
+    parse: parseKontramarkaEvent,
     delayMs: 10_000,
   },
 };

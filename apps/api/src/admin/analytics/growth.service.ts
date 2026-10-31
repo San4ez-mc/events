@@ -212,12 +212,16 @@ export class GrowthService {
     };
   }
 
-  /** Which notification types people actually open. */
+  /**
+   * Which notification types people actually open. Only people with the app installed count: the others get the same
+   * messages by email (opens are not tracked), so they can never mark an in-app notification as read and would drag every rate down.
+   */
   private async notificationsByType(range: DateRange) {
     const rows = await this.prisma.$queryRaw<{ type: string; sent: bigint; read: bigint }[]>(Prisma.sql`
       SELECT n.type::text AS type, count(*) AS sent, count(n."readAt") AS read
       FROM notifications n JOIN users u ON u.id = n."userId"
       WHERE n."createdAt" >= ${range.start} AND n."createdAt" < ${range.end} AND u.email NOT LIKE ${"%" + LISTING_DOMAIN}
+        AND EXISTS (SELECT 1 FROM user_devices d WHERE d."userId" = n."userId" AND d.active)
       GROUP BY n.type ORDER BY sent DESC LIMIT 15`);
     return rows.map((r) => ({ type: r.type, sent: Number(r.sent), read: Number(r.read), readPercent: pct(Number(r.read), Number(r.sent)) ?? 0 }));
   }

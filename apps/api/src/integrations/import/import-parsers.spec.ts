@@ -1,5 +1,5 @@
 import { findTime, ottryUrls, parseOttryEvent, tierPrices } from "./ottry";
-import { findEventNodes, parseJsonLdEvent } from "./jsonld";
+import { breadcrumbCategory, findEventNodes, parseJsonLdEvent, parseKontramarkaEvent } from "./jsonld";
 import { classify } from "./classify";
 import { hintCity, matchCity } from "./cities";
 
@@ -106,6 +106,23 @@ describe("JSON-LD parser", () => {
   it("survives a broken block next to a good one and finds events inside @graph", () => {
     const html = `<script type="application/ld+json">{oops</script><script type="application/ld+json">${JSON.stringify({ "@graph": [{ "@type": "Event", name: "A", startDate: "2026-12-01T19:00:00+02:00" }] })}</script>`;
     expect(findEventNodes(html)).toHaveLength(1);
+  });
+});
+
+describe("kontramarka", () => {
+  const page = (section: string, dates = 1) =>
+    `<script type="application/ld+json">${JSON.stringify({ "@type": "BreadcrumbList", itemListElement: [{ position: 1, name: "Афіша Київ" }, { position: 2, name: section }, { position: 3, name: "Назва" }] })}</script>` +
+    Array.from({ length: dates }, (_, i) => ldPage({ startDate: `2026-11-${String(i + 1).padStart(2, "0")}T19:00:00+02:00` })).join("");
+
+  it("reads the section from the breadcrumb trail", () => {
+    expect(breadcrumbCategory(page("STAND-UP"))).toBe("STAND-UP");
+    expect(breadcrumbCategory("<html></html>")).toBeNull();
+  });
+
+  it("publishes shows and skips permanent attractions", () => {
+    expect(parseKontramarkaEvent(page("STAND-UP"), "https://kontramarka.ua/uk/show.html")).toHaveProperty("event");
+    expect(parseKontramarkaEvent(page("ЗООПАРК"), "https://kontramarka.ua/uk/zoo.html")).toEqual({ skip: "attraction, not an event" });
+    expect(parseKontramarkaEvent(page("ЩОСЬ ІНШЕ", 20), "https://kontramarka.ua/uk/x.html")).toEqual({ skip: "attraction with a date for every day" });
   });
 });
 

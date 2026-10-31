@@ -120,3 +120,34 @@ export function parseJsonLdEvent(html: string, url: string, source: string): Par
   };
   return { event };
 }
+
+/** Section of the site a page sits in ("STAND-UP", "ЗООПАРК"): the second item of its breadcrumb trail. */
+export function breadcrumbCategory(html: string): string | null {
+  for (const m of html.matchAll(/<script[^>]+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)) {
+    try {
+      const data = JSON.parse(m[1]!.trim()) as Json | Json[];
+      for (const node of asArray(data)) {
+        if (node["@type"] !== "BreadcrumbList") continue;
+        const items = asArray(node.itemListElement as Json | Json[]);
+        if (items.length < 3) return null;
+        const second = items[1]!;
+        const inner = second.item && typeof second.item === "object" ? str((second.item as Json).name) : null;
+        return str(second.name) ?? inner;
+      }
+    } catch {
+      // not a usable block: look at the next one
+    }
+  }
+  return null;
+}
+
+/** kontramarka.ua also sells permanent attractions (zoo, museums, aquarium) that show up as events with a date for every single day. */
+const ATTRACTION_SECTION = /зоопарк|музей|океанарі|акваріум|екскурс|квест|атракціон|планетарі|ферма|лабіринт/i;
+const DAILY_ATTRACTION_DATES = 14;
+
+export function parseKontramarkaEvent(html: string, url: string): ParseResult {
+  const section = breadcrumbCategory(html);
+  if (section && ATTRACTION_SECTION.test(section)) return { skip: "attraction, not an event" };
+  if (findEventNodes(html).length >= DAILY_ATTRACTION_DATES) return { skip: "attraction with a date for every day" };
+  return parseJsonLdEvent(html, url, "kontramarka");
+}

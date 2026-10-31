@@ -1005,7 +1005,7 @@
       "turnoutOrganizer": "Turnout by organizer",
       "turnoutHint": "came/registered · percent",
       "notifTitle": "Notification opens",
-      "notifHint": "sent · opened",
+      "notifHint": "sent · opened (app users only: email opens are not tracked)",
       "notifNames": {
         "EVENT_REMINDER_24H": "24h reminder",
         "EVENT_REMINDER_1H": "1h reminder",
