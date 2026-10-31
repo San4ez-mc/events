@@ -148,6 +148,9 @@ const DAILY_ATTRACTION_DATES = 14;
 export function parseKontramarkaEvent(html: string, url: string): ParseResult {
   const section = breadcrumbCategory(html);
   if (section && ATTRACTION_SECTION.test(section)) return { skip: "attraction, not an event" };
+  // A museum listed under a general section: its title starts with what it is ("Музей гітар…"); "Ніч у музеї" is a real event and passes.
+  const title = findEventNodes(html)[0]?.name;
+  if (typeof title === "string" && /^(музей|зоопарк|океанаріум)(\s|$)/i.test(title.trim())) return { skip: "attraction, not an event" };
   if (findEventNodes(html).length >= DAILY_ATTRACTION_DATES) return { skip: "attraction with a date for every day" };
   return parseJsonLdEvent(html, url, "kontramarka");
 }

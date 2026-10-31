@@ -122,6 +122,7 @@ describe("kontramarka", () => {
   it("publishes shows and skips permanent attractions", () => {
     expect(parseKontramarkaEvent(page("STAND-UP"), "https://kontramarka.ua/uk/show.html")).toHaveProperty("event");
     expect(parseKontramarkaEvent(page("ЗООПАРК"), "https://kontramarka.ua/uk/zoo.html")).toEqual({ skip: "attraction, not an event" });
+    expect(parseKontramarkaEvent(page("ШОУ").replace("Трамвай — Бажання", "Музей гітар"), "https://kontramarka.ua/uk/m.html")).toEqual({ skip: "attraction, not an event" });
     expect(parseKontramarkaEvent(page("ЩОСЬ ІНШЕ", 20), "https://kontramarka.ua/uk/x.html")).toEqual({ skip: "attraction with a date for every day" });
   });
 });
