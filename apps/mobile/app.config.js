@@ -16,7 +16,8 @@ module.exports = {
     slug: "kiro",
     scheme: ["kiro", "space.fineko.kiro", "com.googleusercontent.apps.257175906055-ae1pea6dav87793tbpsub09j7u5tkn6q"],
     version: "1.0.0",
-    orientation: "portrait",
+    // Not "portrait": Android 16 ignores that on large screens and Play flags it. Phones are locked in code (src/lib/phone-orientation.ts).
+    orientation: "default",
     icon: "./assets/icon.png",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
@@ -66,7 +67,9 @@ module.exports = {
             // Google Play flags "DEX code optimization below threshold" (obfuscation 1% < 25%): turn on R8 shrinking +
             // obfuscation and resource shrinking for release builds. Expo modules ship their own keep rules; the first
             // build with this should go through closed testing before it is promoted (a bad keep rule only shows at runtime).
-            enableProguardInReleaseBuilds: true,
+            // The key is enableMinifyInReleaseBuilds: the older enableProguardInReleaseBuilds is not in expo-build-properties 57
+            // and is silently ignored, so R8 was never on (check the plugin's pluginConfig.d.ts when upgrading Expo).
+            enableMinifyInReleaseBuilds: true,
             enableShrinkResourcesInReleaseBuilds: true,
           },
         },
