@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, Alert, Image, Linking, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { API_URL, getAccessToken } from "../src/lib/api-client";
 import { useAuth } from "../src/lib/auth-context";
 import { useTranslations } from "../src/lib/locale-context";
@@ -171,6 +172,7 @@ function submitterName(u: Submitter | null, fallback: string): string {
  */
 export default function AdminScreen() {
   const { colors, styles } = useThemedStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { user, isLoading: authLoading } = useAuth();
   const { t } = useTranslations();
   const isAdmin = !!user && ADMIN_ROLES.includes(user.role);
@@ -1059,7 +1061,7 @@ export default function AdminScreen() {
 
       <Modal visible={replyTo !== null} transparent animationType="slide" onRequestClose={() => setReplyTo(null)}>
         <View style={styles.replyBackdrop}>
-          <ScrollView style={styles.replySheet} contentContainerStyle={{ gap: spacing.md, padding: spacing.lg }} keyboardShouldPersistTaps="handled">
+          <ScrollView style={styles.replySheet} contentContainerStyle={{ gap: spacing.md, padding: spacing.lg, paddingBottom: spacing.lg + insets.bottom }} keyboardShouldPersistTaps="handled">
             <Text style={styles.title}>{t("admin.reports.replyTitle")}</Text>
             {replyTo && (
               <Text style={styles.muted}>
