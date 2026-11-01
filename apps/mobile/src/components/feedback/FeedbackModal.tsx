@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as ImagePicker from "expo-image-picker";
@@ -13,6 +14,7 @@ import { Button } from "../ui/Button";
 /** "Повідомити про проблему розробнику": free text + optional screenshot, lands in the admin panel (POST /feedback/report). */
 export function FeedbackModal({ visible, onClose, context }: { visible: boolean; onClose: () => void; context?: string }) {
   const { colors, styles } = useThemedStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { t } = useTranslations();
   const [text, setText] = useState("");
   const [shot, setShot] = useState<string | null>(null);
@@ -76,7 +78,7 @@ export function FeedbackModal({ visible, onClose, context }: { visible: boolean;
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <Pressable style={styles.backdrop} onPress={onClose}>
-          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[styles.sheet, { paddingBottom: spacing.xl + insets.bottom }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.header}>
               <Text style={styles.title}>{t("feedback.title")}</Text>
               <Pressable onPress={onClose} hitSlop={10} accessibilityLabel={t("common.cancel")}>

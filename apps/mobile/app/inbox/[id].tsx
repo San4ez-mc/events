@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { API_URL, getAccessToken } from "../../src/lib/api-client";
 import { useAuth } from "../../src/lib/auth-context";
 import { useTranslations } from "../../src/lib/locale-context";
@@ -13,6 +14,7 @@ import { radius, spacing, type Palette, useThemedStyles } from "../../src/lib/th
 /** One conversation with an organizer (or with a person who asked about your event). Polls for new messages. */
 export default function InquiryScreen() {
   const { colors, styles } = useThemedStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user, isLoading } = useAuth();
   const { t } = useTranslations();
@@ -87,7 +89,7 @@ export default function InquiryScreen() {
           </View>
         )}
       />
-      <View style={styles.composer}>
+      <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
         <TextInput value={text} onChangeText={setText} placeholder={t("inbox.placeholder")} placeholderTextColor={colors.muted} multiline maxLength={1000} style={styles.input} />
         <Pressable onPress={() => void send()} disabled={sending || !text.trim()} style={[styles.send, (sending || !text.trim()) && { opacity: 0.5 }]} accessibilityLabel={t("inbox.send")}>
           <Ionicons name="send" size={20} color={colors.white} />

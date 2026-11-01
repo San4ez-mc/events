@@ -606,7 +606,7 @@ export default function EventDetailScreen() {
 
       <Modal visible={reportOpen} transparent animationType="fade" onRequestClose={() => setReportOpen(false)}>
         <Pressable style={styles.reportBackdrop} onPress={() => setReportOpen(false)}>
-          <Pressable style={styles.reportSheet} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[styles.reportSheet, { paddingBottom: spacing.xl + insets.bottom }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.reportHeader}>
               {menuView === "report" ? (
                 <Pressable
