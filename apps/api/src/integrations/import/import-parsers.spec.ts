@@ -1,5 +1,6 @@
 import { findTime, ottryUrls, parseOttryEvent, tierPrices } from "./ottry";
 import { breadcrumbCategory, findEventNodes, parseJsonLdEvent, parseKontramarkaEvent } from "./jsonld";
+import { decodeText, stripTags } from "./html";
 import { classify } from "./classify";
 import { hintCity, matchCity } from "./cities";
 
@@ -101,6 +102,16 @@ describe("JSON-LD parser", () => {
     expect(parseJsonLdEvent(ldPage({ ...online, location: { "@type": "VirtualLocation", name: "Zoom" } }), "https://x.ua/e", "s")).toEqual({ skip: "online event" });
     // A street address wins over a wrong "online" flag (kontramarka marks everything online).
     expect(parseJsonLdEvent(ldPage(online), "https://x.ua/e", "s")).toHaveProperty("event");
+  });
+
+  it("decodes HTML entities in text, including double-encoded ones (kontramarka: &amp;ldquo;)", () => {
+    const res = parseJsonLdEvent(ldPage({ name: "&ldquo;Ножиці&rdquo; в Києві", description: "<p>&amp;ldquo;Ножиці&amp;rdquo; &amp;mdash; детектив &amp;amp; комедія</p>" }), "https://x.ua/e", "s");
+    expect(res).toHaveProperty("event");
+    const ev = (res as { event: { title: string; description: string } }).event;
+    expect(ev.title).toBe("“Ножиці” в Києві");
+    expect(ev.description).toBe("“Ножиці” — детектив & комедія");
+    expect(decodeText("a &amp;lt;b&amp;gt; &hellip;")).toBe("a <b> …");
+    expect(stripTags("&ldquo;x&rdquo;<br>&bdquo;y&rsquo;")).toBe("“x”\n„y’");
   });
 
   it("survives a broken block next to a good one and finds events inside @graph", () => {

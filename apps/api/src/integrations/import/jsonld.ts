@@ -1,6 +1,6 @@
 import { hasUtcOffset, kyivLocalToDate } from "../../common/utils/kyiv-time";
 import { classify, EXCLUDE_TITLE } from "./classify";
-import { decodeEntities, stripTags } from "./html";
+import { decodeEntities, decodeText, stripTags } from "./html";
 import type { ExternalEvent, ParseResult } from "./types";
 
 type Json = Record<string, unknown>;
@@ -76,7 +76,8 @@ export function parseJsonLdEvent(html: string, url: string, source: string): Par
   const status = str(node.eventStatus) ?? "";
   if (/Cancelled|Postponed/i.test(status)) return { skip: "cancelled or postponed" };
   const mode = str(node.eventAttendanceMode) ?? "";
-  const title = str(node.name);
+  const rawTitle = str(node.name);
+  const title = rawTitle ? decodeText(rawTitle) : null;
   if (!title) return { skip: "no title" };
   if (EXCLUDE_TITLE.test(title)) return { skip: "not for a general audience" };
 
@@ -86,9 +87,10 @@ export function parseJsonLdEvent(html: string, url: string, source: string): Par
 
   const place = asArray(node.location as Json | Json[])[0];
   const addr = place?.address as Json | string | undefined;
-  const street = typeof addr === "string" ? addr : str(addr?.streetAddress);
-  const city = typeof addr === "object" && addr ? str(addr.addressLocality) : null;
-  const venue = str(place?.name);
+  const textOf = (v: string | null): string | null => (v ? decodeText(v) : null);
+  const street = textOf(typeof addr === "string" ? addr : str(addr?.streetAddress));
+  const city = typeof addr === "object" && addr ? textOf(str(addr.addressLocality)) : null;
+  const venue = textOf(str(place?.name));
   if (!venue && !street) return { skip: "no venue" };
   // Some sites (kontramarka) mark every event Online; a street address means it is a real place.
   if (/Online/i.test(mode) && !/Mixed|Offline/i.test(mode) && !street) return { skip: "online event" };
@@ -96,7 +98,7 @@ export function parseJsonLdEvent(html: string, url: string, source: string): Par
   const { min, max } = prices(node);
   const description = stripTags(str(node.description) ?? "").slice(0, 6000);
   const types = asArray(node["@type"] as string | string[]).map(String);
-  const organizer = str((asArray(node.organizer as Json | Json[])[0] as Json | undefined)?.name);
+  const organizer = textOf(str((asArray(node.organizer as Json | Json[])[0] as Json | undefined)?.name));
   const ref = url.replace(/^https?:\/\/[^/]+/, "").replace(/[?#].*$/, "").replace(/\/$/, "");
 
   const event: ExternalEvent = {
