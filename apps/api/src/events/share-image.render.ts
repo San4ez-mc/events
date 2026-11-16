@@ -1,4 +1,29 @@
+import { existsSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import sharp from "sharp";
+
+/**
+ * The brand typeface (Montserrat, SIL OFL; see assets/fonts/OFL.txt) ships with the API. The server has only DejaVu, so a
+ * fontconfig file is written that adds our folder to the system fonts. It must be set before the first text render:
+ * fontconfig reads it once, when the first text is drawn. Linux only (the server); elsewhere the system fonts are used.
+ */
+// apps/api/assets/fonts, seen from src/events (tests, ts-node) and from dist/src/events (the build keeps the src folder).
+const FONT_DIR = [resolve(__dirname, "../../assets/fonts"), resolve(__dirname, "../../../assets/fonts")].find((dir) => existsSync(dir)) ?? "";
+function registerBundledFonts(): void {
+  if (process.platform !== "linux" || process.env.FONTCONFIG_FILE || !FONT_DIR) return;
+  try {
+    const conf = join(tmpdir(), "kiro-fonts.conf");
+    writeFileSync(
+      conf,
+      `<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "fonts.dtd">\n<fontconfig>\n  <include ignore_missing="yes">/etc/fonts/fonts.conf</include>\n  <dir>${FONT_DIR}</dir>\n  <cachedir>${join(tmpdir(), "kiro-fontconfig-cache")}</cachedir>\n</fontconfig>\n`,
+    );
+    process.env.FONTCONFIG_FILE = conf;
+  } catch {
+    // No custom font: the drawing falls back to DejaVu Sans below.
+  }
+}
+registerBundledFonts();
 
 export const WIDTH = 1080;
 export const HEIGHTS = { story: 1920, post: 1350 } as const;
@@ -13,7 +38,7 @@ export type ShareImageFormat = keyof typeof HEIGHTS;
  */
 const SAFE = { story: { top: 250, bottom: 340 }, post: { top: 64, bottom: 64 } } as const;
 const MARGIN = 64;
-const FONT = "DejaVu Sans";
+const FONT = "Montserrat, DejaVu Sans";
 const HANDLE = "@kiro.ukraine";
 
 // ------------------------------------------------------------------ colours
@@ -155,7 +180,7 @@ function layoutChips(chips: Chip[], maxWidth: number) {
   let x = 0;
   let y = 0;
   for (const chip of chips) {
-    const w = Math.ceil(chip.text.length * CHIP_FONT * 0.7) + CHIP_PAD * 2;
+    const w = Math.ceil(chip.text.length * CHIP_FONT * 0.68) + CHIP_PAD * 2;
     if (x > 0 && x + w > maxWidth) {
       x = 0;
       y += CHIP_H + CHIP_GAP;
