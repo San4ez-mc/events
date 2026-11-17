@@ -1,5 +1,7 @@
 "use client";
 
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { IoAddCircle } from "react-icons/io5";
 import { captureEvent } from "@/lib/product-analytics";
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -356,6 +358,11 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
+      {!initialEvent && (
+        <div className="mb-6">
+          <ScreenHeader title={t("nav.create")} subtitle={t("create.subtitle")} Icon={IoAddCircle} />
+        </div>
+      )}
       <ol className="mb-8 flex flex-wrap gap-2 text-xs font-medium">
         {STEPS.map((s, i) => (
           <li key={s}>

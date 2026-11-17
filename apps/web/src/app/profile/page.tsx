@@ -1,13 +1,28 @@
 "use client";
 
 import { ScreenHeader } from "@/components/ui/screen-header";
-import { IoPerson } from "react-icons/io5";
+import {
+  IoChatbubbles,
+  IoChatbubblesOutline,
+  IoChevronForward,
+  IoContrast,
+  IoDocumentTextOutline,
+  IoLanguage,
+  IoLogOutOutline,
+  IoMailOpen,
+  IoPeople,
+  IoPerson,
+  IoShieldCheckmark,
+  IoStar,
+  IoTicket,
+} from "react-icons/io5";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Camera } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
+import { useTheme, type ThemePreference } from "@/lib/theme-context";
 import { getAccessToken } from "@/lib/api-client";
 import { formatPhoneInput } from "@/lib/format";
 import { fieldErrorMessage, readFieldErrors, type FieldErrors } from "@/lib/field-errors";
@@ -78,7 +93,8 @@ const TOGGLES: { key: keyof Prefs; labelKey: string }[] = [
 /** §21/§23 — own profile: photo, basic data, language, privacy toggles, notification opt-outs. */
 export default function ProfilePage() {
   const { user, isLoading: authLoading, logout } = useAuth();
-  const { t } = useTranslations();
+  const { t, locale, setLocale } = useTranslations();
+  const { theme, setTheme } = useTheme();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -91,6 +107,16 @@ export default function ProfilePage() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteFailed, setDeleteFailed] = useState(false);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  // Security block, as in the app: change email / change password, each with its own message.
+  const [newEmail, setNewEmail] = useState("");
+  const [emailPassword, setEmailPassword] = useState("");
+  const [emailMessage, setEmailMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [pwCurrent, setPwCurrent] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwMessage, setPwMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pwSaving, setPwSaving] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -106,6 +132,8 @@ export default function ProfilePage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!cancelled && res.ok) setMe((await res.json()) as Me);
+      const balance = await fetch("/api/v1/credits/balance", { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+      if (!cancelled && balance?.ok) setCreditBalance(((await balance.json()) as { balance?: number }).balance ?? null);
     })();
     return () => {
       cancelled = true;
@@ -237,6 +265,63 @@ export default function ProfilePage() {
     }
   }
 
+  /** Like the app: a switch is saved the moment it is flipped. */
+  async function togglePref(key: keyof Prefs, value: boolean) {
+    const token = getAccessToken();
+    if (!token || !me?.preferences) return;
+    const previous = me.preferences;
+    const next = { ...previous, [key]: value };
+    setMe((prev) => (prev ? { ...prev, preferences: next } : prev));
+    const res = await fetch("/api/v1/users/me/preferences", {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ [key]: value }),
+    }).catch(() => null);
+    if (!res?.ok) setMe((prev) => (prev ? { ...prev, preferences: previous } : prev));
+  }
+
+  async function secureCall(path: string, body: unknown): Promise<{ ok: boolean; code?: string }> {
+    const token = getAccessToken();
+    if (!token) return { ok: false };
+    const res = await fetch(`/api/v1${path}`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
+    if (res?.ok) return { ok: true };
+    const code = ((await res?.json().catch(() => null)) as { error?: { code?: string } } | null)?.error?.code;
+    return { ok: false, code };
+  }
+
+  async function changeEmail() {
+    setEmailSaving(true);
+    setEmailMessage(null);
+    const result = await secureCall("/users/me/email", { newEmail: newEmail.trim(), currentPassword: emailPassword });
+    setEmailSaving(false);
+    if (result.ok) {
+      setNewEmail("");
+      setEmailPassword("");
+      setEmailMessage({ ok: true, text: t("profile.emailChangedCheckInbox") });
+    } else {
+      setEmailMessage({ ok: false, text: result.code && t(`errors.${result.code}`) !== `errors.${result.code}` ? t(`errors.${result.code}`) : t("common.somethingWentWrong") });
+    }
+  }
+
+  async function changePassword() {
+    setPwSaving(true);
+    setPwMessage(null);
+    const result = await secureCall("/users/me/password", { currentPassword: pwCurrent, newPassword: pwNew });
+    setPwSaving(false);
+    if (result.ok) {
+      setPwCurrent("");
+      setPwNew("");
+      setPwMessage({ ok: true, text: t("profile.passwordChanged") });
+    } else {
+      setPwMessage({ ok: false, text: result.code && t(`errors.${result.code}`) !== `errors.${result.code}` ? t(`errors.${result.code}`) : t("common.somethingWentWrong") });
+    }
+  }
+
+  async function signOut() {
+    await logout().catch(() => {});
+    router.replace("/");
+  }
+
   async function uploadAvatar(file: File) {
     const token = getAccessToken();
     if (!token) return;
@@ -265,27 +350,24 @@ export default function ProfilePage() {
     <div className="mx-auto flex max-w-xl flex-col gap-6 px-4 py-10">
       <ScreenHeader title={t("nav.profile")} subtitle={t("screens.profileSubtitle")} Icon={IoPerson} />
       <VerifyEmailBanner />
-      <WebPushToggle />
-
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 rounded-[18px] bg-surface p-4">
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className="accent-gradient relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full text-3xl font-extrabold text-white"
+          disabled={uploading}
+          className="accent-gradient relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-[26px] font-extrabold text-white"
           aria-label={t("profile.changePhoto")}
         >
-          {me.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={me.avatarUrl}
-              alt=""
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            initial
-          )}
-          <span className="absolute inset-x-0 bottom-0 flex justify-center bg-black/40 py-1">
-            <Camera size={14} aria-hidden="true" />
+          <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full">
+            {me.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={me.avatarUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              initial
+            )}
+          </span>
+          <span className="absolute -bottom-0.5 -right-0.5 flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 border-surface bg-[var(--accent-to)] text-white">
+            <Camera size={12} aria-hidden="true" />
           </span>
         </button>
         <input
@@ -299,11 +381,18 @@ export default function ProfilePage() {
             e.target.value = "";
           }}
         />
-        <div className="text-sm text-muted">
-          {uploading ? t("common.loading") : t("profile.changePhoto")}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-lg font-bold">{me.name || me.nickname || user?.email}</p>
+          <p className="truncate text-[13px] text-muted">{user?.email}</p>
+          {creditBalance !== null && (
+            <p className="mt-0.5 text-xs">
+              {t("events.wizard.creditsBalance")}: <span className="font-extrabold">{creditBalance}</span>
+            </p>
+          )}
         </div>
       </div>
 
+      <h2 className="mt-2 text-xs font-bold uppercase tracking-wider text-muted">{t("profile.about")}</h2>
       <TextField
         label={t("auth.register.name")}
         value={me.name ?? ""}
@@ -317,6 +406,18 @@ export default function ProfilePage() {
         onChange={(v) => patch({ nickname: v })}
         error={errors.nickname}
       />
+
+      <div>
+        <TextField
+          label={t("profile.phone")}
+          type="tel"
+          value={me.phone ?? ""}
+          onChange={(v) => patch({ phone: formatPhoneInput(v) })}
+          autoComplete="tel"
+          error={errors.phone}
+        />
+        <p className="mt-1 text-xs text-muted">{t("profile.phoneHint")}</p>
+      </div>
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="bio" className="text-sm font-medium">
@@ -340,18 +441,6 @@ export default function ProfilePage() {
 
       <div>
         <TextField
-          label={t("profile.phone")}
-          type="tel"
-          value={me.phone ?? ""}
-          onChange={(v) => patch({ phone: formatPhoneInput(v) })}
-          autoComplete="tel"
-          error={errors.phone}
-        />
-        <p className="mt-1 text-xs text-muted">{t("profile.phoneHint")}</p>
-      </div>
-
-      <div>
-        <TextField
           label={t("profile.birthDate")}
           type="date"
           value={me.birthDate ? me.birthDate.slice(0, 10) : ""}
@@ -359,21 +448,6 @@ export default function ProfilePage() {
           error={errors.birthDate}
         />
         <p className="mt-1 text-xs text-muted">{t("profile.birthDateHint")}</p>
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="locale" className="text-sm font-medium">
-          {t("profile.language")}
-        </label>
-        <select
-          id="locale"
-          value={me.locale}
-          onChange={(e) => patch({ locale: e.target.value as "uk" | "en" })}
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm"
-        >
-          <option value="uk">Українська</option>
-          <option value="en">English</option>
-        </select>
       </div>
 
       <section className="flex flex-col gap-3">
@@ -456,35 +530,6 @@ export default function ProfilePage() {
         )}
       </section>
 
-      {me.preferences && (
-        <fieldset className="flex flex-col gap-3 rounded-2xl border border-border p-4">
-          <legend className="px-2 text-sm font-semibold">
-            {t("profile.settings")}
-          </legend>
-          {TOGGLES.map(({ key, labelKey }) => (
-            <label
-              key={key}
-              className="flex items-center justify-between gap-4 text-sm"
-            >
-              <span>{t(labelKey)}</span>
-              <input
-                type="checkbox"
-                className="h-5 w-5 accent-[var(--accent-from)]"
-                checked={me.preferences![key]}
-                onChange={(e) =>
-                  patch({
-                    preferences: {
-                      ...me.preferences!,
-                      [key]: e.target.checked,
-                    },
-                  })
-                }
-              />
-            </label>
-          ))}
-        </fieldset>
-      )}
-
       <div className="flex items-center gap-3">
         <Button onClick={save} loading={saving}>
           {t("common.save")}
@@ -504,6 +549,175 @@ export default function ProfilePage() {
           </span>
         )}
       </div>
+
+
+      <h2 className="mt-2 text-xs font-bold uppercase tracking-wider text-muted">{t("profile.security")}</h2>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void changeEmail();
+        }}
+        className="flex flex-col gap-3"
+      >
+        <TextField label={t("profile.changeEmail")} type="email" value={newEmail} onChange={setNewEmail} autoComplete="email" />
+        <TextField label={t("profile.currentPassword")} type="password" value={emailPassword} onChange={setEmailPassword} autoComplete="current-password" />
+        {emailMessage && <p role="status" className={`text-sm ${emailMessage.ok ? "text-green-600" : "text-danger"}`}>{emailMessage.text}</p>}
+        <Button type="submit" variant="secondary" loading={emailSaving} disabled={!newEmail.trim() || !emailPassword}>
+          {t("profile.changeEmail")}
+        </Button>
+      </form>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void changePassword();
+        }}
+        className="flex flex-col gap-3"
+      >
+        <TextField label={t("profile.currentPassword")} type="password" value={pwCurrent} onChange={setPwCurrent} autoComplete="current-password" />
+        <TextField label={t("profile.newPassword")} type="password" value={pwNew} onChange={setPwNew} autoComplete="new-password" />
+        {pwMessage && <p role="status" className={`text-sm ${pwMessage.ok ? "text-green-600" : "text-danger"}`}>{pwMessage.text}</p>}
+        <Button type="submit" variant="secondary" loading={pwSaving} disabled={!pwCurrent || pwNew.length < 8}>
+          {t("profile.changePassword")}
+        </Button>
+      </form>
+      {me.preferences && (
+        <>
+          <h2 className="mt-2 text-xs font-bold uppercase tracking-wider text-muted">{t("profile.notificationsPrivacy")}</h2>
+          <WebPushToggle />
+          <div className="divide-y divide-border rounded-xl bg-surface px-4">
+            {TOGGLES.map(({ key, labelKey }) => (
+              <label key={key} className="flex items-center justify-between gap-4 py-3 text-sm">
+                <span className="flex-1">{t(labelKey)}</span>
+                <input
+                  type="checkbox"
+                  role="switch"
+                  checked={me.preferences![key]}
+                  onChange={(e) => void togglePref(key, e.target.checked)}
+                  className="relative h-[26px] w-[46px] shrink-0 cursor-pointer appearance-none rounded-full bg-border transition-colors before:absolute before:left-[3px] before:top-[3px] before:h-5 before:w-5 before:rounded-full before:bg-white before:shadow before:transition-transform checked:bg-[var(--accent-from)] checked:before:translate-x-5"
+                />
+              </label>
+            ))}
+          </div>
+        </>
+      )}
+      {user && ["MODERATOR", "ADMIN", "SUPER_ADMIN"].includes(user.role) ? (
+        <Link href="/admin" className="flex items-center gap-3 rounded-xl bg-surface p-4">
+          <IoShieldCheckmark className="h-[22px] w-[22px] shrink-0 text-[var(--accent-from)]" aria-hidden="true" />
+          <span className="flex-1">
+            <span className="block text-[15px] font-semibold">{t("nav.admin")}</span>
+          </span>
+          <IoChevronForward className="h-[18px] w-[18px] text-muted" aria-hidden="true" />
+        </Link>
+      ) : null}
+      <Link href="/inbox" className="flex items-center gap-3 rounded-xl bg-surface p-4">
+        <IoChatbubbles className="h-[22px] w-[22px] shrink-0 text-[var(--accent-from)]" aria-hidden="true" />
+        <span className="flex-1">
+          <span className="block text-[15px] font-semibold">{t("inbox.title")}</span>
+        </span>
+        <IoChevronForward className="h-[18px] w-[18px] text-muted" aria-hidden="true" />
+      </Link>
+      <Link href="/friends" className="flex items-center gap-3 rounded-xl bg-surface p-4">
+        <IoPeople className="h-[22px] w-[22px] shrink-0 text-[var(--accent-from)]" aria-hidden="true" />
+        <span className="flex-1">
+          <span className="block text-[15px] font-semibold">{t("friends.title")}</span>
+        </span>
+        <IoChevronForward className="h-[18px] w-[18px] text-muted" aria-hidden="true" />
+      </Link>
+      <Link href="/credits" className="flex items-center gap-3 rounded-xl bg-surface p-4">
+        <IoStar className="h-[22px] w-[22px] shrink-0 text-[var(--accent-from)]" aria-hidden="true" />
+        <span className="flex-1">
+          <span className="block text-[15px] font-semibold">{t("pricing.subscriptionTitle")}</span>
+        </span>
+        <IoChevronForward className="h-[18px] w-[18px] text-muted" aria-hidden="true" />
+      </Link>
+      <Link href="/invitations" className="flex items-center gap-3 rounded-xl bg-surface p-4">
+        <IoMailOpen className="h-[22px] w-[22px] shrink-0 text-[var(--accent-from)]" aria-hidden="true" />
+        <span className="flex-1">
+          <span className="block text-[15px] font-semibold">{t("invitations.title")}</span>
+        </span>
+        <IoChevronForward className="h-[18px] w-[18px] text-muted" aria-hidden="true" />
+      </Link>
+      <Link href="/my-registrations" className="flex items-center gap-3 rounded-xl bg-surface p-4">
+        <IoTicket className="h-[22px] w-[22px] shrink-0 text-[var(--accent-from)]" aria-hidden="true" />
+        <span className="flex-1">
+          <span className="block text-[15px] font-semibold">{t("myEvents.open")}</span>
+          <span className="block text-xs text-muted">{t("myEvents.openHint")}</span>
+        </span>
+        <IoChevronForward className="h-[18px] w-[18px] text-muted" aria-hidden="true" />
+      </Link>
+      <h2 className="mt-2 text-xs font-bold uppercase tracking-wider text-muted">{t("profile.settings")}</h2>
+      <div className="flex flex-col gap-3 rounded-xl bg-surface p-4">
+        <div className="flex items-center gap-3">
+          <IoLanguage className="h-[22px] w-[22px] shrink-0 text-[var(--accent-from)]" aria-hidden="true" />
+          <span className="flex-1 text-[15px] font-semibold">{t("profile.language")}</span>
+        </div>
+        <div className="flex gap-2">
+          {(["uk", "en"] as const).map((code) => (
+            <button
+              key={code}
+              type="button"
+              aria-pressed={locale === code}
+              onClick={() => {
+                setLocale(code);
+                patch({ locale: code });
+                const token = getAccessToken();
+                if (token) void fetch("/api/v1/users/me", { method: "PATCH", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ locale: code }) });
+              }}
+              className={`rounded-full border px-4 py-2 text-sm font-bold ${locale === code ? "accent-gradient border-transparent text-white" : "border-border"}`}
+            >
+              {code === "uk" ? "Українська" : "English"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-col gap-3 rounded-xl bg-surface p-4">
+        <div className="flex items-center gap-3">
+          <IoContrast className="h-[22px] w-[22px] shrink-0 text-[var(--accent-from)]" aria-hidden="true" />
+          <span className="flex-1 text-[15px] font-semibold">{t("profile.theme")}</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {([["system", "profile.themeSystem"], ["light", "profile.themeLight"], ["dark", "profile.themeDark"]] as [ThemePreference, string][]).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={theme === value}
+              onClick={() => setTheme(value)}
+              className={`rounded-full border px-4 py-2 text-sm font-bold ${theme === value ? "accent-gradient border-transparent text-white" : "border-border"}`}
+            >
+              {t(label)}
+            </button>
+          ))}
+        </div>
+      </div>
+      <h2 className="mt-2 text-xs font-bold uppercase tracking-wider text-muted">{t("legal.sectionTitle")}</h2>
+      <Link href="/terms" className="flex items-center gap-3 rounded-xl bg-surface p-4">
+        <IoDocumentTextOutline className="h-[22px] w-[22px] shrink-0 text-muted" aria-hidden="true" />
+        <span className="flex-1 text-[15px] font-semibold">{t("legal.termsAndConditions")}</span>
+      </Link>
+      <Link href="/offer" className="flex items-center gap-3 rounded-xl bg-surface p-4">
+        <IoDocumentTextOutline className="h-[22px] w-[22px] shrink-0 text-muted" aria-hidden="true" />
+        <span className="flex-1 text-[15px] font-semibold">{t("legal.publicOffer")}</span>
+      </Link>
+      <Link href="/refund" className="flex items-center gap-3 rounded-xl bg-surface p-4">
+        <IoDocumentTextOutline className="h-[22px] w-[22px] shrink-0 text-muted" aria-hidden="true" />
+        <span className="flex-1 text-[15px] font-semibold">{t("legal.refundPolicy")}</span>
+      </Link>
+      <Link href="/privacy" className="flex items-center gap-3 rounded-xl bg-surface p-4">
+        <IoDocumentTextOutline className="h-[22px] w-[22px] shrink-0 text-muted" aria-hidden="true" />
+        <span className="flex-1 text-[15px] font-semibold">{t("legal.privacyPolicy")}</span>
+      </Link>
+      <Link href="/contacts" className="flex items-center gap-3 rounded-xl bg-surface p-4">
+        <IoDocumentTextOutline className="h-[22px] w-[22px] shrink-0 text-muted" aria-hidden="true" />
+        <span className="flex-1 text-[15px] font-semibold">{t("legal.contacts")}</span>
+      </Link>
+      <Link href="https://www.threads.com/@kiro.ukraine" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl bg-surface p-4">
+        <IoChatbubblesOutline className="h-[22px] w-[22px] shrink-0 text-muted" aria-hidden="true" />
+        <span className="flex-1 text-[15px] font-semibold">{t("social.threads")}</span>
+      </Link>
+      <button type="button" onClick={() => void signOut()} className="flex items-center gap-3 rounded-xl bg-surface p-4 text-left">
+        <IoLogOutOutline className="h-[22px] w-[22px] shrink-0 text-danger" aria-hidden="true" />
+        <span className="flex-1 text-[15px] font-semibold text-danger">{t("auth.logout")}</span>
+      </button>
 
       <section className="mt-6 rounded-2xl border border-danger/40 p-4">
         <h2 className="mb-1 text-sm font-semibold text-danger">
