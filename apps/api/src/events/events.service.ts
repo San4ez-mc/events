@@ -8,7 +8,7 @@ import { CreditsService } from "../credits/credits.service";
 import { SensitiveContentService } from "../moderation/sensitive-content.service";
 import { ModerationService } from "../moderation/moderation.service";
 import { ApiException } from "../common/exceptions/api.exception";
-import { ResourceNotFoundException } from "../common/exceptions/common-exceptions";
+import { ForbiddenActionException, ResourceNotFoundException } from "../common/exceptions/common-exceptions";
 import { slugifyUnique } from "../common/utils/slugify";
 import { ACTIVE_REGISTRATION_STATUSES } from "../common/constants/registration-active-statuses";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -506,6 +506,20 @@ export class EventsService {
   async cancel(eventId: string, userId: string, reason: string | undefined) {
     const event = await this.getOwnedEvent(eventId, userId);
     return this.applyCancel(event, reason);
+  }
+
+  /**
+   * Deletes a draft for good. Only the owner, and only while it is still a draft: nothing has been published, nobody has
+   * registered and no credit was spent, so there is nothing to keep (everything attached to it goes with it). Anything
+   * that was published is cancelled instead (see `cancel`), never deleted.
+   */
+  async deleteDraft(eventId: string, userId: string): Promise<void> {
+    const event = await this.getOwnedEvent(eventId, userId);
+    if (event.ownerId !== userId) throw new ForbiddenActionException("Only the organizer can delete a draft");
+    if (event.status !== "DRAFT") {
+      throw new ApiException("VALIDATION_ERROR", "Only a draft can be deleted; cancel a published event instead", 400);
+    }
+    await this.prisma.event.delete({ where: { id: eventId } });
   }
 
   /** Phase 10's `/admin/events/:id/cancel` — same effect, no ownership gate. */

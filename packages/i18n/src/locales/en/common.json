@@ -1420,6 +1420,9 @@
       "help": "\"Saw\" is how many different people saw the card in the feed. \"Opened\" is how many swiped right or tapped to read the details. \"Passed\" is how many swiped left."
     },
     "continueDraft": "Continue creating",
+    "deleteDraft": "Delete draft",
+    "deleteDraftConfirm": "Delete the draft \"{title}\"? This cannot be undone.",
+    "deleteDraftFailed": "Could not delete the draft",
     "registrations": "My registrations & tickets"
   },
   "chat": {

@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { API_URL, getAccessToken, refreshAccessToken } from "../../src/lib/api-client";
@@ -94,6 +94,28 @@ export default function MyEventsTab() {
 
   const list = segment === "saved" ? saved : created;
 
+  /** Drafts only: nothing was published, so it is deleted for good (after a confirmation). */
+  function deleteDraft(item: EventCard) {
+    Alert.alert(t("myEvents.deleteDraft"), t("myEvents.deleteDraftConfirm").replace("{title}", item.title), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("myEvents.deleteDraft"),
+        style: "destructive",
+        onPress: () =>
+          void (async () => {
+            const send = (token: string) => fetch(`${API_URL}/api/v1/events/${item.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+            let res = await send(getAccessToken() ?? "").catch(() => null);
+            if (res?.status === 401) {
+              const refreshed = await refreshAccessToken();
+              if (refreshed) res = await send(refreshed).catch(() => null);
+            }
+            if (res?.ok) setCreated((prev) => (prev ? prev.filter((e) => e.id !== item.id) : prev));
+            else Alert.alert(t("myEvents.deleteDraftFailed"));
+          })(),
+      },
+    ]);
+  }
+
   const tile = (value: number | string, label: string, icon: React.ComponentProps<typeof Ionicons>["name"]) => (
     <View key={label} style={styles.tile}>
       <Ionicons name={icon} size={14} color={colors.muted} />
@@ -160,9 +182,14 @@ export default function MyEventsTab() {
               </Pressable>
             </>
           ) : (
-            <Pressable onPress={() => router.push(`/edit/${item.id}`)} hitSlop={6}>
-              <Text style={styles.action}>{t("myEvents.continueDraft")}</Text>
-            </Pressable>
+            <>
+              <Pressable onPress={() => router.push(`/edit/${item.id}`)} hitSlop={6}>
+                <Text style={styles.action}>{t("myEvents.continueDraft")}</Text>
+              </Pressable>
+              <Pressable onPress={() => deleteDraft(item)} hitSlop={6}>
+                <Text style={[styles.action, { color: colors.danger }]}>{t("myEvents.deleteDraft")}</Text>
+              </Pressable>
+            </>
           )}
         </View>
       </View>

@@ -62,6 +62,16 @@ export function SavedEventsContent() {
   const [created, setCreated] = useState<EventCard[] | null>(null);
   const [analytics, setAnalytics] = useState<Record<string, EventAnalytics>>({});
   const [error, setError] = useState(false);
+  const [deleteError, setDeleteError] = useState(false);
+
+  /** Drafts only: nothing was published, so it is deleted for good (after a confirmation). */
+  async function deleteDraft(item: EventCard) {
+    if (!window.confirm(t("myEvents.deleteDraftConfirm").replace("{title}", item.title))) return;
+    setDeleteError(false);
+    const res = await fetch(`/api/v1/events/${item.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` } }).catch(() => null);
+    if (res?.ok) setCreated((prev) => (prev ? prev.filter((e) => e.id !== item.id) : prev));
+    else setDeleteError(true);
+  }
 
   const load = useCallback(async () => {
     try {
@@ -154,7 +164,12 @@ export function SavedEventsContent() {
               <Link href={`/organizer/events/${item.id}/edit`}>{t("myEvents.edit")}</Link>
             </>
           ) : (
-            <Link href={`/organizer/events/${item.id}/edit`}>{t("myEvents.continueDraft")}</Link>
+            <>
+              <Link href={`/organizer/events/${item.id}/edit`}>{t("myEvents.continueDraft")}</Link>
+              <button type="button" onClick={() => void deleteDraft(item)} className="font-bold text-danger">
+                {t("myEvents.deleteDraft")}
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -187,6 +202,7 @@ export function SavedEventsContent() {
 
       {!error && list !== null && list.length > 0 && segment === "created" && (
         <>
+          {deleteError && <p role="alert" className="text-sm text-danger">{t("myEvents.deleteDraftFailed")}</p>}
           <p className="text-xs text-muted">{t("myEvents.stats.help")}</p>
           <div className="flex flex-col gap-3">{list.map(renderCreated)}</div>
         </>

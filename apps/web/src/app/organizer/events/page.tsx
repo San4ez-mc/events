@@ -27,6 +27,16 @@ export default function OrganizerEventsPage() {
   const [events, setEvents] = useState<EventSummary[] | null>(null);
   const [error, setError] = useState(false);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const [deleteFailed, setDeleteFailed] = useState(false);
+
+  /** Drafts only: deleted for good, after a confirmation. */
+  async function deleteDraft(event: EventSummary) {
+    if (!window.confirm(t("myEvents.deleteDraftConfirm").replace("{title}", event.title))) return;
+    setDeleteFailed(false);
+    const res = await fetch(`/api/v1/events/${event.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` } }).catch(() => null);
+    if (res?.ok) setEvents((prev) => (prev ? prev.filter((e) => e.id !== event.id) : prev));
+    else setDeleteFailed(true);
+  }
 
   useEffect(() => {
     if (authLoading) return;
@@ -94,6 +104,8 @@ export default function OrganizerEventsPage() {
           message={t("common.somethingWentWrong")}
         />
       )}
+
+      {deleteFailed && <p role="alert" className="mb-3 text-sm text-danger">{t("myEvents.deleteDraftFailed")}</p>}
 
       {!error && events === null && <LoadingState />}
 
@@ -184,6 +196,15 @@ export default function OrganizerEventsPage() {
                 >
                   {t("organizerTools.duplicate")}
                 </Button>
+                {event.status === "DRAFT" && (
+                  <button
+                    type="button"
+                    onClick={() => void deleteDraft(event)}
+                    className="rounded-md border border-danger/50 px-3 py-1.5 text-xs font-medium text-danger hover:bg-background"
+                  >
+                    {t("myEvents.deleteDraft")}
+                  </button>
+                )}
               </div>
             </li>
           ))}

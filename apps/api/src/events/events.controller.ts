@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Header, Param, Patch, Post, Put, Query, Req, StreamableFile } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Header, HttpCode, Param, Patch, Post, Put, Query, Req, StreamableFile } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ApiTags } from "@nestjs/swagger";
 import QRCode from "qrcode";
@@ -83,6 +83,13 @@ export class EventsController {
   @Post(":id/publish")
   publish(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
     return this.eventsService.publish(id, user.id);
+  }
+
+  /** Deletes a draft (published events are cancelled, not deleted). */
+  @Delete(":id")
+  @HttpCode(204)
+  async deleteDraft(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string): Promise<void> {
+    await this.eventsService.deleteDraft(id, user.id);
   }
 
   @Post(":id/cancel")
