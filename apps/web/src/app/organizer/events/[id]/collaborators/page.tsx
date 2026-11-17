@@ -1,5 +1,7 @@
 "use client";
 
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { IoPeopleCircle } from "react-icons/io5";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -121,7 +123,7 @@ export default function CollaboratorsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="mb-6 text-2xl font-bold">{t("organizerCollaborators.title")}</h1>
+      <div className="mb-6"><ScreenHeader title={t("organizerCollaborators.title")} Icon={IoPeopleCircle} /></div>
 
       {error && <p className="text-danger">{t("common.somethingWentWrong")}</p>}
       {!error && items === null && <p className="text-muted">{t("common.loading")}</p>}

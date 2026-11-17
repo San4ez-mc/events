@@ -1,5 +1,7 @@
 "use client";
 
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { IoRepeat } from "react-icons/io5";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -176,10 +178,7 @@ export default function EventSeriesPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="mb-2 text-2xl font-bold">{t("organizerSeries.title")}</h1>
-      <p className="mb-6 text-sm text-muted">
-        {t("organizerSeries.description")}
-      </p>
+      <div className="mb-6"><ScreenHeader title={t("organizerSeries.title")} subtitle={t("organizerSeries.description")} Icon={IoRepeat} /></div>
 
       {error && <p className="text-danger">{t("common.somethingWentWrong")}</p>}
       {!error && event === null && (

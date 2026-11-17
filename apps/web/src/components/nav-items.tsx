@@ -1,7 +1,7 @@
 "use client";
 
 import type { IconType } from "react-icons";
-import { IoAddCircle, IoCompass, IoHeart, IoPerson, IoSearch } from "react-icons/io5";
+import { IoAddCircle, IoCalendar, IoCompass, IoPerson, IoSearch } from "react-icons/io5";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
@@ -25,7 +25,7 @@ export function useNavItems(): NavItem[] {
     { href: "/", label: t("nav.discover"), Icon: IoCompass, active: pathname === "/" },
     { href: "/search", label: t("nav.search"), Icon: IoSearch, active: pathname.startsWith("/search") },
     { href: "/organizer/events/new", label: t("nav.create"), Icon: IoAddCircle, active: pathname.startsWith("/organizer/events/new"), primary: true },
-    { href: user ? "/saved" : "/login", label: t("nav.saved"), Icon: IoHeart, active: pathname.startsWith("/saved") },
+    { href: user ? "/saved" : "/login", label: t("nav.myEvents"), Icon: IoCalendar, active: pathname.startsWith("/saved") },
     {
       href: user ? `/users/${user.id}` : "/login",
       label: t("nav.profile"),

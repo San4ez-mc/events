@@ -6,6 +6,7 @@ import {
   IoArrowForward,
   IoArrowUndo,
   IoClose,
+  IoDiamond,
   IoHeart,
   IoHeartOutline,
   IoListOutline,
@@ -73,6 +74,8 @@ export function DiscoverFeed() {
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const fetchingRef = useRef(false);
 
+  /** null until known; like in the app, the gold subscription button is for signed-in people without a subscription. */
+  const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
   const [drag, setDrag] = useState({ x: 0, y: 0, rot: 0, active: false });
   const dragRef = useRef({ x: 0, y: 0 });
   /** Recent pointer positions (x, time), for the flick velocity at release. */
@@ -345,6 +348,24 @@ export function DiscoverFeed() {
     });
   }
 
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!user || !token) {
+      queueMicrotask(() => setHasSubscription(null));
+      return;
+    }
+    void (async () => {
+      try {
+        const res = await fetch("/api/v1/platform-subscriptions/mine", { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) return;
+        const mine = (await res.json()) as { tier: string | null; status: string | null };
+        setHasSubscription(mine.tier !== null && (mine.status === "ACTIVE" || mine.status === "GRACE_PERIOD"));
+      } catch {
+        // Unknown state: the button stays hidden.
+      }
+    })();
+  }, [user]);
+
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (flyOut) return;
     startRef.current = { x: e.clientX, y: e.clientY };
@@ -577,6 +598,17 @@ export function DiscoverFeed() {
               </span>
             )}
           </button>
+          {user && hasSubscription === false && (
+            <button
+              type="button"
+              onClick={() => router.push("/credits")}
+              aria-label={t("pricing.subscriptionTitle")}
+              title={t("pricing.subscriptionTitle")}
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full border-2 border-white/85 bg-amber-400 text-[#3b2300] transition active:scale-90 hover:brightness-95"
+            >
+              <IoDiamond className="h-5 w-5" />
+            </button>
+          )}
           {shareNote && (
             <span
               role="status"

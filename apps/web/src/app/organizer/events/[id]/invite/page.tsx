@@ -1,5 +1,7 @@
 "use client";
 
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { IoPersonAdd } from "react-icons/io5";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -70,7 +72,7 @@ export default function InvitePreviousParticipantsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="mb-6 text-2xl font-bold">{t("organizerInvite.title")}</h1>
+      <div className="mb-6"><ScreenHeader title={t("organizerInvite.title")} Icon={IoPersonAdd} /></div>
 
       <div className="mb-6">
         <TextField

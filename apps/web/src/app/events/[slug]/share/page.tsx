@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { IoMegaphone } from "react-icons/io5";
 import { SYSTEM_SETTING_DEFAULTS, SystemSettingKey } from "@kiro/types";
 import { useAuth } from "@/lib/auth-context";
@@ -162,13 +163,7 @@ export default function ShareEventPage() {
     <div className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-8 pb-28">
       {justPublished && <p className="rounded-[14px] border border-[var(--accent-from)] bg-surface px-4 py-3 text-sm">{t("referral.publishedBanner")}</p>}
 
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-extrabold">
-          <IoMegaphone className="h-6 w-6 text-[var(--accent-from)]" aria-hidden="true" />
-          {t("referral.createStory")}
-        </h1>
-        <p className="mt-1 text-sm text-muted">{event.title}</p>
-      </div>
+      <ScreenHeader title={t("referral.createStory")} subtitle={event.title} Icon={IoMegaphone} />
 
       <div>
         <p className="mb-2 text-sm font-semibold">{t("referral.chooseDesign")}</p>
