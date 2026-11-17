@@ -10,6 +10,7 @@ import { reportClientError } from "../../src/lib/crash-reporter";
 import { useTranslations } from "../../src/lib/locale-context";
 import { formatPhoneInput } from "../../src/lib/format";
 import { ProfileQrModal } from "../../src/components/social/ProfileQrModal";
+import { InviteCard } from "../../src/components/social/InviteCard";
 import { Button } from "../../src/components/ui/Button";
 import { TextField } from "../../src/components/ui/TextField";
 import { ScreenHeader } from "../../src/components/ui/ScreenHeader";
@@ -281,6 +282,8 @@ export default function ProfileScreen() {
             )}
           </View>
         </View>
+
+        <InviteCard />
 
         <Text style={styles.section}>{t("profile.about")}</Text>
         <View style={styles.form}>

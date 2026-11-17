@@ -689,6 +689,7 @@
       "broadcast": "Broadcast",
       "analytics": "Traffic",
       "referrals": "Referrals",
+      "invites": "Invitations",
       "feedback": "Reports"
     },
     "dashboard": {
@@ -978,6 +979,29 @@
       "registrations": "Event registrations",
       "saves": "Event saves",
       "shares": "Shares"
+    },
+    "invites": {
+      "title": "Invite organizers",
+      "subtitle": "Your personal link: we can see who you brought in.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "share": "Share",
+      "shareText": "Publish your events on Kiro for free:",
+      "clicks": "Opened the link",
+      "joined": "Signed up",
+      "organizers": "Became organizers",
+      "empty": "Nobody has signed up through your link yet.",
+      "organizerBadge": "organizer",
+      "events": "events",
+      "codeLabel": "Invitation code (optional)",
+      "codeHint": "If someone invited you, enter the code from their link.",
+      "adminTitle": "Who invited whom",
+      "adminHint": "People's personal links. An \"organizer\" is someone who has already created an event.",
+      "adminEmpty": "Nobody has invited anyone yet.",
+      "adminTotals": "Inviters: {inviters} · invited: {invited} · of them organizers: {organizers}",
+      "invitedBy": "Invited by",
+      "people": "invited",
+      "linkClicks": "clicks"
     },
     "growth": {
       "newUsers": "New users",

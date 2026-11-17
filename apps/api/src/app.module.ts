@@ -49,6 +49,7 @@ import { PlatformSubscriptionsModule } from "./platform-subscriptions/platform-s
 import { AuditModule } from "./audit/audit.module";
 import { ReportsModule } from "./reports/reports.module";
 import { ReferralsModule } from "./referrals/referrals.module";
+import { InvitesModule } from "./invites/invites.module";
 import { AdminModule } from "./admin/admin.module";
 import { IntegrationsModule } from "./integrations/integrations.module";
 
@@ -114,6 +115,7 @@ import { IntegrationsModule } from "./integrations/integrations.module";
     AuditModule,
     ReportsModule,
     ReferralsModule,
+    InvitesModule,
     AdminModule,
     IntegrationsModule,
   ],

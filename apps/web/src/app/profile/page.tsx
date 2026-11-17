@@ -29,6 +29,7 @@ import { fieldErrorMessage, readFieldErrors, type FieldErrors } from "@/lib/fiel
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { VerifyEmailBanner } from "@/components/verify-email-banner";
+import { InviteCard } from "@/components/invite-card";
 import { WebPushToggle } from "@/components/web-push-toggle";
 
 type SocialType =
@@ -391,6 +392,8 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+
+      <InviteCard />
 
       <h2 className="mt-2 text-xs font-bold uppercase tracking-wider text-muted">{t("profile.about")}</h2>
       <TextField

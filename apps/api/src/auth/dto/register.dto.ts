@@ -40,4 +40,10 @@ export class RegisterDto {
   @IsOptional()
   @IsIn(["uk", "en"])
   locale?: "uk" | "en";
+
+  @ApiPropertyOptional({ description: "Personal invitation code of the person who invited this one (the /r/<code> link)" })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  referralCode?: string;
 }

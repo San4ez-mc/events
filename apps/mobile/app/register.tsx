@@ -17,6 +17,7 @@ export default function RegisterScreen() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [emailTaken, setEmailTaken] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -26,7 +27,7 @@ export default function RegisterScreen() {
     setEmailTaken(false);
     setLoading(true);
     try {
-      await register({ email: email.trim(), password, name: name.trim() || undefined });
+      await register({ email: email.trim(), password, name: name.trim() || undefined, referralCode: inviteCode.trim() || undefined });
       router.replace("/welcome");
     } catch (err) {
       setEmailTaken(err instanceof ApiRequestError && err.code === "EMAIL_ALREADY_REGISTERED");
@@ -45,6 +46,8 @@ export default function RegisterScreen() {
         <TextField label={t("auth.login.email")} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
         <TextField label={t("auth.login.password")} value={password} onChangeText={setPassword} secureTextEntry />
         <Text style={styles.hint}>{t("auth.register.passwordHint")}</Text>
+        <TextField label={t("admin.invites.codeLabel")} value={inviteCode} onChangeText={setInviteCode} autoCapitalize="characters" />
+        <Text style={styles.hint}>{t("admin.invites.codeHint")}</Text>
 
         {error && <Text style={styles.error}>{error}</Text>}
         {emailTaken && (

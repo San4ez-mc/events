@@ -4,6 +4,10 @@ import { captureEvent } from "@/lib/product-analytics";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { UserRole } from "@kiro/types";
 import { api, refreshAccessToken, setAccessToken } from "./api-client";
+import { captureInviteCode, clearInviteCode, readInviteCode } from "./invite-code";
+
+// A "?ref=<code>" on any page (the landing page's links carry it) is remembered for the sign-up.
+captureInviteCode();
 
 export interface SessionUser {
   id: string;
@@ -75,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Client-Platform": "web" },
       credentials: "include",
-      body: JSON.stringify({ idToken }),
+      body: JSON.stringify({ idToken, referralCode: readInviteCode() }),
     });
     const body = await res.json();
     if (!res.ok) throw new ApiRequestError(body);
@@ -90,12 +94,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Client-Platform": "web" },
         credentials: "include",
-        body: JSON.stringify(input),
+        body: JSON.stringify({ ...input, referralCode: readInviteCode() }),
       });
       const body = await res.json();
       if (!res.ok) throw new ApiRequestError(body);
       setAccessToken(body.accessToken);
       setUser(body.user);
+      clearInviteCode();
       captureEvent("sign_up", { method: "email" });
     },
     [],

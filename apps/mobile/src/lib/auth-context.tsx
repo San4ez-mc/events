@@ -19,7 +19,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<void>;
-  register: (input: { email: string; password: string; name?: string; nickname?: string }) => Promise<void>;
+  register: (input: { email: string; password: string; name?: string; nickname?: string; referralCode?: string }) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (input: { email: string; password: string; name?: string; nickname?: string }) => {
+    async (input: { email: string; password: string; name?: string; nickname?: string; referralCode?: string }) => {
       const res = await fetch(`${API_URL}/api/v1/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

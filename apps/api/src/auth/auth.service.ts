@@ -12,6 +12,7 @@ import { GoogleTokenVerifier } from "./google-token.verifier";
 import type { RegisterDto } from "./dto/register.dto";
 import type { LoginDto } from "./dto/login.dto";
 import { randomUUID } from "node:crypto";
+import { normalizeInviteCode } from "../invites/invites.service";
 
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000; // 1h
@@ -61,6 +62,7 @@ export class AuthService {
     }
 
     const passwordHash = await argon2.hash(dto.password, { type: argon2.argon2id });
+    const inviterId = await this.findInviter(dto.referralCode);
 
     const user = await this.prisma.user.create({
       data: {
@@ -70,6 +72,7 @@ export class AuthService {
         nickname: dto.nickname,
         locale: dto.locale ?? "uk",
         preferences: { create: {} },
+        ...(inviterId ? { referredById: inviterId, referredAt: new Date() } : {}),
       },
     });
 
@@ -109,7 +112,15 @@ export class AuthService {
    * created with an unusable random password (the user can set a real one via
    * "forgot password").
    */
-  async loginWithGoogle(idToken: string): Promise<{ user: SafeUser; tokens: AuthTokens }> {
+  /** Who a personal invitation code belongs to; an unknown, malformed or blocked-account code is simply ignored. */
+  private async findInviter(rawCode: string | undefined): Promise<string | null> {
+    const code = normalizeInviteCode(rawCode);
+    if (!code) return null;
+    const inviter = await this.prisma.user.findUnique({ where: { referralCode: code }, select: { id: true, status: true } });
+    return inviter && inviter.status === "ACTIVE" ? inviter.id : null;
+  }
+
+  async loginWithGoogle(idToken: string, referralCode?: string): Promise<{ user: SafeUser; tokens: AuthTokens }> {
     await this.flags.assertEnabled("SOCIAL_LOGIN");
     const identity = await this.googleTokenVerifier.verify(idToken);
     if (!identity.emailVerified) {
@@ -123,8 +134,10 @@ export class AuthService {
 
     if (!user) {
       const passwordHash = await argon2.hash(randomUUID() + randomUUID(), { type: argon2.argon2id });
+      const inviterId = await this.findInviter(referralCode);
       user = await this.prisma.user.create({
         data: {
+          ...(inviterId ? { referredById: inviterId, referredAt: new Date() } : {}),
           email: identity.email,
           passwordHash,
           name: identity.name,

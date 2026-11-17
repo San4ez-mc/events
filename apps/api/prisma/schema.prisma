@@ -99,6 +99,16 @@ model User {
   updatedAt   DateTime  @updatedAt
   lastLoginAt DateTime?
 
+  /// Personal invitation code (the "/r/<code>" link). Created the first time the person opens "invite organizers".
+  referralCode String? @unique
+  /// Who invited this person: set at sign-up from the code in the invitation link (never changes afterwards).
+  referredById String? @db.Uuid
+  referredBy   User?   @relation("UserInvites", fields: [referredById], references: [id], onDelete: SetNull)
+  referredAt   DateTime?
+  invitedUsers User[]  @relation("UserInvites")
+  /// How many times this person's invitation link was opened.
+  referralClicks Int @default(0)
+
   socialLinks              UserSocialLink[]
   preferences              UserPreferences?
   devices                  UserDevice[]
@@ -144,6 +154,7 @@ model User {
   referralSubmissions      ReferralSubmission[]     @relation("ReferralSubmitter")
   referralSubmissionsReviewed ReferralSubmission[]   @relation("ReferralReviewer")
 
+  @@index([referredById])
   @@map("users")
 }
 

@@ -14,6 +14,7 @@ import { InsightsPanel } from "../src/components/admin/InsightsPanel";
 import { PeriodFilter, presetPeriod, type Period } from "../src/components/admin/PeriodFilter";
 import { GrowthPanel } from "../src/components/admin/GrowthPanel";
 import { DailyCharts } from "../src/components/admin/DailyCharts";
+import { InvitesPanel } from "../src/components/admin/InvitesPanel";
 import { AdminLoader } from "../src/components/admin/AdminLoader";
 import { radius, spacing, type Palette, useThemedStyles } from "../src/lib/theme";
 
@@ -962,6 +963,7 @@ export default function AdminScreen() {
                 )}
               </View>
             ))}
+            <InvitesPanel />
           </>
         )}
 

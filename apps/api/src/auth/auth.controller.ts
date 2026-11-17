@@ -60,7 +60,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { user, tokens } = await this.authService.loginWithGoogle(dto.idToken);
+    const { user, tokens } = await this.authService.loginWithGoogle(dto.idToken, dto.referralCode);
     return this.respondWithTokens(req, res, user, tokens);
   }
 
