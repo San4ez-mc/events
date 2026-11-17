@@ -63,5 +63,5 @@ export const DISCOVERY_RANKING_WEIGHTS = {
  */
 export const SUBSCRIPTION_TIERS = {
   STARTER: { monthlyCredits: 5, price: 199, productId: "organizer_starter_monthly" },
-  PRO: { monthlyCredits: 15, price: 449, productId: "organizer_pro_monthly" },
+  PRO: { monthlyCredits: 15, price: 499, productId: "organizer_pro_monthly" },
 } as const;

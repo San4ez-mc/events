@@ -436,7 +436,7 @@ const offerUk: LegalDoc = {
     {
       heading: "3. Підписка: ціна, тривалість, поновлення",
       items: [
-        "Тарифи на момент публікації цієї оферти: «Старт» — 199 грн/місяць (5 кредитів щомісяця), «Про» — 449 грн/місяць (15 кредитів щомісяця, пріоритет у стрічці, бейдж «Перевірений організатор», доступ до співорганізаторів і повторюваних подій). Актуальні тарифи — на сторінці «Ціни».",
+        "Тарифи на момент публікації цієї оферти: «Старт» — 199 грн/місяць (5 кредитів щомісяця), «Про» — 499 грн/місяць (15 кредитів щомісяця, пріоритет у стрічці, бейдж «Перевірений організатор», доступ до співорганізаторів і повторюваних подій). Актуальні тарифи — на сторінці «Ціни».",
         "Одна оплата активує рівно один місяць доступу від дати оплати (або продовжує поточний період, якщо ви оплачуєте заздалегідь). Підписка НЕ списується автоматично: щоб продовжити користування після завершення оплаченого місяця, потрібно оплатити наступний період вручну на сторінці «Ціни». Про наближення завершення періоду сервіс попереджає в акаунті/сповіщеннях.",
         "Оплата приймається через WayForPay та/або Monobank Acquiring (банківський переказ для підписки не приймається).",
       ],
@@ -490,7 +490,7 @@ const offerEn: LegalDoc = {
     {
       heading: "3. Subscription: price, duration, renewal",
       items: [
-        "Tiers at the time this offer was published: \"Starter\" — 199 UAH/month (5 credits/month), \"Pro\" — 449 UAH/month (15 credits/month, feed priority, \"Verified organizer\" badge, access to co-organizers and recurring events). Current tiers are on the \"Pricing\" page.",
+        "Tiers at the time this offer was published: \"Starter\" — 199 UAH/month (5 credits/month), \"Pro\" — 499 UAH/month (15 credits/month, feed priority, \"Verified organizer\" badge, access to co-organizers and recurring events). Current tiers are on the \"Pricing\" page.",
         "One payment activates exactly one month of access from the payment date (or extends the current period if paid in advance). The subscription does NOT auto-renew: to keep using it after the paid month ends, pay for the next period manually on the \"Pricing\" page. The service warns you in-account/via notifications as the period nears its end.",
         "Payment is accepted via WayForPay and/or Monobank Acquiring (bank transfer is not accepted for subscriptions).",
       ],
