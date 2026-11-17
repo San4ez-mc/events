@@ -482,7 +482,15 @@ export function DiscoverFilters({
         </div>
 
         <footer className="flex items-center justify-between gap-3 border-t border-border px-5 py-4">
-          <Button variant="ghost" onClick={() => setDraft(EMPTY_FILTERS)}>
+          {/* Reset takes effect at once: it used to only clear the choices inside the panel, so the feed looked unchanged and the button seemed broken. */}
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setDraft(EMPTY_FILTERS);
+              onApply(EMPTY_FILTERS);
+              onClose();
+            }}
+          >
             {t("filters.reset")}
           </Button>
           <Button
