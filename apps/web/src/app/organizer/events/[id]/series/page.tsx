@@ -3,6 +3,7 @@
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { IoRepeat } from "react-icons/io5";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
@@ -45,6 +46,20 @@ export default function EventSeriesPage() {
   const [until, setUntil] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  // Recurring events are a Pro feature: say so up front and when the server refuses, instead of a bare "something went wrong".
+  const [isPro, setIsPro] = useState<boolean | null>(null);
+  const [needsPro, setNeedsPro] = useState(false);
+
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) return;
+    void (async () => {
+      const res = await fetch("/api/v1/platform-subscriptions/mine", { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+      if (!res?.ok) return;
+      const mine = (await res.json()) as { tier: string | null };
+      setIsPro(mine.tier === "PRO");
+    })();
+  }, [user]);
 
   // §29 — edit every upcoming occurrence at once (details that don't move date/place).
   const [bulk, setBulk] = useState({
@@ -114,7 +129,9 @@ export default function EventSeriesPage() {
         }),
       });
       if (!res.ok) {
-        setCreateError(t("common.somethingWentWrong"));
+        const code = ((await res.json().catch(() => null)) as { error?: { code?: string } } | null)?.error?.code;
+        setNeedsPro(code === "SUBSCRIPTION_REQUIRED");
+        setCreateError(code && t(`errors.${code}`) !== `errors.${code}` ? t(`errors.${code}`) : t("common.somethingWentWrong"));
         return;
       }
       const result = (await res.json()) as CreateSeriesResult;
@@ -258,8 +275,18 @@ export default function EventSeriesPage() {
                 />
               </div>
 
+              {isPro === false && !createError && (
+                <p className="mb-3 rounded-xl bg-surface p-3 text-sm">{t("errors.SUBSCRIPTION_REQUIRED")}</p>
+              )}
               {createError && (
                 <p className="mb-3 text-sm text-danger">{createError}</p>
+              )}
+              {(needsPro || isPro === false) && (
+                <p className="mb-3">
+                  <Link href="/credits" className="text-sm font-bold text-[var(--accent-from)] underline">
+                    {t("nav.pricing")}
+                  </Link>
+                </p>
               )}
               <Button loading={creating} onClick={() => void createSeries()}>
                 {t("organizerSeries.create")}

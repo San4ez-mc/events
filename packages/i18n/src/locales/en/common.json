@@ -1150,7 +1150,7 @@
   },
   "organizerSeries": {
     "title": "Make it recurring",
-    "description": "Turn this draft into a series of repeating events. Each occurrence is created as its own independent draft.",
+    "description": "Turn this event into a series of repeating events. Each occurrence is created as its own independent draft.",
     "recurrenceType": "Repeats",
     "interval": "Every N (optional)",
     "count": "Number of occurrences (max 52)",
