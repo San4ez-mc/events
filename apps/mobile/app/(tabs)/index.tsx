@@ -40,6 +40,8 @@ export default function DiscoverScreen() {
   const [toast, setToast] = useState<ToastData | null>(null);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  /** null until known; the subscription button is shown only to signed-in people who don't have one yet. */
+  const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
   const { tutorial } = useLocalSearchParams<{ tutorial?: string }>();
 
   const loadUnreadCount = useCallback(async () => {
@@ -48,6 +50,24 @@ export default function DiscoverScreen() {
     const res = await fetch(`${API_URL}/api/v1/notifications/unread-count`, { headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) setUnreadCount((await res.json()).count);
   }, []);
+
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!authUser || !token) {
+      setHasSubscription(null);
+      return;
+    }
+    void (async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/v1/platform-subscriptions/mine`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) return;
+        const mine = (await res.json()) as { tier: string | null; status: string | null };
+        setHasSubscription(mine.tier !== null && (mine.status === "ACTIVE" || mine.status === "GRACE_PERIOD"));
+      } catch {
+        // Leave the button hidden when the state is unknown.
+      }
+    })();
+  }, [authUser]);
 
   useEffect(() => {
     void loadUnreadCount();
@@ -304,7 +324,9 @@ ${url}`, url, title: event.title }).catch(() => {});
       )}
 
       <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]} pointerEvents="box-none">
-        <Text style={styles.headerTitle}>{t("nav.discover")}</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {t("nav.discover")}
+        </Text>
         <View style={styles.headerActions}>
           {top && (
             <Pressable onPress={() => void shareEvent(top)} style={styles.headerButton} accessibilityLabel={t("discover.share")}>
@@ -322,6 +344,19 @@ ${url}`, url, title: event.title }).catch(() => {});
           <Pressable onPress={() => setTutorialOpen(true)} style={styles.headerButton} accessibilityLabel={t("discover.showTips")}>
             <Ionicons name="school-outline" size={22} color={colors.white} />
           </Pressable>
+          {/* The subscription used to be buried in the profile list; a gold button here is hard to miss. */}
+          {authUser && hasSubscription === false && (
+            <Pressable
+              onPress={() => {
+                captureEvent("subscription_cta_click", { from: "discover" });
+                router.push("/subscription");
+              }}
+              style={styles.proButton}
+              accessibilityLabel={t("pricing.subscriptionTitle")}
+            >
+              <Ionicons name="diamond" size={20} color="#3b2300" />
+            </Pressable>
+          )}
           {/* Guests had no visible way in (a Play reviewer even typed the login into the search box). */}
           {!authLoading && !authUser && (
             <Pressable onPress={() => router.push("/login")} style={styles.loginPill} accessibilityLabel={t("auth.login.title")}>
@@ -429,7 +464,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   loginPillText: { color: colors.white, fontSize: 14, fontWeight: "800" },
   badge: { position: "absolute", top: -2, right: -2, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: colors.accentTo, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
   badgeText: { color: colors.white, fontSize: 11, fontWeight: "800" },
-  headerTitle: { color: colors.white, fontSize: 24, fontWeight: "800", textShadowColor: "rgba(0,0,0,0.5)", textShadowRadius: 6 },
+  proButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#fbbf24", borderWidth: 2, borderColor: "rgba(255,255,255,0.85)", alignItems: "center", justifyContent: "center" },
+  headerTitle: { flexShrink: 1, marginRight: spacing.sm, color: colors.white, fontSize: 24, fontWeight: "800", textShadowColor: "rgba(0,0,0,0.5)", textShadowRadius: 6 },
   actions: {
     position: "absolute",
     left: 0,
