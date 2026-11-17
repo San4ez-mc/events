@@ -24,7 +24,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
   landing.searchParams.set("ref", code);
   landing.searchParams.set("utm_source", "invite");
   landing.searchParams.set("utm_medium", "referral");
-  const domain = inviteCookieDomain(new URL(request.url).hostname);
+  // Behind the reverse proxy request.url is the internal address; the public host is in the forwarded headers.
+  const publicHost = (request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "").split(":")[0]!;
+  const domain = inviteCookieDomain(publicHost);
   const headers = new Headers({ Location: landing.toString() });
   headers.append("Set-Cookie", `${INVITE_COOKIE}=${code}; Max-Age=${INVITE_MAX_AGE_SECONDS}; Path=/; SameSite=Lax${domain ? `; Domain=${domain}; Secure` : ""}`);
   return new Response(null, { status: 302, headers });
