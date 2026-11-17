@@ -233,7 +233,7 @@ const termsUk: LegalDoc = {
       items: [
         "Ви відповідаєте за точність опису події, її проведення та виконання вимог закону.",
         "Платні події: оплата учасників та повернення коштів відбуваються між вами й учасником; платформа лише надає інструменти обліку, якщо інше прямо не вказано.",
-        "Публікація подій може потребувати кредитів — разових (сторінка «Ціни») або отриманих щомісяця за підпискою «Старт»/«Про». Підписка також відкриває співорганізаторів, повторювані події, пріоритет у стрічці та бейдж. Умови оплати — на сторінці «Публічна оферта».",
+        "Публікація подій може потребувати кредитів — разових (сторінка «Тарифи») або отриманих щомісяця за підпискою «Старт»/«Про». Підписка також відкриває співорганізаторів, повторювані події, пріоритет у стрічці та бейдж. Умови оплати — на сторінці «Публічна оферта».",
       ],
     },
     {
@@ -296,7 +296,7 @@ const termsEn: LegalDoc = {
       items: [
         "You are responsible for the accuracy of your event description, for running it and for complying with the law.",
         "Paid events: payment from participants and refunds are between you and the participant; the platform only provides record-keeping tools unless stated otherwise.",
-        "Publishing events may require credits — bought one-off (see \"Pricing\") or granted monthly by a Starter/Pro subscription. The subscription also unlocks co-organizers, recurring events, feed priority and a badge. Payment terms are on the \"Public Offer\" page.",
+        "Publishing events may require credits — bought one-off (see \"Plans\") or granted monthly by a Starter/Pro subscription. The subscription also unlocks co-organizers, recurring events, feed priority and a badge. Payment terms are on the \"Public Offer\" page.",
       ],
     },
     {
@@ -429,15 +429,15 @@ const offerUk: LegalDoc = {
     {
       heading: "2. Кредити: ціна та оплата",
       items: [
-        "Актуальні пакети та ціни показуються на сторінці «Ціни» перед оплатою; на момент публікації цієї оферти діють: «1 публікація» — 199 грн, «5 публікацій» — 799 грн, «10 публікацій» — 1499 грн.",
+        "Актуальні пакети та ціни показуються на сторінці «Тарифи» перед оплатою; на момент публікації цієї оферти діють: «1 публікація» — 199 грн, «5 публікацій» — 799 грн, «10 публікацій» — 1499 грн.",
         "Оплата приймається через платіжні системи WayForPay та/або Monobank Acquiring. Дані банківської картки вводяться на стороні платіжної системи; продавець їх не бачить і не зберігає.",
       ],
     },
     {
       heading: "3. Підписка: ціна, тривалість, поновлення",
       items: [
-        "Тарифи на момент публікації цієї оферти: «Старт» — 199 грн/місяць (5 кредитів щомісяця), «Про» — 499 грн/місяць (15 кредитів щомісяця, пріоритет у стрічці, бейдж «Перевірений організатор», доступ до співорганізаторів і повторюваних подій). Актуальні тарифи — на сторінці «Ціни».",
-        "Одна оплата активує рівно один місяць доступу від дати оплати (або продовжує поточний період, якщо ви оплачуєте заздалегідь). Підписка НЕ списується автоматично: щоб продовжити користування після завершення оплаченого місяця, потрібно оплатити наступний період вручну на сторінці «Ціни». Про наближення завершення періоду сервіс попереджає в акаунті/сповіщеннях.",
+        "Тарифи на момент публікації цієї оферти: «Старт» — 199 грн/місяць (5 кредитів щомісяця), «Про» — 499 грн/місяць (15 кредитів щомісяця, пріоритет у стрічці, бейдж «Перевірений організатор», доступ до співорганізаторів і повторюваних подій). Актуальні тарифи — на сторінці «Тарифи».",
+        "Одна оплата активує рівно один місяць доступу від дати оплати (або продовжує поточний період, якщо ви оплачуєте заздалегідь). Підписка НЕ списується автоматично: щоб продовжити користування після завершення оплаченого місяця, потрібно оплатити наступний період вручну на сторінці «Тарифи». Про наближення завершення періоду сервіс попереджає в акаунті/сповіщеннях.",
         "Оплата приймається через WayForPay та/або Monobank Acquiring (банківський переказ для підписки не приймається).",
       ],
     },
@@ -483,15 +483,15 @@ const offerEn: LegalDoc = {
     {
       heading: "2. Credits: price and payment",
       items: [
-        "Current packages and prices are shown on the \"Pricing\" page before payment; at the time this offer was published: \"1 publication\" — 199 UAH, \"5 publications\" — 799 UAH, \"10 publications\" — 1499 UAH.",
+        "Current packages and prices are shown on the \"Plans\" page before payment; at the time this offer was published: \"1 publication\" — 199 UAH, \"5 publications\" — 799 UAH, \"10 publications\" — 1499 UAH.",
         "Payment is accepted via WayForPay and/or Monobank Acquiring. Card details are entered on the payment provider's side; the Seller never sees or stores them.",
       ],
     },
     {
       heading: "3. Subscription: price, duration, renewal",
       items: [
-        "Tiers at the time this offer was published: \"Starter\" — 199 UAH/month (5 credits/month), \"Pro\" — 499 UAH/month (15 credits/month, feed priority, \"Verified organizer\" badge, access to co-organizers and recurring events). Current tiers are on the \"Pricing\" page.",
-        "One payment activates exactly one month of access from the payment date (or extends the current period if paid in advance). The subscription does NOT auto-renew: to keep using it after the paid month ends, pay for the next period manually on the \"Pricing\" page. The service warns you in-account/via notifications as the period nears its end.",
+        "Tiers at the time this offer was published: \"Starter\" — 199 UAH/month (5 credits/month), \"Pro\" — 499 UAH/month (15 credits/month, feed priority, \"Verified organizer\" badge, access to co-organizers and recurring events). Current tiers are on the \"Plans\" page.",
+        "One payment activates exactly one month of access from the payment date (or extends the current period if paid in advance). The subscription does NOT auto-renew: to keep using it after the paid month ends, pay for the next period manually on the \"Plans\" page. The service warns you in-account/via notifications as the period nears its end.",
         "Payment is accepted via WayForPay and/or Monobank Acquiring (bank transfer is not accepted for subscriptions).",
       ],
     },
