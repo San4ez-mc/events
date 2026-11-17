@@ -15,7 +15,8 @@ export interface DateRange {
 }
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
-const MAX_DAYS = 366;
+/** Three years: enough for the admin's "весь час" period for a long time to come. */
+const MAX_DAYS = 1100;
 
 const kyivToday = (): string => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Kyiv" });
 

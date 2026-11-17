@@ -13,6 +13,7 @@ import { TrafficPanel } from "../src/components/admin/TrafficPanel";
 import { InsightsPanel } from "../src/components/admin/InsightsPanel";
 import { PeriodFilter, presetPeriod, type Period } from "../src/components/admin/PeriodFilter";
 import { GrowthPanel } from "../src/components/admin/GrowthPanel";
+import { DailyCharts } from "../src/components/admin/DailyCharts";
 import { AdminLoader } from "../src/components/admin/AdminLoader";
 import { radius, spacing, type Palette, useThemedStyles } from "../src/lib/theme";
 
@@ -1040,6 +1041,7 @@ export default function AdminScreen() {
         {tab === "analytics" && (
           <>
             <PeriodFilter period={period} onChange={setPeriod} />
+            <DailyCharts period={period} refreshKey={refreshKey} />
             <GrowthPanel period={period} refreshKey={refreshKey} />
             <TrafficPanel period={period} refreshKey={refreshKey} />
             <InsightsPanel period={period} refreshKey={refreshKey} />

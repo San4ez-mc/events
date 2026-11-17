@@ -36,6 +36,12 @@ export class AdminAnalyticsController {
     return this.insightsService.getReport(resolveRange({ days, from, to }));
   }
 
+  /** One number per day for the charts at the top of the admin analytics (database only). */
+  @Get("daily")
+  getDaily(@Query("days") days?: string, @Query("from") from?: string, @Query("to") to?: string) {
+    return this.growthService.getDaily(resolveRange({ days, from, to }));
+  }
+
   /** New users, new event registrations and the share of registered people who actually came (organizers' post-event reports). Database only, so it is fast. */
   @Get("growth")
   getGrowth(@Query("days") days?: string, @Query("from") from?: string, @Query("to") to?: string) {

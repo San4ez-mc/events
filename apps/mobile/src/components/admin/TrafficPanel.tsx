@@ -50,8 +50,6 @@ export function TrafficPanel({ period, refreshKey = 0 }: { period: Period; refre
   if (!report.configured) return <Text style={styles.muted}>{t("admin.traffic.notConfigured")}</Text>;
   if (report.error || !report.totals) return <Text style={styles.error}>{t("admin.traffic.unavailable")}</Text>;
 
-  const maxVisitors = Math.max(1, ...(report.daily ?? []).map((d) => d.visitors));
-
   return (
     <View style={{ gap: spacing.md }}>
       <View style={styles.tiles}>
@@ -60,17 +58,6 @@ export function TrafficPanel({ period, refreshKey = 0 }: { period: Period; refre
         <Tile label={t("admin.traffic.sessions")} value={String(report.totals.sessions)} />
         <Tile label={t("admin.traffic.avgSession")} value={formatDuration(report.totals.avgSessionSeconds)} />
       </View>
-
-      {report.daily && report.daily.length > 0 && (
-        <View style={styles.card}>
-          <Text style={styles.title}>{t("admin.traffic.daily")}</Text>
-          <View style={styles.bars}>
-            {report.daily.map((d) => (
-              <View key={d.date} style={[styles.bar, { height: `${Math.max(2, (d.visitors / maxVisitors) * 100)}%` }]} />
-            ))}
-          </View>
-        </View>
-      )}
 
       <Section
         title={t("admin.traffic.topPages")}
@@ -143,8 +130,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   tileLabel: { color: colors.muted, fontSize: 11, textAlign: "center", marginTop: 2 },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, gap: spacing.xs },
   title: { color: colors.foreground, fontSize: 14, fontWeight: "700" },
-  bars: { flexDirection: "row", alignItems: "flex-end", gap: 2, height: 80, marginTop: spacing.sm },
-  bar: { flex: 1, backgroundColor: colors.accentFrom, borderTopLeftRadius: 2, borderTopRightRadius: 2, minHeight: 2 },
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.md, paddingVertical: 3 },
   rowLabel: { color: colors.foreground, fontSize: 13, flex: 1 },
 });

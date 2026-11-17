@@ -962,8 +962,22 @@
       "day": "Today",
       "week": "Week",
       "month": "Month",
+      "all": "All time",
       "custom": "Custom",
       "showing": "Showing: {period}"
+    },
+    "daily": {
+      "visitors": "Visitors per day",
+      "views": "Page and screen views",
+      "newUsers": "New users",
+      "placements": "Events placed",
+      "placementsApp": "by organizers",
+      "placementsImported": "imported",
+      "eventViews": "Event views",
+      "ticketClicks": "Ticket clicks",
+      "registrations": "Event registrations",
+      "saves": "Event saves",
+      "shares": "Shares"
     },
     "growth": {
       "newUsers": "New users",

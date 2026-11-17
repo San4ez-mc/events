@@ -55,6 +55,26 @@ export interface GrowthReport {
   organizerFeedback: { eventTitle: string; comment: string; submittedAt: string }[];
 }
 
+/** One number per day (Kyiv days from `from` to `to`) for the admin charts. */
+export interface DailyReport {
+  from: string;
+  to: string;
+  days: string[];
+  series: {
+    newUsers: number[];
+    registrations: number[];
+    /** Listings published by organizers in the app (and the Telegram bot). */
+    placementsApp: number[];
+    /** Listings imported from outside sources. */
+    placementsImported: number[];
+    eventViews: number[];
+    saves: number[];
+    /** Clicks on the "tickets / register on the organizer's site" button. */
+    ticketClicks: number[];
+    shares: number[];
+  };
+}
+
 const LISTING_DOMAIN = "@listings.kiro.invalid";
 const pct = (part: number, whole: number): number | null => (whole > 0 ? Math.round((part / whole) * 100) : null);
 
@@ -123,6 +143,54 @@ export class GrowthService {
       notificationsByType,
       organizerFeedback: feedback.filter((f) => f.comment).map((f) => ({ eventTitle: f.event.title, comment: f.comment!, submittedAt: f.submittedAt.toISOString() })),
     };
+  }
+
+  /**
+   * One number per Kyiv day for the charts at the top of the admin analytics: new accounts, registrations, listings
+   * published by organizers ("app") and imported ones, and what people did on events (views, saves, ticket clicks, shares).
+   * Days without anything are zero, so the series line up with `days`.
+   */
+  async getDaily(range: DateRange): Promise<DailyReport> {
+    const { start, end } = range;
+    const kyivDay = Prisma.sql`'Europe/Kyiv'`;
+    const [users, registrations, listings, actions] = await Promise.all([
+      this.prisma.$queryRaw<{ d: string; n: number }[]>(Prisma.sql`
+        SELECT to_char("createdAt" AT TIME ZONE ${kyivDay}, 'YYYY-MM-DD') AS d, count(*)::int AS n
+        FROM users WHERE "createdAt" >= ${start} AND "createdAt" < ${end} AND email NOT LIKE ${`%${LISTING_DOMAIN}`}
+        GROUP BY 1`),
+      this.prisma.$queryRaw<{ d: string; n: number }[]>(Prisma.sql`
+        SELECT to_char(r."registeredAt" AT TIME ZONE ${kyivDay}, 'YYYY-MM-DD') AS d, count(*)::int AS n
+        FROM event_registrations r JOIN events e ON e.id = r."eventId"
+        WHERE r."registeredAt" >= ${start} AND r."registeredAt" < ${end} AND r.status::text NOT IN ('CANCELLED', 'REJECTED') AND e."isTest" = false
+        GROUP BY 1`),
+      this.prisma.$queryRaw<{ d: string; imported: boolean; n: number }[]>(Prisma.sql`
+        SELECT to_char("publishedAt" AT TIME ZONE ${kyivDay}, 'YYYY-MM-DD') AS d, (source IS NOT NULL AND source NOT IN ('app', 'telegram_bot')) AS imported, count(*)::int AS n
+        FROM events WHERE "publishedAt" >= ${start} AND "publishedAt" < ${end} AND "isTest" = false
+        GROUP BY 1, 2`),
+      this.prisma.$queryRaw<{ d: string; action: string; n: number }[]>(Prisma.sql`
+        SELECT to_char("createdAt" AT TIME ZONE ${kyivDay}, 'YYYY-MM-DD') AS d, action::text AS action, count(*)::int AS n
+        FROM event_analytics_events
+        WHERE "createdAt" >= ${start} AND "createdAt" < ${end} AND action::text IN ('VIEW', 'SAVE', 'PAYMENT_LINK_CLICK', 'SHARE', 'SHARE_IMAGE')
+        GROUP BY 1, 2`),
+    ]);
+
+    const days: string[] = [];
+    for (let d = new Date(`${range.from}T12:00:00Z`); d.toISOString().slice(0, 10) <= range.to; d.setUTCDate(d.getUTCDate() + 1)) days.push(d.toISOString().slice(0, 10));
+    const index = new Map(days.map((d, i) => [d, i]));
+    const zero = () => days.map(() => 0);
+    const series = { newUsers: zero(), registrations: zero(), placementsApp: zero(), placementsImported: zero(), eventViews: zero(), saves: zero(), ticketClicks: zero(), shares: zero() };
+    const add = (target: number[], day: string, n: number) => {
+      const i = index.get(day);
+      if (i !== undefined) target[i]! += n;
+    };
+    for (const r of users) add(series.newUsers, r.d, r.n);
+    for (const r of registrations) add(series.registrations, r.d, r.n);
+    for (const r of listings) add(r.imported ? series.placementsImported : series.placementsApp, r.d, r.n);
+    for (const r of actions) {
+      const target = r.action === "VIEW" ? series.eventViews : r.action === "SAVE" ? series.saves : r.action === "PAYMENT_LINK_CLICK" ? series.ticketClicks : series.shares;
+      add(target, r.d, r.n);
+    }
+    return { from: range.from, to: range.to, days, series };
   }
 
   private async repeatAttendees(range: DateRange) {

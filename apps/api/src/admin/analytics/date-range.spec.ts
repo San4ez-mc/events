@@ -25,9 +25,14 @@ describe("resolveRange", () => {
     expect(resolveRange({}).days).toBe(30);
   });
 
-  it("rejects anything that is not a plain date (it ends up in HogQL) and periods over a year", () => {
+  it("rejects anything that is not a plain date (it ends up in HogQL) and periods over three years", () => {
     expect(() => resolveRange({ from: "2026-10-01'; DROP", to: "2026-10-07" })).toThrow();
     expect(() => resolveRange({ from: "2026-13-45", to: "2026-14-01" })).toThrow();
-    expect(() => resolveRange({ from: "2025-01-01", to: "2026-10-07" })).toThrow();
+    expect(() => resolveRange({ from: "2020-01-01", to: "2026-10-07" })).toThrow();
+  });
+
+  it("allows an all-time period from the launch (a year and more)", () => {
+    expect(resolveRange({ from: "2026-09-20", to: "2026-11-16" }).days).toBe(58);
+    expect(resolveRange({ from: "2025-01-01", to: "2026-10-07" }).days).toBe(645);
   });
 });

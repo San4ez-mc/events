@@ -10,13 +10,17 @@ export interface Period {
   to: string;
 }
 
-export type PeriodPreset = "day" | "week" | "month" | "custom";
+export type PeriodPreset = "day" | "week" | "month" | "all" | "custom";
+
+/** The day before the first account and the first visit: "весь час" means everything since the launch. */
+export const ALL_TIME_FROM = "2026-09-20";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const dayKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
 export function presetPeriod(preset: Exclude<PeriodPreset, "custom">): Period {
   const to = new Date();
+  if (preset === "all") return { from: ALL_TIME_FROM, to: dayKey(to) };
   const from = new Date();
   from.setDate(from.getDate() - (preset === "day" ? 0 : preset === "week" ? 6 : 29));
   return { from: dayKey(from), to: dayKey(to) };
@@ -26,7 +30,8 @@ export function presetPeriod(preset: Exclude<PeriodPreset, "custom">): Period {
 export const periodQuery = (p: Period): string => `from=${p.from}&to=${p.to}`;
 
 /** "28.10 – 3.11" / "28.10". */
-function formatPeriod(p: Period): string {
+function formatPeriod(p: Period, allLabel: string): string {
+  if (p.from === ALL_TIME_FROM) return allLabel;
   const short = (k: string) => `${Number(k.slice(8))}.${k.slice(5, 7)}`;
   return p.from === p.to ? short(p.from) : `${short(p.from)} – ${short(p.to)}`;
 }
@@ -47,6 +52,7 @@ export function PeriodFilter({ period, onChange }: { period: Period; onChange: (
     { key: "day", label: t("admin.period.day") },
     { key: "week", label: t("admin.period.week") },
     { key: "month", label: t("admin.period.month") },
+    { key: "all", label: t("admin.period.all") },
     { key: "custom", label: t("admin.period.custom") },
   ];
 
@@ -71,7 +77,7 @@ export function PeriodFilter({ period, onChange }: { period: Period; onChange: (
           }}
         />
       )}
-      <Text style={styles.hint}>{t("admin.period.showing").replace("{period}", formatPeriod(period))}</Text>
+      <Text style={styles.hint}>{t("admin.period.showing").replace("{period}", formatPeriod(period, t("admin.period.all").toLowerCase()))}</Text>
     </View>
   );
 }
