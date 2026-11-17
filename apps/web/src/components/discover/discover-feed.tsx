@@ -30,7 +30,14 @@ import { EMPTY_FILTERS, countActiveFilters, filtersToQuery } from "@kiro/types";
 const FILTERS_STORAGE_KEY = "kiro_discover_filters";
 const VIEW_STORAGE_KEY = "kiro_discover_view";
 const INTRO_STORAGE_KEY = "kiro_discover_intro_seen";
-const SWIPE_DISTANCE = 100;
+// The swipe feels exactly like the app's (apps/mobile/src/components/discover/SwipeCard.tsx): it counts after 14% of the
+// card's width or as a quick flick (px/ms), the card tilts up to 10° per card-width, follows the finger in both axes,
+// flies out in 140 ms and springs back when let go early.
+const SWIPE_RATIO = 0.14;
+const FLICK_VELOCITY = 0.3;
+const FLY_OUT_MS = 140;
+const MAX_TILT_DEG = 10;
+const FALLBACK_WIDTH = 390;
 const TAP_DISTANCE = 6;
 
 /** Action circles over the card: surface fill, hairline border, coloured icon — as in the app. */
@@ -66,8 +73,10 @@ export function DiscoverFeed() {
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const fetchingRef = useRef(false);
 
-  const [drag, setDrag] = useState({ x: 0, y: 0, active: false });
+  const [drag, setDrag] = useState({ x: 0, y: 0, rot: 0, active: false });
   const dragRef = useRef({ x: 0, y: 0 });
+  /** Recent pointer positions (x, time), for the flick velocity at release. */
+  const samplesRef = useRef<{ x: number; t: number }[]>([]);
   const [flyOut, setFlyOut] = useState<null | "left" | "right">(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -340,16 +349,19 @@ export function DiscoverFeed() {
     if (flyOut) return;
     startRef.current = { x: e.clientX, y: e.clientY };
     dragRef.current = { x: 0, y: 0 };
+    samplesRef.current = [{ x: 0, t: e.timeStamp }];
     e.currentTarget.setPointerCapture(e.pointerId);
-    setDrag({ x: 0, y: 0, active: true });
+    setDrag({ x: 0, y: 0, rot: 0, active: true });
   }
 
   function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
     const start = startRef.current;
     if (!start) return;
-    const next = { x: e.clientX - start.x, y: (e.clientY - start.y) * 0.3 };
+    const next = { x: e.clientX - start.x, y: e.clientY - start.y };
     dragRef.current = next;
-    setDrag({ ...next, active: true });
+    samplesRef.current = [...samplesRef.current.filter((p) => e.timeStamp - p.t < 100), { x: next.x, t: e.timeStamp }];
+    const width = e.currentTarget.offsetWidth || FALLBACK_WIDTH;
+    setDrag({ ...next, rot: (next.x / width) * MAX_TILT_DEG, active: true });
   }
 
   /**
@@ -358,35 +370,45 @@ export function DiscoverFeed() {
    * distance now counts as a swipe; a short one just resets and never counts as a tap.
    * The offsets come from a ref, not from state: on iOS pointerup can arrive before React re-rendered with the last move.
    */
-  function finishGesture(cancelled: boolean) {
+  function finishGesture(cancelled: boolean, width: number = FALLBACK_WIDTH) {
     const start = startRef.current;
     startRef.current = null;
     if (!start) return;
     const { x, y } = dragRef.current;
     if (Math.abs(x) < TAP_DISTANCE && Math.abs(y) < TAP_DISTANCE) {
-      setDrag({ x: 0, y: 0, active: false });
+      setDrag({ x: 0, y: 0, rot: 0, active: false });
       if (!cancelled) handleOpen();
       return;
     }
-    if (Math.abs(x) >= SWIPE_DISTANCE) {
-      const direction = x > 0 ? "right" : "left";
+    const samples = samplesRef.current;
+    const first = samples[0];
+    const last = samples[samples.length - 1];
+    const vx = first && last && last.t > first.t ? (last.x - first.x) / (last.t - first.t) : 0;
+    const threshold = width * SWIPE_RATIO;
+    const direction = x > threshold || vx > FLICK_VELOCITY ? "right" : x < -threshold || vx < -FLICK_VELOCITY ? "left" : null;
+    if (direction) {
+      const side = direction === "right" ? 1 : -1;
       setFlyOut(direction);
-      setDrag({ x: x > 0 ? 700 : -700, y, active: false });
+      // Out along the finger's line, tilting on to 15° like the app (1.5 card widths).
+      setDrag({ x: side * width * 1.5, y, rot: side * MAX_TILT_DEG * 1.5, active: false });
       window.setTimeout(() => {
+        // Back to the middle with no transition: by now the card underneath is the current one, so nothing slides back in.
         setFlyOut(null);
-        setDrag({ x: 0, y: 0, active: false });
+        setDrag({ x: 0, y: 0, rot: 0, active: true });
         if (direction === "right") handleOpen();
         else handlePass();
-      }, 220);
+      }, FLY_OUT_MS);
       return;
     }
-    setDrag({ x: 0, y: 0, active: false });
+    setDrag({ x: 0, y: 0, rot: 0, active: false });
   }
 
-  const onPointerUp = () => finishGesture(false);
+  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => finishGesture(false, e.currentTarget.offsetWidth || FALLBACK_WIDTH);
 
-  const passOpacity = Math.min(1, Math.max(0, -drag.x / SWIPE_DISTANCE));
-  const openOpacity = Math.min(1, Math.max(0, drag.x / SWIPE_DISTANCE));
+  // The stamps fade in over the first 14% of the card's width, like the app's.
+  const stampRange = (typeof window === "undefined" ? FALLBACK_WIDTH : Math.min(window.innerWidth, 560)) * SWIPE_RATIO;
+  const passOpacity = Math.min(1, Math.max(0, -drag.x / stampRange));
+  const openOpacity = Math.min(1, Math.max(0, drag.x / stampRange));
   const hasCards = !loading && !error && items.length > 0;
   const quickChips = [
     { key: "today", label: t("filters.dateToday"), on: filters.datePreset === "today", next: { ...filters, datePreset: filters.datePreset === "today" ? ("any" as const) : ("today" as const) } },
@@ -487,7 +509,7 @@ export function DiscoverFeed() {
         {current && (
           <>
             {upcoming && (
-              <div className="pointer-events-none absolute inset-0 origin-bottom scale-[0.96] opacity-70" aria-hidden="true">
+              <div className="pointer-events-none absolute inset-0" aria-hidden="true">
                 <EventCard event={upcoming} locale={locale} t={t} bottomInset={ACTIONS_INSET} />
               </div>
             )}
@@ -504,11 +526,12 @@ export function DiscoverFeed() {
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
-              onPointerCancel={() => finishGesture(true)}
+              onPointerCancel={(e) => finishGesture(true, e.currentTarget.offsetWidth || FALLBACK_WIDTH)}
               className="absolute inset-0 cursor-grab touch-none select-none active:cursor-grabbing"
               style={{
-                transform: `translate(${drag.x}px, ${drag.y}px) rotate(${drag.x / 25}deg)`,
-                transition: drag.active ? "none" : "transform 220ms ease-out",
+                transform: `translate(${drag.x}px, ${drag.y}px) rotate(${drag.rot}deg)`,
+                // Following the finger: none. Flying out: the app's 140 ms ease-in-out. Letting go early: a springy return.
+                transition: drag.active ? "none" : flyOut ? `transform ${FLY_OUT_MS}ms cubic-bezier(0.42, 0, 0.58, 1)` : "transform 380ms cubic-bezier(0.34, 1.56, 0.64, 1)",
               }}
             >
               <EventCard event={current} locale={locale} t={t} bottomInset={ACTIONS_INSET} />

@@ -66,3 +66,33 @@ export const api = createKiroApiClient({
   getAccessToken,
   onUnauthorized: refreshAccessToken,
 });
+
+/**
+ * Many screens call `fetch("/api/v1/...", { headers: { Authorization: Bearer <token> } })` directly. The access token lives
+ * only a short while, so a tab left open for a few minutes then got a 401 and the screen showed "Щось пішло не так" (or
+ * stayed on "Завантаження…"). This wraps the browser's fetch once: a 401 on an authenticated /api/v1 call refreshes the
+ * token (single-flighted, see refreshAccessToken) and repeats the request with the new one. Calls through the typed client
+ * (they pass a Request) already have their own refresh and are left alone.
+ */
+function installAuthRetry(): void {
+  if (typeof window === "undefined" || (window as { __kiroAuthRetry?: boolean }).__kiroAuthRetry) return;
+  (window as { __kiroAuthRetry?: boolean }).__kiroAuthRetry = true;
+  const original = window.fetch.bind(window);
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const res = await original(input, init);
+    if (res.status !== 401 || input instanceof Request) return res;
+    const path = new URL(typeof input === "string" ? input : input.href, window.location.origin).pathname;
+    if (!path.startsWith("/api/v1/") || path.startsWith("/api/v1/auth/")) return res;
+    const headers = new Headers(init?.headers);
+    const sent = headers.get("Authorization");
+    if (!sent) return res;
+    // Someone else may have refreshed already: then just repeat with the current token.
+    const current = getAccessToken();
+    const token = current && `Bearer ${current}` !== sent ? current : await refreshAccessToken();
+    if (!token) return res;
+    headers.set("Authorization", `Bearer ${token}`);
+    return original(input, { ...init, headers });
+  };
+}
+
+installAuthRetry();
