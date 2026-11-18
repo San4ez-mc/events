@@ -10,3 +10,19 @@ node_modules
 test-results
 apps/api/dist
 *.log
+
+# Secrets and local files that must never reach the build servers (.easignore replaces .gitignore for EAS)
+.secrets
+.claude
+.env
+.env.*
+**/.env
+**/.env.*
+/FOP.txt
+/google clients.txt
+/mail.txt
+/pay.txt
+/tik tok.txt
+/README - KIRO.md
+/FEEDBACK.md
+.git
