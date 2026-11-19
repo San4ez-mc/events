@@ -1,4 +1,4 @@
-import { INVITE_COOKIE, INVITE_MAX_AGE_SECONDS, inviteCookieDomain, normalizeInviteCode } from "@/lib/invite-code";
+import { INVITE_COOKIE, INVITE_MAX_AGE_SECONDS, inviteCookieDomain, isRobot, normalizeInviteCode } from "@/lib/invite-code";
 
 /**
  * The landing page's "download" button points here: kiro.fineko.space/get?ref=<code>.
@@ -19,16 +19,17 @@ export async function GET(request: Request): Promise<Response> {
   const code = normalizeInviteCode(url.searchParams.get("ref")) ?? normalizeInviteCode(cookieCode);
   const toWeb = url.searchParams.get("to") === "web";
 
+  const robot = isRobot(request.headers.get("user-agent"));
   const target = new URL(toWeb ? SITE_URL : PLAY_URL);
   if (code) {
-    // Best effort: a failed count must never stop the visitor reaching the store.
-    await fetch(`${API_URL}/api/v1/invites/click/${code}?kind=download`, { method: "POST", signal: AbortSignal.timeout(3000) }).catch(() => undefined);
+    // Best effort: a failed count must never stop the visitor reaching the store. Robots (link previews) are not counted.
+    if (!robot) await fetch(`${API_URL}/api/v1/invites/click/${code}?kind=download`, { method: "POST", signal: AbortSignal.timeout(3000) }).catch(() => undefined);
     if (toWeb) target.searchParams.set("ref", code);
     else target.searchParams.set("referrer", `kiro_ref=${code}&utm_source=invite&utm_medium=referral`);
   }
 
   const headers = new Headers({ Location: target.toString() });
-  if (code) {
+  if (code && !robot) {
     // Behind the reverse proxy request.url is the internal address; the public host is in the forwarded headers.
     const publicHost = (request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "").split(":")[0]!;
     const domain = inviteCookieDomain(publicHost);

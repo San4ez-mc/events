@@ -1,4 +1,4 @@
-import { INVITE_COOKIE, INVITE_MAX_AGE_SECONDS, inviteCookieDomain, normalizeInviteCode } from "@/lib/invite-code";
+import { INVITE_COOKIE, INVITE_MAX_AGE_SECONDS, inviteCookieDomain, isRobot, normalizeInviteCode } from "@/lib/invite-code";
 
 /**
  * A personal invitation link: kiro.fineko.space/r/<code>.
@@ -18,8 +18,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
   const landing = new URL(LANDING_URL);
   if (!code) return Response.redirect(landing.toString(), 302);
 
-  // Best effort: a failed count must never stop the visitor reaching the landing page.
-  await fetch(`${API_URL}/api/v1/invites/click/${code}`, { method: "POST", signal: AbortSignal.timeout(3000) }).catch(() => undefined);
+  const robot = isRobot(request.headers.get("user-agent"));
+  // Best effort: a failed count must never stop the visitor reaching the landing page. Robots (link previews) are not counted.
+  if (!robot) await fetch(`${API_URL}/api/v1/invites/click/${code}`, { method: "POST", signal: AbortSignal.timeout(3000) }).catch(() => undefined);
 
   landing.searchParams.set("ref", code);
   landing.searchParams.set("utm_source", "invite");
@@ -28,6 +29,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
   const publicHost = (request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "").split(":")[0]!;
   const domain = inviteCookieDomain(publicHost);
   const headers = new Headers({ Location: landing.toString() });
-  headers.append("Set-Cookie", `${INVITE_COOKIE}=${code}; Max-Age=${INVITE_MAX_AGE_SECONDS}; Path=/; SameSite=Lax${domain ? `; Domain=${domain}; Secure` : ""}`);
+  if (!robot) headers.append("Set-Cookie", `${INVITE_COOKIE}=${code}; Max-Age=${INVITE_MAX_AGE_SECONDS}; Path=/; SameSite=Lax${domain ? `; Domain=${domain}; Secure` : ""}`);
   return new Response(null, { status: 302, headers });
 }

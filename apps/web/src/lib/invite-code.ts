@@ -13,6 +13,14 @@ export function normalizeInviteCode(raw: string | null | undefined): string | nu
   return code.length === CODE_LENGTH ? code : null;
 }
 
+/**
+ * Link-preview and search robots (Facebook/Instagram, Telegram, WhatsApp, Slack, Google...) open a shared link to build the
+ * preview, sometimes dozens of times. They must still reach the landing page, but they are not people: not counted, no cookie.
+ */
+export function isRobot(userAgent: string | null | undefined): boolean {
+  return !userAgent || /bot|crawl|spider|slurp|preview|facebookexternalhit|facebot|whatsapp|telegram|skype|discord|slack|linkedin|pinterest|embedly|curl|wget|python-requests|node-fetch|headless|lighthouse/i.test(userAgent);
+}
+
 /** The Domain attribute shared with the landing page; none on localhost / other hosts. */
 export function inviteCookieDomain(host: string): string | null {
   return /(^|\.)fineko\.space$/.test(host) ? ".fineko.space" : null;
