@@ -1,4 +1,4 @@
-import { Controller, Get, HttpCode, Param, Post, Query } from "@nestjs/common";
+import { Controller, Get, HttpCode, NotFoundException, Param, Post, Query } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Public } from "../common/decorators/public.decorator";
@@ -23,8 +23,8 @@ export class InvitesController {
   @RateLimit(60)
   @Post("invites/click/:code")
   @HttpCode(204)
-  async click(@Param("code") code: string, @Query("kind") kind?: string): Promise<void> {
-    await this.invites.registerClick(code, kind === "download" ? "download" : "visit");
+  async click(@Param("code") code: string, @Query("kind") kind?: string, @Query("device") device?: string): Promise<void> {
+    await this.invites.registerClick(code, kind === "download" ? "download" : "visit", device);
   }
 
   /** Admin: who invited whom. */
@@ -32,5 +32,14 @@ export class InvitesController {
   @Get("admin/invites")
   overview() {
     return this.invites.overview();
+  }
+
+  /** Admin: the list behind each number of one person (opens, download presses, people who signed up). */
+  @Roles("ADMIN", "SUPER_ADMIN")
+  @Get("admin/invites/:userId")
+  async details(@Param("userId") userId: string) {
+    const details = await this.invites.details(userId);
+    if (!details) throw new NotFoundException("User not found");
+    return details;
   }
 }

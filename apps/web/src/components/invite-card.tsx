@@ -3,22 +3,32 @@
 import { useEffect, useState } from "react";
 import { IoCheckmark, IoCopyOutline, IoPersonAdd, IoShareSocialOutline } from "react-icons/io5";
 import { useTranslations } from "@/lib/locale-context";
+import { formatDateTime } from "@/lib/format";
 import { getAccessToken } from "@/lib/api-client";
 
+interface Action {
+  at: string;
+  device: "ANDROID" | "IPHONE" | "DESKTOP" | "OTHER";
+}
 interface MyInvites {
   code: string;
   link: string;
   clicks: number;
+  downloadClicks: number;
   total: number;
   organizers: number;
   invited: { id: string; name: string; joinedAt: string; isOrganizer: boolean; eventsPublished: number }[];
+  visits: Action[];
+  downloads: Action[];
 }
+type Kind = "visits" | "downloads" | "people" | "organizers";
 
-/** "Invite organizers": the person's own link, and what came of it (opened, signed up, became organizers). */
+/** "Invite organizers": the person's own link, and what came of it. Tap a number to see the list behind it. */
 export function InviteCard() {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const [data, setData] = useState<MyInvites | null>(null);
   const [copied, setCopied] = useState(false);
+  const [open, setOpen] = useState<Kind | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -48,12 +58,59 @@ export function InviteCard() {
     }
   }
 
-  const stat = (value: number, label: string) => (
-    <div className="flex-1 rounded-xl bg-background px-2 py-2 text-center">
-      <p className="text-lg font-extrabold">{value}</p>
-      <p className="text-[11px] leading-tight text-muted">{label}</p>
-    </div>
+  const stat = (kind: Kind, value: number, label: string) => (
+    <button
+      type="button"
+      key={kind}
+      onClick={() => setOpen(open === kind ? null : kind)}
+      aria-expanded={open === kind}
+      className={`flex-1 rounded-xl px-1 py-2 text-center ${open === kind ? "accent-gradient text-white" : "bg-background"}`}
+    >
+      <span className="block text-lg font-extrabold">{value}</span>
+      <span className={`block text-[11px] leading-tight ${open === kind ? "text-white/90" : "text-muted"}`}>{label}</span>
+    </button>
   );
+
+  const listTitle: Record<Kind, string> = {
+    visits: t("admin.invites.listVisits"),
+    downloads: t("admin.invites.listDownloads"),
+    people: t("admin.invites.listPeople"),
+    organizers: t("admin.invites.listOrganizers"),
+  };
+
+  function renderList(kind: Kind) {
+    if (kind === "visits" || kind === "downloads") {
+      const list = kind === "visits" ? data!.visits : data!.downloads;
+      const total = kind === "visits" ? data!.clicks : data!.downloadClicks;
+      return (
+        <>
+          {list.length === 0 && <p className="text-sm text-muted">{t("admin.invites.emptyList")}</p>}
+          {list.map((a, i) => (
+            <p key={`${a.at}-${i}`} className="flex justify-between gap-3 rounded-lg bg-background px-3 py-2 text-sm">
+              <span>{formatDateTime(a.at, locale)}</span>
+              <span className="text-muted">{t(`admin.invites.device${a.device}`)}</span>
+            </p>
+          ))}
+          {total > list.length && <p className="text-xs text-muted">{t("admin.invites.olderWithoutDetails").replace("{n}", String(total - list.length))}</p>}
+        </>
+      );
+    }
+    const people = kind === "organizers" ? data!.invited.filter((p) => p.isOrganizer) : data!.invited;
+    return (
+      <>
+        {people.length === 0 && <p className="text-sm text-muted">{t("admin.invites.emptyList")}</p>}
+        {people.map((p) => (
+          <p key={p.id} className="flex justify-between gap-3 rounded-lg bg-background px-3 py-2 text-sm">
+            <span className="truncate font-medium">{p.name}</span>
+            <span className="shrink-0 text-muted">
+              {formatDateTime(p.joinedAt, locale)}
+              {p.isOrganizer ? ` · ${p.eventsPublished} ${t("admin.invites.events")}` : ""}
+            </span>
+          </p>
+        ))}
+      </>
+    );
+  }
 
   return (
     <section className="flex flex-col gap-3 rounded-[18px] bg-surface p-4">
@@ -78,11 +135,19 @@ export function InviteCard() {
         </button>
       </div>
       <div className="flex gap-2">
-        {stat(data.clicks, t("admin.invites.clicks"))}
-        {stat(data.total, t("admin.invites.joined"))}
-        {stat(data.organizers, t("admin.invites.organizers"))}
+        {stat("visits", data.clicks, t("admin.invites.clicks"))}
+        {stat("downloads", data.downloadClicks, t("admin.invites.downloadClicks"))}
+        {stat("people", data.total, t("admin.invites.joined"))}
+        {stat("organizers", data.organizers, t("admin.invites.organizers"))}
       </div>
-      {data.total === 0 && <p className="text-xs text-muted">{t("admin.invites.empty")}</p>}
+      {open ? (
+        <div className="flex flex-col gap-1.5 border-t border-border pt-3">
+          <h3 className="text-sm font-bold">{listTitle[open]}</h3>
+          {renderList(open)}
+        </div>
+      ) : (
+        <p className="text-xs text-muted">{data.total === 0 ? t("admin.invites.empty") : t("admin.invites.tapNumber")}</p>
+      )}
     </section>
   );
 }

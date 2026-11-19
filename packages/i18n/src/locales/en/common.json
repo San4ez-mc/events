@@ -1002,7 +1002,18 @@
       "invitedBy": "Invited by",
       "people": "invited",
       "linkClicks": "clicks",
-      "downloadClicks": "pressed Download"
+      "downloadClicks": "pressed Download",
+      "listVisits": "Opened the link",
+      "listDownloads": "Pressed Download",
+      "listPeople": "Signed up",
+      "listOrganizers": "Became organizers",
+      "emptyList": "Nothing yet",
+      "olderWithoutDetails": "{n} earlier ones without details (the list is kept since tracking was introduced).",
+      "tapNumber": "Tap a number to see the list.",
+      "deviceANDROID": "Android",
+      "deviceIPHONE": "iPhone",
+      "deviceDESKTOP": "Computer",
+      "deviceOTHER": "Other device"
     },
     "growth": {
       "newUsers": "New users",

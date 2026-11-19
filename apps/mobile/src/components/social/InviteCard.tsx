@@ -3,21 +3,32 @@ import { Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { API_URL, getAccessToken } from "../../lib/api-client";
 import { useTranslations } from "../../lib/locale-context";
+import { formatShortDateTime } from "../../lib/format";
 import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
 
+interface Action {
+  at: string;
+  device: "ANDROID" | "IPHONE" | "DESKTOP" | "OTHER";
+}
 interface MyInvites {
   code: string;
   link: string;
   clicks: number;
+  downloadClicks: number;
   total: number;
   organizers: number;
+  invited: { id: string; name: string; joinedAt: string; isOrganizer: boolean; eventsPublished: number }[];
+  visits: Action[];
+  downloads: Action[];
 }
+type Kind = "visits" | "downloads" | "people" | "organizers";
 
-/** "Invite organizers": the person's own link (copy / share) and what came of it: opened, signed up, became organizers. */
+/** "Invite organizers": the person's own link (share) and what came of it. Tap a number to see the list behind it. */
 export function InviteCard() {
   const { colors, styles } = useThemedStyles(makeStyles);
   const { t } = useTranslations();
   const [data, setData] = useState<MyInvites | null>(null);
+  const [open, setOpen] = useState<Kind | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -28,12 +39,57 @@ export function InviteCard() {
 
   if (!data) return null;
 
-  const stat = (value: number, label: string) => (
-    <View key={label} style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
+  const stat = (kind: Kind, value: number, label: string) => (
+    <Pressable key={kind} onPress={() => setOpen(open === kind ? null : kind)} style={[styles.stat, open === kind && { backgroundColor: colors.accentFrom }]} accessibilityRole="button" accessibilityState={{ expanded: open === kind }}>
+      <Text style={[styles.statValue, open === kind && { color: colors.white }]}>{value}</Text>
+      <Text style={[styles.statLabel, open === kind && { color: colors.white }]} numberOfLines={2}>
+        {label}
+      </Text>
+    </Pressable>
   );
+
+  const listTitle: Record<Kind, string> = {
+    visits: t("admin.invites.listVisits"),
+    downloads: t("admin.invites.listDownloads"),
+    people: t("admin.invites.listPeople"),
+    organizers: t("admin.invites.listOrganizers"),
+  };
+
+  function renderList(kind: Kind) {
+    if (kind === "visits" || kind === "downloads") {
+      const list = kind === "visits" ? data!.visits : data!.downloads;
+      const total = kind === "visits" ? data!.clicks : data!.downloadClicks;
+      return (
+        <>
+          {list.length === 0 && <Text style={styles.muted}>{t("admin.invites.emptyList")}</Text>}
+          {list.map((a, i) => (
+            <View key={`${a.at}-${i}`} style={styles.line}>
+              <Text style={styles.lineText}>{formatShortDateTime(a.at)}</Text>
+              <Text style={styles.muted}>{t(`admin.invites.device${a.device}`)}</Text>
+            </View>
+          ))}
+          {total > list.length ? <Text style={styles.muted}>{t("admin.invites.olderWithoutDetails").replace("{n}", String(total - list.length))}</Text> : null}
+        </>
+      );
+    }
+    const people = kind === "organizers" ? data!.invited.filter((p) => p.isOrganizer) : data!.invited;
+    return (
+      <>
+        {people.length === 0 && <Text style={styles.muted}>{t("admin.invites.emptyList")}</Text>}
+        {people.map((p) => (
+          <View key={p.id} style={styles.line}>
+            <Text style={[styles.lineText, { flex: 1 }]} numberOfLines={1}>
+              {p.name}
+            </Text>
+            <Text style={styles.muted}>
+              {formatShortDateTime(p.joinedAt)}
+              {p.isOrganizer ? ` · ${p.eventsPublished} ${t("admin.invites.events")}` : ""}
+            </Text>
+          </View>
+        ))}
+      </>
+    );
+  }
 
   return (
     <View style={styles.card}>
@@ -56,11 +112,19 @@ export function InviteCard() {
         </Pressable>
       </View>
       <View style={styles.stats}>
-        {stat(data.clicks, t("admin.invites.clicks"))}
-        {stat(data.total, t("admin.invites.joined"))}
-        {stat(data.organizers, t("admin.invites.organizers"))}
+        {stat("visits", data.clicks, t("admin.invites.clicks"))}
+        {stat("downloads", data.downloadClicks, t("admin.invites.downloadClicks"))}
+        {stat("people", data.total, t("admin.invites.joined"))}
+        {stat("organizers", data.organizers, t("admin.invites.organizers"))}
       </View>
-      {data.total === 0 ? <Text style={styles.muted}>{t("admin.invites.empty")}</Text> : null}
+      {open ? (
+        <View style={styles.list}>
+          <Text style={styles.listTitle}>{listTitle[open]}</Text>
+          {renderList(open)}
+        </View>
+      ) : (
+        <Text style={styles.muted}>{data.total === 0 ? t("admin.invites.empty") : t("admin.invites.tapNumber")}</Text>
+      )}
     </View>
   );
 }
@@ -75,11 +139,14 @@ const makeStyles = (colors: Palette) =>
     link: { color: colors.foreground, fontSize: 14, fontWeight: "600", backgroundColor: colors.background, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
     buttons: { flexDirection: "row", gap: spacing.sm },
     button: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: spacing.sm + 2, borderRadius: radius.md },
-    buttonGhost: { borderWidth: 1, borderColor: colors.border },
     buttonPrimary: { backgroundColor: colors.accentFrom },
     buttonText: { color: colors.foreground, fontSize: 14, fontWeight: "700" },
-    stats: { flexDirection: "row", gap: spacing.sm },
-    stat: { flex: 1, backgroundColor: colors.background, borderRadius: radius.md, paddingVertical: spacing.sm, alignItems: "center" },
+    stats: { flexDirection: "row", gap: spacing.xs },
+    stat: { flex: 1, backgroundColor: colors.background, borderRadius: radius.md, paddingVertical: spacing.sm, paddingHorizontal: 4, alignItems: "center" },
     statValue: { color: colors.foreground, fontSize: 18, fontWeight: "800" },
-    statLabel: { color: colors.muted, fontSize: 11, textAlign: "center" },
+    statLabel: { color: colors.muted, fontSize: 10, textAlign: "center" },
+    list: { gap: spacing.xs, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm },
+    listTitle: { color: colors.foreground, fontSize: 13, fontWeight: "700" },
+    line: { flexDirection: "row", justifyContent: "space-between", gap: spacing.md, backgroundColor: colors.background, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2 },
+    lineText: { color: colors.foreground, fontSize: 13, fontWeight: "600" },
   });

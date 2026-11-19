@@ -21,6 +21,15 @@ export function isRobot(userAgent: string | null | undefined): boolean {
   return !userAgent || /bot|crawl|spider|slurp|preview|facebookexternalhit|facebot|whatsapp|telegram|skype|discord|slack|linkedin|pinterest|embedly|curl|wget|python-requests|node-fetch|headless|lighthouse/i.test(userAgent);
 }
 
+/** What the person opened the link on, for the admin's lists. */
+export function deviceOf(userAgent: string | null | undefined): "ANDROID" | "IPHONE" | "DESKTOP" | "OTHER" {
+  const ua = userAgent ?? "";
+  if (/android/i.test(ua)) return "ANDROID";
+  if (/iphone|ipad|ipod/i.test(ua)) return "IPHONE";
+  if (/windows|macintosh|linux|x11|cros/i.test(ua)) return "DESKTOP";
+  return "OTHER";
+}
+
 /** The Domain attribute shared with the landing page; none on localhost / other hosts. */
 export function inviteCookieDomain(host: string): string | null {
   return /(^|\.)fineko\.space$/.test(host) ? ".fineko.space" : null;

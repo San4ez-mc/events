@@ -15,6 +15,15 @@ export function normalizeInviteCode(raw: string | null | undefined): string | nu
   return code.length === CODE_LENGTH ? code : null;
 }
 
+export type InviteDevice = "ANDROID" | "IPHONE" | "DESKTOP" | "OTHER";
+const DEVICES: readonly string[] = ["ANDROID", "IPHONE", "DESKTOP", "OTHER"];
+
+/** One counted action on the link, newest first in the lists. */
+export interface InviteAction {
+  at: string;
+  device: InviteDevice;
+}
+
 export interface InvitedPerson {
   id: string;
   name: string;
@@ -22,6 +31,8 @@ export interface InvitedPerson {
   /** Has created an event, i.e. became an organizer. */
   isOrganizer: boolean;
   eventsPublished: number;
+  /** Titles of the events this person published (up to 5), newest first. */
+  events?: { title: string; slug: string; status: string }[];
 }
 
 export interface MyInvites {
@@ -34,6 +45,18 @@ export interface MyInvites {
   total: number;
   organizers: number;
   invited: InvitedPerson[];
+  /** The last opens and download presses behind the counters (the log starts when it was introduced). */
+  visits: InviteAction[];
+  downloads: InviteAction[];
+}
+
+export interface InviterDetails {
+  inviter: { id: string; name: string; email: string };
+  clicks: number;
+  downloadClicks: number;
+  visits: InviteAction[];
+  downloads: InviteAction[];
+  people: (InvitedPerson & { email: string })[];
 }
 
 export interface InviterRow {
@@ -99,17 +122,70 @@ export class InvitesService {
       isOrganizer: p.organizerActivatedAt !== null,
       eventsPublished: p._count.events,
     }));
-    return { code, link: this.linkFor(code), clicks: me?.referralClicks ?? 0, downloadClicks: me?.referralDownloadClicks ?? 0, total: invited.length, organizers: invited.filter((p) => p.isOrganizer).length, invited };
+    const { visits, downloads } = await this.actionLists(userId);
+    return { code, link: this.linkFor(code), clicks: me?.referralClicks ?? 0, downloadClicks: me?.referralDownloadClicks ?? 0, total: invited.length, organizers: invited.filter((p) => p.isOrganizer).length, invited, visits, downloads };
   }
 
   /** The invitation link was opened: counts the click for the person it belongs to (unknown codes are ignored). */
-  async registerClick(rawCode: string, kind: "visit" | "download" = "visit"): Promise<void> {
+  async registerClick(rawCode: string, kind: "visit" | "download" = "visit", device?: string): Promise<void> {
     const code = normalizeInviteCode(rawCode);
     if (!code) return;
-    await this.prisma.user.updateMany({
-      where: { referralCode: code },
-      data: kind === "download" ? { referralDownloadClicks: { increment: 1 } } : { referralClicks: { increment: 1 } },
+    const inviter = await this.prisma.user.findUnique({ where: { referralCode: code }, select: { id: true } });
+    if (!inviter) return;
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: inviter.id }, data: kind === "download" ? { referralDownloadClicks: { increment: 1 } } : { referralClicks: { increment: 1 } } }),
+      this.prisma.inviteEvent.create({ data: { inviterId: inviter.id, kind: kind === "download" ? "DOWNLOAD" : "VISIT", device: device && DEVICES.includes(device) ? device : "OTHER" } }),
+    ]);
+  }
+
+  /** The last 100 opens and download presses of one person's link, newest first. */
+  private async actionLists(userId: string): Promise<{ visits: InviteAction[]; downloads: InviteAction[] }> {
+    const rows = await this.prisma.inviteEvent.findMany({ where: { inviterId: userId }, orderBy: { createdAt: "desc" }, take: 200, select: { kind: true, device: true, createdAt: true } });
+    const toAction = (r: { device: string; createdAt: Date }): InviteAction => ({ at: r.createdAt.toISOString(), device: r.device as InviteDevice });
+    return { visits: rows.filter((r) => r.kind === "VISIT").slice(0, 100).map(toAction), downloads: rows.filter((r) => r.kind === "DOWNLOAD").slice(0, 100).map(toAction) };
+  }
+
+  /** Admin: everything behind one person's numbers: each open, each download press, and the people who signed up. */
+  async details(userId: string): Promise<InviterDetails | null> {
+    const inviter = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, nickname: true, email: true, referralClicks: true, referralDownloadClicks: true },
     });
+    if (!inviter) return null;
+    const [{ visits, downloads }, people] = await Promise.all([
+      this.actionLists(userId),
+      this.prisma.user.findMany({
+        where: { referredById: userId },
+        orderBy: { referredAt: "desc" },
+        select: {
+          id: true,
+          name: true,
+          nickname: true,
+          email: true,
+          referredAt: true,
+          createdAt: true,
+          organizerActivatedAt: true,
+          _count: { select: { events: { where: PUBLISHED_EVENTS } } },
+          events: { where: { isTest: false, status: { not: "DRAFT" } }, orderBy: { createdAt: "desc" }, take: 5, select: { title: true, slug: true, status: true } },
+        },
+      }),
+    ]);
+    return {
+      inviter: { id: inviter.id, name: inviter.name ?? inviter.nickname ?? "—", email: inviter.email },
+      clicks: inviter.referralClicks,
+      downloadClicks: inviter.referralDownloadClicks,
+      visits,
+      downloads,
+      people: people.map((p) => ({
+        id: p.id,
+        name: p.name ?? p.nickname ?? "—",
+        email: p.email,
+        joinedAt: (p.referredAt ?? p.createdAt).toISOString(),
+        isOrganizer: p.organizerActivatedAt !== null,
+        eventsPublished: p._count.events,
+        events: p.events,
+      })),
+    };
   }
 
   /** Admin: every person who invited someone, with the people they brought and which of them became organizers. */

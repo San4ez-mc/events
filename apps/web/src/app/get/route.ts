@@ -1,4 +1,4 @@
-import { INVITE_COOKIE, INVITE_MAX_AGE_SECONDS, inviteCookieDomain, isRobot, normalizeInviteCode } from "@/lib/invite-code";
+import { INVITE_COOKIE, INVITE_MAX_AGE_SECONDS, deviceOf, inviteCookieDomain, isRobot, normalizeInviteCode } from "@/lib/invite-code";
 
 /**
  * The landing page's "download" button points here: kiro.fineko.space/get?ref=<code>.
@@ -23,7 +23,7 @@ export async function GET(request: Request): Promise<Response> {
   const target = new URL(toWeb ? SITE_URL : PLAY_URL);
   if (code) {
     // Best effort: a failed count must never stop the visitor reaching the store. Robots (link previews) are not counted.
-    if (!robot) await fetch(`${API_URL}/api/v1/invites/click/${code}?kind=download`, { method: "POST", signal: AbortSignal.timeout(3000) }).catch(() => undefined);
+    if (!robot) await fetch(`${API_URL}/api/v1/invites/click/${code}?kind=download&device=${deviceOf(request.headers.get("user-agent"))}`, { method: "POST", signal: AbortSignal.timeout(3000) }).catch(() => undefined);
     if (toWeb) target.searchParams.set("ref", code);
     else target.searchParams.set("referrer", `kiro_ref=${code}&utm_source=invite&utm_medium=referral`);
   }

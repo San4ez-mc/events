@@ -1,4 +1,4 @@
-import { INVITE_COOKIE, INVITE_MAX_AGE_SECONDS, inviteCookieDomain, isRobot, normalizeInviteCode } from "@/lib/invite-code";
+import { INVITE_COOKIE, INVITE_MAX_AGE_SECONDS, deviceOf, inviteCookieDomain, isRobot, normalizeInviteCode } from "@/lib/invite-code";
 
 /**
  * A personal invitation link: kiro.fineko.space/r/<code>.
@@ -20,7 +20,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
 
   const robot = isRobot(request.headers.get("user-agent"));
   // Best effort: a failed count must never stop the visitor reaching the landing page. Robots (link previews) are not counted.
-  if (!robot) await fetch(`${API_URL}/api/v1/invites/click/${code}`, { method: "POST", signal: AbortSignal.timeout(3000) }).catch(() => undefined);
+  if (!robot) await fetch(`${API_URL}/api/v1/invites/click/${code}?device=${deviceOf(request.headers.get("user-agent"))}`, { method: "POST", signal: AbortSignal.timeout(3000) }).catch(() => undefined);
 
   landing.searchParams.set("ref", code);
   landing.searchParams.set("utm_source", "invite");

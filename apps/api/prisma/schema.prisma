@@ -110,6 +110,8 @@ model User {
   referralClicks Int @default(0)
   /// How many times someone pressed "download" on the landing page with this person's code.
   referralDownloadClicks Int @default(0)
+  /// The log behind those counters: one row per counted open / download press of this person's link.
+  inviteEvents InviteEvent[]
 
   socialLinks              UserSocialLink[]
   preferences              UserPreferences?
@@ -1792,4 +1794,19 @@ model CityAlert {
   @@unique([email, kind, cityId])
   @@index([kind, lastSentAt])
   @@map("city_alerts")
+}
+
+/// One counted action on a personal invitation link (robots are never logged): someone opened the link, or pressed "download".
+model InviteEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  inviterId String   @db.Uuid
+  inviter   User     @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  /// "VISIT" (opened /r/<code>) or "DOWNLOAD" (pressed download, /get).
+  kind      String
+  /// "ANDROID" | "IPHONE" | "DESKTOP" | "OTHER", from the browser.
+  device    String
+  createdAt DateTime @default(now())
+
+  @@index([inviterId, createdAt])
+  @@map("invite_events")
 }

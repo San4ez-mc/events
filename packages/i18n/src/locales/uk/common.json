@@ -1002,7 +1002,18 @@
       "invitedBy": "Запросив(ла)",
       "people": "запрошених",
       "linkClicks": "переходів",
-      "downloadClicks": "натиснули «Завантажити»"
+      "downloadClicks": "натиснули «Завантажити»",
+      "listVisits": "Переходи за посиланням",
+      "listDownloads": "Натиснули «Завантажити»",
+      "listPeople": "Зареєструвалися",
+      "listOrganizers": "Стали організаторами",
+      "emptyList": "Поки порожньо",
+      "olderWithoutDetails": "Ще {n} раніших без деталей (список ведеться відтоді, як з'явився облік).",
+      "tapNumber": "Натисніть на цифру, щоб побачити список.",
+      "deviceANDROID": "Android",
+      "deviceIPHONE": "iPhone",
+      "deviceDESKTOP": "Комп'ютер",
+      "deviceOTHER": "Інший пристрій"
     },
     "growth": {
       "newUsers": "Нові користувачі",
