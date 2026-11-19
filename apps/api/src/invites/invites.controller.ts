@@ -1,4 +1,4 @@
-import { Controller, Get, HttpCode, Param, Post } from "@nestjs/common";
+import { Controller, Get, HttpCode, Param, Post, Query } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Public } from "../common/decorators/public.decorator";
@@ -23,8 +23,8 @@ export class InvitesController {
   @RateLimit(60)
   @Post("invites/click/:code")
   @HttpCode(204)
-  async click(@Param("code") code: string): Promise<void> {
-    await this.invites.registerClick(code);
+  async click(@Param("code") code: string, @Query("kind") kind?: string): Promise<void> {
+    await this.invites.registerClick(code, kind === "download" ? "download" : "visit");
   }
 
   /** Admin: who invited whom. */

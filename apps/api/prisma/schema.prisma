@@ -108,6 +108,8 @@ model User {
   invitedUsers User[]  @relation("UserInvites")
   /// How many times this person's invitation link was opened.
   referralClicks Int @default(0)
+  /// How many times someone pressed "download" on the landing page with this person's code.
+  referralDownloadClicks Int @default(0)
 
   socialLinks              UserSocialLink[]
   preferences              UserPreferences?

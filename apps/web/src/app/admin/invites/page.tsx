@@ -17,6 +17,7 @@ interface Person {
 interface InviterRow {
   inviter: { id: string; name: string; email: string };
   clicks: number;
+  downloadClicks: number;
   invited: number;
   organizers: number;
   eventsPublished: number;
@@ -73,6 +74,10 @@ export default function AdminInvitesPage() {
                     <span>
                       <span className="block text-lg font-extrabold">{row.clicks}</span>
                       {t("admin.invites.linkClicks")}
+                    </span>
+                    <span>
+                      <span className="block text-lg font-extrabold">{row.downloadClicks}</span>
+                      {t("admin.invites.downloadClicks")}
                     </span>
                     <span>
                       <span className="block text-lg font-extrabold">{row.invited}</span>

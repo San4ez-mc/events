@@ -17,6 +17,7 @@ interface Person {
 interface InviterRow {
   inviter: { id: string; name: string; email: string };
   clicks: number;
+  downloadClicks: number;
   invited: number;
   organizers: number;
   people: Person[];
@@ -65,11 +66,11 @@ export function InvitesPanel() {
               </Text>
             </View>
             <Text style={styles.counts}>
-              {row.clicks} · {row.invited} · {row.organizers}
+              {row.clicks} · {row.downloadClicks} · {row.invited} · {row.organizers}
             </Text>
           </View>
           <Text style={styles.muted}>
-            {t("admin.invites.linkClicks")} · {t("admin.invites.people")} · {t("admin.invites.organizerBadge")}
+            {t("admin.invites.linkClicks")} · {t("admin.invites.downloadClicks")} · {t("admin.invites.people")} · {t("admin.invites.organizerBadge")}
           </Text>
           {open === row.inviter.id &&
             row.people.map((p) => (

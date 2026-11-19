@@ -1001,7 +1001,8 @@
       "adminTotals": "Запрошувачів: {inviters} · запрошених: {invited} · організаторів серед них: {organizers}",
       "invitedBy": "Запросив(ла)",
       "people": "запрошених",
-      "linkClicks": "переходів"
+      "linkClicks": "переходів",
+      "downloadClicks": "натиснули «Завантажити»"
     },
     "growth": {
       "newUsers": "Нові користувачі",

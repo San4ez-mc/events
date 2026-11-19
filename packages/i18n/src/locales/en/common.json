@@ -1001,7 +1001,8 @@
       "adminTotals": "Inviters: {inviters} · invited: {invited} · of them organizers: {organizers}",
       "invitedBy": "Invited by",
       "people": "invited",
-      "linkClicks": "clicks"
+      "linkClicks": "clicks",
+      "downloadClicks": "pressed Download"
     },
     "growth": {
       "newUsers": "New users",

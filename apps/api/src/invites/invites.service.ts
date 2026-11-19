@@ -29,6 +29,8 @@ export interface MyInvites {
   link: string;
   /** How many times the link was opened. */
   clicks: number;
+  /** How many times "download" was pressed on the landing page with this person's code. */
+  downloadClicks: number;
   total: number;
   organizers: number;
   invited: InvitedPerson[];
@@ -37,6 +39,7 @@ export interface MyInvites {
 export interface InviterRow {
   inviter: { id: string; name: string; email: string };
   clicks: number;
+  downloadClicks: number;
   invited: number;
   organizers: number;
   eventsPublished: number;
@@ -83,7 +86,7 @@ export class InvitesService {
 
   async mine(userId: string): Promise<MyInvites> {
     const code = await this.ensureCode(userId);
-    const me = await this.prisma.user.findUnique({ where: { id: userId }, select: { referralClicks: true } });
+    const me = await this.prisma.user.findUnique({ where: { id: userId }, select: { referralClicks: true, referralDownloadClicks: true } });
     const people = await this.prisma.user.findMany({
       where: { referredById: userId },
       orderBy: { referredAt: "desc" },
@@ -96,14 +99,17 @@ export class InvitesService {
       isOrganizer: p.organizerActivatedAt !== null,
       eventsPublished: p._count.events,
     }));
-    return { code, link: this.linkFor(code), clicks: me?.referralClicks ?? 0, total: invited.length, organizers: invited.filter((p) => p.isOrganizer).length, invited };
+    return { code, link: this.linkFor(code), clicks: me?.referralClicks ?? 0, downloadClicks: me?.referralDownloadClicks ?? 0, total: invited.length, organizers: invited.filter((p) => p.isOrganizer).length, invited };
   }
 
   /** The invitation link was opened: counts the click for the person it belongs to (unknown codes are ignored). */
-  async registerClick(rawCode: string): Promise<void> {
+  async registerClick(rawCode: string, kind: "visit" | "download" = "visit"): Promise<void> {
     const code = normalizeInviteCode(rawCode);
     if (!code) return;
-    await this.prisma.user.updateMany({ where: { referralCode: code }, data: { referralClicks: { increment: 1 } } });
+    await this.prisma.user.updateMany({
+      where: { referralCode: code },
+      data: kind === "download" ? { referralDownloadClicks: { increment: 1 } } : { referralClicks: { increment: 1 } },
+    });
   }
 
   /** Admin: every person who invited someone, with the people they brought and which of them became organizers. */
@@ -116,6 +122,7 @@ export class InvitesService {
         nickname: true,
         email: true,
         referralClicks: true,
+        referralDownloadClicks: true,
         invitedUsers: {
           orderBy: { referredAt: "desc" },
           select: { id: true, name: true, nickname: true, email: true, referredAt: true, createdAt: true, organizerActivatedAt: true, _count: { select: { events: { where: PUBLISHED_EVENTS } } } },
@@ -135,6 +142,7 @@ export class InvitesService {
         return {
           inviter: { id: u.id, name: u.name ?? u.nickname ?? "—", email: u.email },
           clicks: u.referralClicks,
+          downloadClicks: u.referralDownloadClicks,
           invited: people.length,
           organizers: people.filter((p) => p.isOrganizer).length,
           eventsPublished: people.reduce((sum, p) => sum + p.eventsPublished, 0),
