@@ -651,6 +651,9 @@ model Event {
 
   /// External payment link/instruction (§21) — Kiro is not a party to this payment.
   paymentUrl String?
+  /// How to pay the organizer when there is no link: card / IBAN and what to write in the comment. Shown only to the
+  /// organizer and to people who registered (PrismaService omits it from every read unless a query asks for it).
+  paymentDetails String? @db.Text
 
   publishedAt        DateTime?
   cancelledAt        DateTime?

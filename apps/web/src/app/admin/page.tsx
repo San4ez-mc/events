@@ -7,10 +7,14 @@ import { getAccessToken } from "@/lib/api-client";
 import type { AdminAnalyticsSummary } from "@/lib/admin-types";
 import { AdminTraffic } from "@/components/admin-traffic";
 import { AdminInsights } from "@/components/admin-insights";
+import { AdminPeriodFilter, presetPeriod, type Period } from "@/components/admin-period";
+import { AdminDailyCharts } from "@/components/admin-daily-charts";
+import { AdminGrowth } from "@/components/admin-growth";
 
 export default function AdminDashboardPage() {
   const { t } = useTranslations();
   const [summary, setSummary] = useState<AdminAnalyticsSummary | null>(null);
+  const [period, setPeriod] = useState<Period>(() => presetPeriod("month"));
 
   useEffect(() => {
     const token = getAccessToken();
@@ -25,8 +29,11 @@ export default function AdminDashboardPage() {
     <div className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="mb-6 text-2xl font-bold">{t("admin.dashboard.title")}</h1>
 
-      <AdminTraffic />
-      <AdminInsights />
+      <AdminPeriodFilter period={period} onChange={setPeriod} />
+      <AdminDailyCharts period={period} />
+      <AdminGrowth period={period} />
+      <AdminTraffic period={period} />
+      <AdminInsights period={period} />
 
       {summary === null && <p className="text-muted">{t("common.loading")}</p>}
 

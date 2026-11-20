@@ -200,6 +200,10 @@
       "adultsOnlyHint": "Minors will not see this event.",
       "rules": "Rules and important info",
       "paymentUrl": "Payment link",
+      "paymentUrlHint": "Optional. You can paste a payment link (for example a Monobank jar). If you have no link, leave it empty and write the payment details below.",
+      "paymentUrlInvalid": "The payment link must start with https://. If you have bank details rather than a link, leave this field empty and put them in \"Payment details\".",
+      "paymentDetails": "Payment details",
+      "paymentDetailsHint": "Optional. Card number or IBAN and what to write in the transfer comment. Only people who registered for the event can see it.",
       "questions": "Questions for participants",
       "questionsHint": "Participants answer them when registering.",
       "questionLabel": "Question text",
@@ -484,6 +488,7 @@
       "payNow": "Go to payment",
       "markPaid": "I've paid",
       "noPayLink": "The organizer didn't add a payment link: message them to ask how to pay.",
+      "paymentDetailsTitle": "Payment details",
       "open": {
         "title": "You're in 🎉",
         "body1": "This is an open event: no organizer approval is needed, so you can simply show up.",

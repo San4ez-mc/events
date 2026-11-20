@@ -5,6 +5,7 @@ import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
 import { Spinner } from "@/components/ui/spinner";
 import { tEnum } from "@/lib/format";
+import { periodQuery, type Period } from "@/components/admin-period";
 
 interface Insights {
   days: number;
@@ -30,11 +31,10 @@ interface Row {
   value: string;
 }
 
-const DAYS = 30;
 const pct = (part: number, whole: number) => (whole > 0 ? ` (${Math.round((part / whole) * 100)}%)` : "");
 
 /** Funnels, activation, retention, search terms (PostHog) and supply/demand, payments, referrals, notification delivery (our DB). */
-export function AdminInsights() {
+export function AdminInsights({ period }: { period: Period }) {
   const { t } = useTranslations();
   const [data, setData] = useState<Insights | null>(null);
   const [failed, setFailed] = useState(false);
@@ -42,16 +42,25 @@ export function AdminInsights() {
   useEffect(() => {
     const token = getAccessToken();
     if (!token) return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      setData(null);
+      setFailed(false);
+    });
     (async () => {
       try {
-        const res = await fetch(`/api/v1/admin/analytics/insights?days=${DAYS}`, { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch(`/api/v1/admin/analytics/insights?${periodQuery(period)}`, { headers: { Authorization: `Bearer ${token}` } });
+        if (cancelled) return;
         if (res.ok) setData(await res.json());
         else setFailed(true);
       } catch {
-        setFailed(true);
+        if (!cancelled) setFailed(true);
       }
     })();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [period]);
 
   if (failed) return <p className="mb-8 text-sm text-danger">{t("common.somethingWentWrong")}</p>;
   if (!data) return <Spinner />;
@@ -163,7 +172,6 @@ export function AdminInsights() {
   return (
     <section className="mb-10">
       <h2 className="mb-1 text-lg font-bold">{i("title")}</h2>
-      <p className="mb-4 text-xs text-muted">{t("admin.traffic.period").replace("{days}", String(DAYS))}</p>
       {!data.posthogConfigured && <p className="mb-4 rounded-lg border border-border p-3 text-sm text-muted">{i("needPosthog")}</p>}
       {data.posthogError && <p className="mb-4 text-sm text-danger">{i("posthogError")}</p>}
       <div className="grid gap-6 sm:grid-cols-2">

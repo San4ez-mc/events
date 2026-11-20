@@ -213,6 +213,12 @@ export class UpdateEventDto {
   @IsUrl()
   paymentUrl?: string;
 
+  @ApiPropertyOptional({ description: "How to pay the organizer (card / IBAN, what to put in the comment). Shown only to registered people." })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  paymentDetails?: string;
+
   @ApiPropertyOptional({
     description:
       "Confirms the organizer wants participants notified of a significant change (§78). Required to be true when changing startsAt/address/onlineUrl on an already-published event.",

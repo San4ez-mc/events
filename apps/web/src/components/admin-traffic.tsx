@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
 import { Spinner } from "@/components/ui/spinner";
+import { periodQuery, type Period } from "@/components/admin-period";
 
 interface TrafficReport {
   configured: boolean;
@@ -28,29 +29,33 @@ function formatDuration(totalSeconds: number): string {
 }
 
 /** Site + app visitors from PostHog, via the API's /admin/analytics/traffic (the personal API key never reaches the browser). */
-export function AdminTraffic() {
+export function AdminTraffic({ period }: { period: Period }) {
   const { t } = useTranslations();
   const [report, setReport] = useState<TrafficReport | null>(null);
 
   useEffect(() => {
     const token = getAccessToken();
     if (!token) return;
+    let cancelled = false;
+    queueMicrotask(() => setReport(null));
     (async () => {
+      let next: TrafficReport;
       try {
-        const res = await fetch(`/api/v1/admin/analytics/traffic?days=${DAYS}`, { headers: { Authorization: `Bearer ${token}` } });
-        setReport(res.ok ? await res.json() : { configured: true, days: DAYS, error: "TRAFFIC_UNAVAILABLE" });
+        const res = await fetch(`/api/v1/admin/analytics/traffic?${periodQuery(period)}`, { headers: { Authorization: `Bearer ${token}` } });
+        next = res.ok ? await res.json() : { configured: true, days: DAYS, error: "TRAFFIC_UNAVAILABLE" };
       } catch {
-        setReport({ configured: true, days: DAYS, error: "TRAFFIC_UNAVAILABLE" });
+        next = { configured: true, days: DAYS, error: "TRAFFIC_UNAVAILABLE" };
       }
+      if (!cancelled) setReport(next);
     })();
-  }, []);
-
-  const maxVisitors = Math.max(1, ...(report?.daily ?? []).map((d) => d.visitors));
+    return () => {
+      cancelled = true;
+    };
+  }, [period]);
 
   return (
     <section className="mb-10">
       <h2 className="mb-1 text-lg font-bold">{t("admin.traffic.title")}</h2>
-      <p className="mb-4 text-xs text-muted">{t("admin.traffic.period").replace("{days}", String(DAYS))}</p>
 
       {report === null && <Spinner />}
       {report && !report.configured && <p className="rounded-lg border border-border p-4 text-sm text-muted">{t("admin.traffic.notConfigured")}</p>}
@@ -64,22 +69,6 @@ export function AdminTraffic() {
             <Tile label={t("admin.traffic.sessions")} value={report.totals.sessions} />
             <Tile label={t("admin.traffic.avgSession")} value={formatDuration(report.totals.avgSessionSeconds)} />
           </div>
-
-          {report.daily && report.daily.length > 0 && (
-            <>
-              <h3 className="mb-2 text-sm font-semibold">{t("admin.traffic.daily")}</h3>
-              <div className="mb-6 flex h-28 items-end gap-1 rounded-lg border border-border p-3" role="img" aria-label={t("admin.traffic.daily")}>
-                {report.daily.map((d) => (
-                  <div
-                    key={d.date}
-                    title={`${d.date}: ${d.visitors}`}
-                    className="accent-gradient min-h-[2px] flex-1 rounded-t"
-                    style={{ height: `${Math.max(2, (d.visitors / maxVisitors) * 100)}%` }}
-                  />
-                ))}
-              </div>
-            </>
-          )}
 
           <div className="grid gap-6 sm:grid-cols-2">
             <List title={t("admin.traffic.topPages")} hint={t("admin.traffic.topPagesHint")} empty={t("admin.traffic.empty")} rows={(report.topPages ?? []).map((p) => ({ key: p.page, label: p.page, value: `${p.views} · ${p.visitors}${p.avgSeconds !== null ? ` · ${formatDuration(p.avgSeconds)}` : ""}` }))} />

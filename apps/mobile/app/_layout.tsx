@@ -10,9 +10,11 @@ import { ThemeProvider, useTheme } from "../src/lib/theme";
 import { installCrashReporter } from "../src/lib/crash-reporter";
 import { captureScreen } from "../src/lib/product-analytics";
 import { lockPhonesToPortrait } from "../src/lib/phone-orientation";
+import { captureInstallReferrer } from "../src/lib/install-referrer";
 
 installCrashReporter();
 lockPhonesToPortrait();
+void captureInstallReferrer();
 
 /** The navigator lives below ThemeProvider so its header/background and the status-bar icons follow the chosen theme. */
 function ThemedStack() {

@@ -3,6 +3,7 @@ import type { UserRole } from "@kiro/types";
 import { API_URL, getAccessToken, refreshAccessToken, setAccessToken } from "./api-client";
 import { captureEvent, identifyUser, isInternalAccount } from "./product-analytics";
 import { setStoredRefreshToken } from "./token-storage";
+import { clearStoredInviteCode, readStoredInviteCode } from "./install-referrer";
 
 export interface SessionUser {
   id: string;
@@ -71,13 +72,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const res = await fetch(`${API_URL}/api/v1/auth/google`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idToken }),
+      body: JSON.stringify({ idToken, referralCode: (await readStoredInviteCode()) ?? undefined }),
     });
     const body = await res.json();
     if (!res.ok) throw new ApiRequestError(body);
     setAccessToken(body.accessToken);
     await setStoredRefreshToken(body.refreshToken);
     setUser(body.user);
+    void clearStoredInviteCode();
     captureEvent("login", { method: "google" });
   }, []);
 
@@ -86,13 +88,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(`${API_URL}/api/v1/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
+        body: JSON.stringify({ ...input, referralCode: input.referralCode || (await readStoredInviteCode()) || undefined }),
       });
       const body = await res.json();
       if (!res.ok) throw new ApiRequestError(body);
       setAccessToken(body.accessToken);
       await setStoredRefreshToken(body.refreshToken);
       setUser(body.user);
+      void clearStoredInviteCode();
       captureEvent("sign_up", { method: "email" });
     },
     [],

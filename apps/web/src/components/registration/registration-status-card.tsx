@@ -23,6 +23,7 @@ export function RegistrationStatusCard({
   eventId,
   startsAt,
   paymentUrl,
+  paymentDetails,
   online,
   submitting,
   onCancel,
@@ -34,6 +35,7 @@ export function RegistrationStatusCard({
   eventId: string;
   startsAt: string | null;
   paymentUrl: string | null;
+  paymentDetails?: string | null;
   online: boolean;
   submitting: boolean;
   onCancel: () => void;
@@ -74,13 +76,19 @@ export function RegistrationStatusCard({
 
       {state.showPayment && (
         <div className="flex flex-col gap-2">
+          {paymentDetails?.trim() && (
+            <div className="rounded-[14px] border border-border bg-background p-3.5 text-sm">
+              <p className="mb-1 font-bold">{t("registration.state.paymentDetailsTitle")}</p>
+              <p className="whitespace-pre-wrap break-words select-all">{paymentDetails}</p>
+            </div>
+          )}
           {paymentUrl ? (
             <a href={paymentUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="secondary" className="w-full">
                 {t("registration.state.payNow")}
               </Button>
             </a>
-          ) : (
+          ) : paymentDetails?.trim() ? null : (
             <p className="text-muted">{t("registration.state.noPayLink")}</p>
           )}
           <Button onClick={onMarkPaid} loading={submitting} className="w-full">

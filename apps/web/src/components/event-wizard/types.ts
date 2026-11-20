@@ -44,6 +44,7 @@ export interface WizardData {
   adultsOnly: boolean;
   rules: string;
   paymentUrl: string;
+  paymentDetails: string;
   fields: WizardField[];
   faq: { question: string; answer: string }[];
   tiers: { id?: string; name: string; price: string; capacity: string }[];
@@ -79,6 +80,7 @@ export const EMPTY_WIZARD_DATA: WizardData = {
   adultsOnly: false,
   rules: "",
   paymentUrl: "",
+  paymentDetails: "",
   fields: [],
   faq: [],
   tiers: [],

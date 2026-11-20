@@ -66,6 +66,7 @@ interface EventDetail {
   ageRestriction: number | null;
   rules: string | null;
   paymentUrl: string | null;
+  paymentDetails?: string | null;
   additionalCategories?: { category: { id: string } }[];
 }
 interface Form {
@@ -99,6 +100,7 @@ interface Form {
   adultsOnly: boolean;
   rules: string;
   paymentUrl: string;
+  paymentDetails: string;
 }
 
 const RECURRENCE_TYPES = ["DAILY", "WEEKLY", "EVERY_N_WEEKS", "EVERY_N_MONTHS"] as const;
@@ -181,6 +183,7 @@ const INITIAL: Form = {
   adultsOnly: false,
   rules: "",
   paymentUrl: "",
+  paymentDetails: "",
 };
 
 /**
@@ -240,6 +243,8 @@ const FIELD_LABELS: Record<string, string> = {
 function describePublishError(err: ApiRequestError, t: (key: string) => string): string {
   const details = err.details as Record<string, string[]> | undefined;
   if (!details) return t(`errors.${err.code}`);
+  // A bank card or IBAN typed into the payment *link* field: say what to do instead of showing the raw server message.
+  if (JSON.stringify(details).includes("paymentUrl")) return t("events.wizard.paymentUrlInvalid");
 
   if (Array.isArray(details._) && details._.length > 0) {
     const names = details._.map((field) => (FIELD_LABELS[field] ? t(FIELD_LABELS[field]) : field)).join(", ");
@@ -390,6 +395,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
           adultsOnly: (e.ageRestriction ?? 0) >= 18,
           rules: e.rules ?? "",
           paymentUrl: e.paymentUrl ?? "",
+          paymentDetails: e.paymentDetails ?? "",
         });
       })
       .catch(() => setError(t("common.somethingWentWrong")));
@@ -541,6 +547,8 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
         ageRestriction: form.adultsOnly ? 18 : 0,
         rules: form.rules.trim() || undefined,
         paymentUrl: form.priceType !== "FREE" && form.paymentUrl.trim() ? form.paymentUrl.trim() : undefined,
+        // Sent even when empty, so clearing the field (or making the event free) removes the details.
+        paymentDetails: form.priceType !== "FREE" ? form.paymentDetails.trim() : "",
       };
     }
     return {};
@@ -1074,6 +1082,11 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
                 <Field label={t("events.wizard.paymentUrl")}>
                   <TextInput value={form.paymentUrl} onChangeText={(v) => set({ paymentUrl: v })} style={styles.input} autoCapitalize="none" keyboardType="url" placeholder="https://" placeholderTextColor={colors.muted} />
                 </Field>
+                <Text style={styles.hint}>{t("events.wizard.paymentUrlHint")}</Text>
+                <Field label={t("events.wizard.paymentDetails")}>
+                  <TextInput value={form.paymentDetails} onChangeText={(v) => set({ paymentDetails: v })} style={[styles.input, styles.multiline]} multiline maxLength={2000} placeholderTextColor={colors.muted} />
+                </Field>
+                <Text style={styles.hint}>{t("events.wizard.paymentDetailsHint")}</Text>
               </>
             )}
 

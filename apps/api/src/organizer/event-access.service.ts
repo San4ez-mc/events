@@ -17,7 +17,7 @@ export class EventAccessService {
 
   /** Returns the event if the caller owns it or holds `permission` as a collaborator; throws otherwise. */
   async assertPermission(eventId: string, userId: string, permission: CollaboratorPermission): Promise<Event> {
-    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
+    const event = await this.prisma.event.findUnique({ where: { id: eventId }, omit: { paymentDetails: false } });
     if (!event) throw new ResourceNotFoundException("Event not found");
     if (event.ownerId === userId) return event;
 
@@ -31,7 +31,7 @@ export class EventAccessService {
 
   /** Owner-only actions (e.g. managing collaborators themselves) — no permission can substitute for this. */
   async assertOwner(eventId: string, userId: string): Promise<Event> {
-    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
+    const event = await this.prisma.event.findUnique({ where: { id: eventId }, omit: { paymentDetails: false } });
     if (!event) throw new ResourceNotFoundException("Event not found");
     if (event.ownerId !== userId) throw new ForbiddenActionException();
     return event;

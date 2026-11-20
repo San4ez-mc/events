@@ -309,6 +309,7 @@ export class EventsService {
     // making callers hit /events/slug/:slug just to get media/category/etc.
     return this.prisma.event.findUniqueOrThrow({
       where: { id: eventId },
+      omit: { paymentDetails: false },
       include: {
         media: { orderBy: { sortOrder: "asc" } },
         category: true,
@@ -343,6 +344,7 @@ export class EventsService {
   async findBySlugForPreview(slug: string, requesterId: string | undefined) {
     const event = await this.prisma.event.findUnique({
       where: { slug },
+      omit: { paymentDetails: false },
       include: {
         media: { orderBy: { sortOrder: "asc" } },
         category: true,
@@ -399,9 +401,12 @@ export class EventsService {
       select: { user: { select: { id: true, name: true, nickname: true, avatarUrl: true } } },
     });
 
+    // Bank details: only the organizer and people who are registered (same rule as the exact address).
+    const paymentFields = canSeeExactLocation ? {} : { paymentDetails: null };
     return {
       ...withSocial!,
       ...locationFields,
+      ...paymentFields,
       addressLocked: !canSeeExactLocation && (event.format === "OFFLINE" || event.format === "ONLINE"),
       /** Why the address is hidden, so a client can say it ("after approval", "when a spot opens") rather than only "register". */
       addressLockReason: canSeeExactLocation ? null : await this.addressLockReason(event.id, requesterId),
@@ -662,6 +667,7 @@ export class EventsService {
           priceMax: source.priceMax,
           currency: source.currency,
           paymentUrl: source.paymentUrl,
+          paymentDetails: source.paymentDetails,
           // Explicitly DRAFT with no publishedAt/cancelledAt/seriesId — a duplicate starts clean (§70).
         },
       });

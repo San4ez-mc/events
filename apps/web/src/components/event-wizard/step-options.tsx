@@ -113,13 +113,32 @@ export function StepOptions({ data, onChange }: StepProps) {
       </div>
 
       {data.priceType !== "FREE" && (
-        <TextField
-          label={t("events.wizard.paymentUrl")}
-          type="url"
-          value={data.paymentUrl}
-          onChange={(v) => onChange({ paymentUrl: v })}
-          placeholder="https://"
-        />
+        <>
+          <div>
+            <TextField
+              label={t("events.wizard.paymentUrl")}
+              type="url"
+              value={data.paymentUrl}
+              onChange={(v) => onChange({ paymentUrl: v })}
+              placeholder="https://"
+            />
+            <p className="mt-1 text-xs text-muted">{t("events.wizard.paymentUrlHint")}</p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="paymentDetails" className="text-sm font-medium">
+              {t("events.wizard.paymentDetails")}
+            </label>
+            <textarea
+              id="paymentDetails"
+              rows={4}
+              maxLength={2000}
+              value={data.paymentDetails}
+              onChange={(e) => onChange({ paymentDetails: e.target.value })}
+              className={input}
+            />
+            <p className="text-xs text-muted">{t("events.wizard.paymentDetailsHint")}</p>
+          </div>
+        </>
       )}
 
       <section className="flex flex-col gap-3">

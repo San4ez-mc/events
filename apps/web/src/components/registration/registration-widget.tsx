@@ -362,6 +362,7 @@ export function RegistrationWidget({ event }: { event: EventDetail }) {
         eventId={event.id}
         startsAt={event.startsAt}
         paymentUrl={event.paymentUrl ?? null}
+        paymentDetails={event.paymentDetails ?? null}
         online={event.format === "ONLINE"}
         submitting={submitting}
         onCancel={() => void cancel()}

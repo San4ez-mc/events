@@ -100,6 +100,8 @@ export interface EventDetail extends EventSummary {
   ageRestriction: number | null;
   rules: string | null;
   paymentUrl: string | null;
+  /** Card / IBAN: the API sends it only to the organizer and to people who are registered. */
+  paymentDetails?: string | null;
   cancellationReason: string | null;
   category: { id: string; nameUk: string; nameEn: string } | null;
   /** UX §10 — categories beyond the primary one, set via PUT /events/:id/categories. */

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, router } from "expo-router";
 import { Linking, StyleSheet, Text, View } from "react-native";
 import { API_URL } from "../src/lib/api-client";
@@ -9,6 +9,7 @@ import { TextField } from "../src/components/ui/TextField";
 import { AuthBackdrop } from "../src/components/auth/AuthBackdrop";
 import { GoogleSignInButton } from "../src/components/auth/GoogleSignInButton";
 import { spacing, type Palette, useThemedStyles } from "../src/lib/theme";
+import { readStoredInviteCode } from "../src/lib/install-referrer";
 
 export default function RegisterScreen() {
   const { styles } = useThemedStyles(makeStyles);
@@ -18,6 +19,13 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [inviteCode, setInviteCode] = useState("");
+
+  // A code that came with the install (the landing page's download button) is filled in; the person can still change it.
+  useEffect(() => {
+    void readStoredInviteCode().then((code) => {
+      if (code) setInviteCode((current) => current || code);
+    });
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [emailTaken, setEmailTaken] = useState(false);
   const [loading, setLoading] = useState(false);

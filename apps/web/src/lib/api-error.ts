@@ -37,6 +37,8 @@ export function describeApiError(err: ApiRequestError, t: (key: string) => strin
   const generic = t(`errors.${err.code}`);
   const details = err.details;
   if (!details) return generic;
+  // A bank card or IBAN typed into the payment *link* field: say what to do instead of showing the raw server message.
+  if (JSON.stringify(details).includes("paymentUrl")) return t("events.wizard.paymentUrlInvalid");
 
   const label = (field: string): string => {
     const key = FIELD_LABELS[field];

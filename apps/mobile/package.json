@@ -11,6 +11,7 @@
     "@kiro/schemas": "workspace:*",
     "@kiro/types": "workspace:*",
     "expo": "~57.0.26",
+    "expo-application": "~57.0.3",
     "expo-auth-session": "~57.0.13",
     "expo-build-properties": "~57.0.22",
     "expo-constants": "~57.0.20",

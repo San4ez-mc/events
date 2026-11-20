@@ -797,6 +797,7 @@ export default function EventDetailScreen() {
         onlineUrl={event.onlineUrl}
         mapsUrl={mapsUrl}
         paymentUrl={event.paymentUrl ?? null}
+        paymentDetails={event.paymentDetails ?? null}
         submitting={submitting}
         onCancel={() => void cancelRegistration()}
         onMarkPaid={() => void markPaid()}

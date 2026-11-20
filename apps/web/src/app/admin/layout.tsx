@@ -9,21 +9,21 @@ import { useTranslations } from "@/lib/locale-context";
 const ADMIN_ROLES = ["MODERATOR", "ADMIN", "SUPER_ADMIN"];
 
 const NAV_ITEMS: { href: string; labelKey: string }[] = [
-  { href: "/admin", labelKey: "admin.nav.dashboard" },
+  { href: "/admin", labelKey: "admin.nav.analytics" },
   { href: "/admin/moderation", labelKey: "admin.nav.moderation" },
-  { href: "/admin/reports", labelKey: "admin.nav.reports" },
-  { href: "/admin/users", labelKey: "admin.nav.users" },
-  { href: "/admin/events", labelKey: "admin.nav.events" },
   { href: "/admin/reviews", labelKey: "admin.nav.reviews" },
+  { href: "/admin/reports", labelKey: "admin.nav.reports" },
   { href: "/admin/categories", labelKey: "admin.nav.categories" },
   { href: "/admin/districts", labelKey: "admin.nav.districts" },
+  { href: "/admin/users", labelKey: "admin.nav.users" },
+  { href: "/admin/events", labelKey: "admin.nav.events" },
   { href: "/admin/payments", labelKey: "admin.nav.payments" },
   { href: "/admin/credits", labelKey: "admin.nav.credits" },
   { href: "/admin/referrals", labelKey: "admin.nav.referrals" },
   { href: "/admin/invites", labelKey: "admin.nav.invites" },
   { href: "/admin/feedback", labelKey: "admin.nav.feedback" },
-  { href: "/admin/broadcast", labelKey: "admin.nav.broadcast" },
   { href: "/admin/audit", labelKey: "admin.nav.audit" },
+  { href: "/admin/broadcast", labelKey: "admin.nav.broadcast" },
 ];
 
 /** §72/§73 — every `/admin/*` page. Phone-friendly: a horizontally-scrolling tab strip instead of a fixed sidebar. Server-side RBAC (RolesGuard) is the real gate; this is just UX. */

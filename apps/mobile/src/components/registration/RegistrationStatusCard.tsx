@@ -22,6 +22,7 @@ export function RegistrationStatusCard({
   onlineUrl,
   mapsUrl,
   paymentUrl,
+  paymentDetails,
   submitting,
   onCancel,
   onMarkPaid,
@@ -36,6 +37,7 @@ export function RegistrationStatusCard({
   onlineUrl: string | null;
   mapsUrl: string | null;
   paymentUrl: string | null;
+  paymentDetails?: string | null;
   submitting: boolean;
   onCancel: () => void;
   onMarkPaid: () => void;
@@ -89,7 +91,15 @@ export function RegistrationStatusCard({
 
       {state.showPayment && (
         <View style={{ gap: spacing.sm }}>
-          {paymentUrl ? <Button title={t("registration.state.payNow")} variant="secondary" onPress={() => void Linking.openURL(paymentUrl)} /> : <Text style={styles.muted}>{t("registration.state.noPayLink")}</Text>}
+          {paymentDetails?.trim() ? (
+            <View style={styles.detailsBox}>
+              <Text style={styles.detailsTitle}>{t("registration.state.paymentDetailsTitle")}</Text>
+              <Text style={styles.detailsText} selectable>
+                {paymentDetails}
+              </Text>
+            </View>
+          ) : null}
+          {paymentUrl ? <Button title={t("registration.state.payNow")} variant="secondary" onPress={() => void Linking.openURL(paymentUrl)} /> : paymentDetails?.trim() ? null : <Text style={styles.muted}>{t("registration.state.noPayLink")}</Text>}
           <Button title={t("registration.state.markPaid")} onPress={onMarkPaid} loading={submitting} />
         </View>
       )}
@@ -150,6 +160,9 @@ const makeStyles = (colors: Palette) =>
     title: { color: colors.foreground, fontSize: 17, fontWeight: "800" },
     body: { color: colors.foreground, fontSize: 14, lineHeight: 20 },
     muted: { color: colors.muted, fontSize: 14, lineHeight: 20 },
+    detailsBox: { backgroundColor: colors.background, borderRadius: radius.md, padding: spacing.md, gap: 4 },
+    detailsTitle: { color: colors.foreground, fontSize: 14, fontWeight: "700" },
+    detailsText: { color: colors.foreground, fontSize: 14, lineHeight: 20 },
     small: { color: colors.muted, fontSize: 12 },
     bold: { fontWeight: "700" },
     detail: { gap: 4, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md },

@@ -51,6 +51,7 @@ function toWizardData(event: EventDetail): WizardData {
     adultsOnly: (event.ageRestriction ?? 0) >= 18,
     rules: event.rules ?? "",
     paymentUrl: event.paymentUrl ?? "",
+    paymentDetails: event.paymentDetails ?? "",
     tiers: (event.priceOptions ?? []).map((o) => ({
       id: o.id,
       name: o.name,
@@ -104,6 +105,8 @@ function toUpdatePayload(data: WizardData): Record<string, unknown> {
       data.priceType !== "FREE" && data.paymentUrl
         ? data.paymentUrl
         : undefined,
+    // Sent even when empty, so clearing the field (or making the event free) removes the details.
+    paymentDetails: data.priceType !== "FREE" ? data.paymentDetails.trim() : "",
   };
   if (data.format === "OFFLINE") {
     payload.cityId = data.cityId ?? undefined;

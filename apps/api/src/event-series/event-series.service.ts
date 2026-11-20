@@ -41,6 +41,7 @@ function copyableFields(template: Event): Omit<Prisma.EventUncheckedCreateInput,
     priceMax: template.priceMax,
     currency: template.currency,
     paymentUrl: template.paymentUrl,
+    paymentDetails: template.paymentDetails,
   };
 }
 

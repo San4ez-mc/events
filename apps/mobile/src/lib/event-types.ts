@@ -63,6 +63,8 @@ export interface EventDetail extends EventCard {
   rules: string | null;
   approvalMode: "AUTO" | "ORGANIZER_APPROVAL";
   paymentUrl: string | null;
+  /** Card / IBAN: the API sends it only to the organizer and to people who are registered. */
+  paymentDetails?: string | null;
   registrationFields: {
     id: string;
     label: string;

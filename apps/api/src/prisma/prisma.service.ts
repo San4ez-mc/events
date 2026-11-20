@@ -5,6 +5,15 @@ import { PrismaClient } from "@prisma/client";
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
 
+  /**
+   * Event.paymentDetails (bank card / IBAN) is private: it is left out of every read by default, so no list, feed or
+   * search can leak it. The few queries that may show it (organizer/collaborator edit, the event page for someone who is
+   * registered) pass `omit: { paymentDetails: false }`.
+   */
+  constructor() {
+    super({ omit: { event: { paymentDetails: true } } });
+  }
+
   async onModuleInit() {
     await this.$connect();
     this.logger.log("Connected to PostgreSQL");
