@@ -1440,6 +1440,9 @@
     "deleteDraft": "Delete draft",
     "deleteDraftConfirm": "Delete the draft \"{title}\"? This cannot be undone.",
     "deleteDraftFailed": "Could not delete the draft",
+    "deleteEvent": "Delete event",
+    "deleteEventConfirm": "Delete the event \"{title}\"? It will disappear from Kiro. If anyone has already registered, we will tell them it was cancelled.",
+    "deleteEventFailed": "Could not delete the event",
     "registrations": "My registrations & tickets"
   },
   "chat": {

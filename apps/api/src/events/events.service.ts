@@ -234,7 +234,8 @@ export class EventsService {
     const limit = Math.min(params.limit ?? PAGINATION.defaultLimit, PAGINATION.maxLimit);
 
     const events = await this.prisma.event.findMany({
-      where: { ownerId: userId, status: params.status },
+      // Deleted (archived) events are gone from the organizer's lists unless that status is asked for explicitly.
+      where: { ownerId: userId, status: params.status ?? { not: "ARCHIVED" } },
       orderBy: { createdAt: "desc" },
       take: limit + 1,
       ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
@@ -514,17 +515,25 @@ export class EventsService {
   }
 
   /**
-   * Deletes a draft for good. Only the owner, and only while it is still a draft: nothing has been published, nobody has
-   * registered and no credit was spent, so there is nothing to keep (everything attached to it goes with it). Anything
-   * that was published is cancelled instead (see `cancel`), never deleted.
+   * The organizer's "delete". Only the owner.
+   *  - A draft is deleted for good: nothing was published, nobody registered and no credit was spent.
+   *  - Anything else disappears from Kiro (it is archived: not shown on the site, in the feed, in search or in the organizer's
+   *    lists) but the record stays, so registrations, payments and statistics are not lost. If it is still upcoming and
+   *    published, the people who registered are first told it is cancelled (same as `cancel`).
    */
-  async deleteDraft(eventId: string, userId: string): Promise<void> {
+  async deleteEvent(eventId: string, userId: string): Promise<void> {
     const event = await this.getOwnedEvent(eventId, userId);
-    if (event.ownerId !== userId) throw new ForbiddenActionException("Only the organizer can delete a draft");
-    if (event.status !== "DRAFT") {
-      throw new ApiException("VALIDATION_ERROR", "Only a draft can be deleted; cancel a published event instead", 400);
+    if (event.ownerId !== userId) throw new ForbiddenActionException("Only the organizer can delete an event");
+    if (event.status === "DRAFT") {
+      await this.prisma.event.delete({ where: { id: eventId } });
+      return;
     }
-    await this.prisma.event.delete({ where: { id: eventId } });
+    if (event.status === "ARCHIVED") throw new ResourceNotFoundException("Event not found");
+    const upcoming = !event.startsAt || event.startsAt.getTime() > Date.now();
+    if (upcoming && (event.status === "PUBLISHED" || event.status === "PENDING_MODERATION")) {
+      await this.applyCancel(event, undefined);
+    }
+    await this.prisma.event.update({ where: { id: eventId }, data: { status: "ARCHIVED" } });
   }
 
   /** Phase 10's `/admin/events/:id/cancel` — same effect, no ownership gate. */

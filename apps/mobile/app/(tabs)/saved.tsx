@@ -94,12 +94,13 @@ export default function MyEventsTab() {
 
   const list = segment === "saved" ? saved : created;
 
-  /** Drafts only: nothing was published, so it is deleted for good (after a confirmation). */
+  /** A draft is deleted for good; any other event disappears from Kiro (registrants are told it was cancelled). Always confirmed first. */
   function deleteDraft(item: EventCard) {
-    Alert.alert(t("myEvents.deleteDraft"), t("myEvents.deleteDraftConfirm").replace("{title}", item.title), [
+    const draft = item.status === "DRAFT";
+    Alert.alert(t(draft ? "myEvents.deleteDraft" : "myEvents.deleteEvent"), t(draft ? "myEvents.deleteDraftConfirm" : "myEvents.deleteEventConfirm").replace("{title}", item.title), [
       { text: t("common.cancel"), style: "cancel" },
       {
-        text: t("myEvents.deleteDraft"),
+        text: t(draft ? "myEvents.deleteDraft" : "myEvents.deleteEvent"),
         style: "destructive",
         onPress: () =>
           void (async () => {
@@ -110,7 +111,7 @@ export default function MyEventsTab() {
               if (refreshed) res = await send(refreshed).catch(() => null);
             }
             if (res?.ok) setCreated((prev) => (prev ? prev.filter((e) => e.id !== item.id) : prev));
-            else Alert.alert(t("myEvents.deleteDraftFailed"));
+            else Alert.alert(t("myEvents.deleteEventFailed"));
           })(),
       },
     ]);
@@ -179,6 +180,9 @@ export default function MyEventsTab() {
               )}
               <Pressable onPress={() => router.push(`/edit/${item.id}`)} hitSlop={6}>
                 <Text style={styles.action}>{t("myEvents.edit")}</Text>
+              </Pressable>
+              <Pressable onPress={() => deleteDraft(item)} hitSlop={6}>
+                <Text style={[styles.action, { color: colors.danger }]}>{t("myEvents.deleteEvent")}</Text>
               </Pressable>
             </>
           ) : (

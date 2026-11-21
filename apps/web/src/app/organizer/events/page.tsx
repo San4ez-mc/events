@@ -29,9 +29,10 @@ export default function OrganizerEventsPage() {
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [deleteFailed, setDeleteFailed] = useState(false);
 
-  /** Drafts only: deleted for good, after a confirmation. */
+  /** A draft is deleted for good; any other event disappears from Kiro (registrants are told it was cancelled). Always confirmed first. */
   async function deleteDraft(event: EventSummary) {
-    if (!window.confirm(t("myEvents.deleteDraftConfirm").replace("{title}", event.title))) return;
+    const draft = event.status === "DRAFT";
+    if (!window.confirm(t(draft ? "myEvents.deleteDraftConfirm" : "myEvents.deleteEventConfirm").replace("{title}", event.title))) return;
     setDeleteFailed(false);
     const res = await fetch(`/api/v1/events/${event.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` } }).catch(() => null);
     if (res?.ok) setEvents((prev) => (prev ? prev.filter((e) => e.id !== event.id) : prev));
@@ -105,7 +106,7 @@ export default function OrganizerEventsPage() {
         />
       )}
 
-      {deleteFailed && <p role="alert" className="mb-3 text-sm text-danger">{t("myEvents.deleteDraftFailed")}</p>}
+      {deleteFailed && <p role="alert" className="mb-3 text-sm text-danger">{t("myEvents.deleteEventFailed")}</p>}
 
       {!error && events === null && <LoadingState />}
 
@@ -196,15 +197,13 @@ export default function OrganizerEventsPage() {
                 >
                   {t("organizerTools.duplicate")}
                 </Button>
-                {event.status === "DRAFT" && (
-                  <button
-                    type="button"
-                    onClick={() => void deleteDraft(event)}
-                    className="rounded-md border border-danger/50 px-3 py-1.5 text-xs font-medium text-danger hover:bg-background"
-                  >
-                    {t("myEvents.deleteDraft")}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => void deleteDraft(event)}
+                  className="rounded-md border border-danger/50 px-3 py-1.5 text-xs font-medium text-danger hover:bg-background"
+                >
+                  {t(event.status === "DRAFT" ? "myEvents.deleteDraft" : "myEvents.deleteEvent")}
+                </button>
               </div>
             </li>
           ))}

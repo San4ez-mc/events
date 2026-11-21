@@ -85,11 +85,11 @@ export class EventsController {
     return this.eventsService.publish(id, user.id);
   }
 
-  /** Deletes a draft (published events are cancelled, not deleted). */
+  /** Deletes a draft for good; any other event is archived (hidden everywhere, registrants told if it was upcoming). */
   @Delete(":id")
   @HttpCode(204)
-  async deleteDraft(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string): Promise<void> {
-    await this.eventsService.deleteDraft(id, user.id);
+  async deleteEvent(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string): Promise<void> {
+    await this.eventsService.deleteEvent(id, user.id);
   }
 
   @Post(":id/cancel")
