@@ -149,6 +149,8 @@ export class EventsService {
       }
     }
 
+    this.assertPriceUpdate(event, dto);
+
     const slug =
       dto.title && event.status === "DRAFT" && dto.title !== event.title
         ? await this.generateUniqueSlug(dto.title)
@@ -842,6 +844,20 @@ export class EventsService {
   }
 
   /** §69 — the minimum fields required to publish (drafts may be incomplete until this point). */
+  /**
+   * The price of a paid event can't be zero, the upper price can't be below the lower one, and an event that is already
+   * out (published or waiting for moderation) can't be switched to "paid" without an amount. An older event that is
+   * already paid with no amount can still be edited; the forms ask for the amount.
+   */
+  private assertPriceUpdate(event: Event, dto: UpdateEventDto): void {
+    if ((dto.priceType ?? event.priceType) !== "PAID") return;
+    const price = dto.price ?? (event.price == null ? null : Number(event.price));
+    const invalid = (field: string, message: string) => new ApiException("VALIDATION_ERROR", message, 400, { [field]: [message] });
+    if (dto.price !== undefined && !(dto.price > 0)) throw invalid("price", "The price of a paid event must be above zero");
+    if (event.status !== "DRAFT" && event.priceType !== "PAID" && !(Number(price ?? 0) > 0)) throw invalid("price", "A paid event needs a price");
+    if (dto.priceMax !== undefined && dto.priceMax > 0 && price !== null && dto.priceMax < price) throw invalid("priceMax", "The upper price must not be below the price");
+  }
+
   private assertPublishable(event: {
     title: string;
     categoryId: string | null;
@@ -852,6 +868,7 @@ export class EventsService {
     addressText: string | null;
     onlineUrl: string | null;
     priceType: string;
+    price?: Prisma.Decimal | number | null;
     registrationMode?: string;
     externalRegistrationUrl?: string | null;
   }): void {
@@ -863,6 +880,8 @@ export class EventsService {
     if (event.format === "OFFLINE" && !event.cityId) missing.push("cityId");
     if (event.format === "ONLINE" && !event.onlineUrl) missing.push("onlineUrl");
     if (event.registrationMode === "EXTERNAL" && !event.externalRegistrationUrl) missing.push("externalRegistrationUrl");
+    // A paid event without an amount would be shown as "paid" with nothing to pay.
+    if (event.priceType === "PAID" && !(Number(event.price ?? 0) > 0)) missing.push("price");
 
     if (missing.length > 0) {
       throw new ApiException("VALIDATION_ERROR", "Event is missing required fields to publish", 400, {

@@ -4,7 +4,7 @@ import { IoCalendar, IoCalendarOutline, IoLocationOutline, IoPeople, IoPeopleCir
 import { AttendeeStack } from "./attendee-stack";
 import type { SupportedLocale } from "@kiro/i18n";
 import type { EventCard as EventCardData } from "@/lib/event-types";
-import { EVENT_TZ, formatCurrency, formatPriceAmount } from "@/lib/format";
+import { EVENT_TZ, paidPriceText } from "@/lib/format";
 
 /**
  * The swipe card — laid out like the app's: a full-bleed cover with the chips (category, price), a big title,
@@ -98,7 +98,7 @@ export function EventCard({
               ? event.priceType === "DONATION"
                 ? t("common.donation")
                 : t("common.free")
-              : `${formatPriceAmount(event.price, event.priceMax)} ${formatCurrency(event.currency)}`}
+              : paidPriceText(event, t)}
           </span>
         </div>
 

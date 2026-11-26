@@ -2,7 +2,9 @@
 export function formatPriceLabel(e: { priceType: string; price: string | null; priceMax?: string | null; currency: string }, t: (key: string) => string): string {
   if (e.priceType === "FREE") return t("common.free");
   if (e.priceType === "DONATION") return t("common.donation");
-  const range = e.priceMax && e.price && Number(e.priceMax) > Number(e.price) ? `${Number(e.price)}–${Number(e.priceMax)}` : `${e.price ?? "?"}`;
+  // A paid event with no amount is shown as just "paid".
+  if (!e.price) return t("events.wizard.pricePaid");
+  const range = e.priceMax && Number(e.priceMax) > Number(e.price) ? `${Number(e.price)}–${Number(e.priceMax)}` : e.price;
   return `${range} ${formatCurrency(e.currency)}`;
 }
 

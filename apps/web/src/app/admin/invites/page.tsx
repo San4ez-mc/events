@@ -13,6 +13,8 @@ interface Person {
   joinedAt: string;
   isOrganizer: boolean;
   eventsPublished: number;
+  paid: boolean;
+  paidAmount: number;
 }
 interface InviterRow {
   inviter: { id: string; name: string; email: string };
@@ -21,11 +23,13 @@ interface InviterRow {
   invited: number;
   organizers: number;
   eventsPublished: number;
+  payers: number;
+  paidAmount: number;
   people: Person[];
 }
 interface Overview {
   inviters: InviterRow[];
-  totals: { inviters: number; invited: number; organizers: number };
+  totals: { inviters: number; invited: number; organizers: number; payers: number; paidAmount: number };
 }
 interface Action {
   at: string;
@@ -37,7 +41,9 @@ interface Details {
   people: (Person & { events?: { title: string; slug: string; status: string }[] })[];
 }
 
-type Kind = "visits" | "downloads" | "people" | "organizers";
+type Kind = "visits" | "downloads" | "people" | "organizers" | "payers";
+
+const money = (n: number) => new Intl.NumberFormat("uk-UA", { maximumFractionDigits: 0 }).format(n);
 
 const authHeaders = () => ({ Authorization: `Bearer ${getAccessToken() ?? ""}` });
 
@@ -112,7 +118,7 @@ export default function AdminInvitesPage() {
         </>
       );
     }
-    const people = kind === "organizers" ? d.people.filter((p) => p.isOrganizer) : d.people;
+    const people = kind === "organizers" ? d.people.filter((p) => p.isOrganizer) : kind === "payers" ? d.people.filter((p) => p.paid) : d.people;
     return (
       <>
         {people.length === 0 && <p className="text-sm text-muted">{t("admin.invites.emptyList")}</p>}
@@ -126,10 +132,14 @@ export default function AdminInvitesPage() {
                     {p.email} · {when(p.joinedAt)}
                   </span>
                 </span>
-                {p.isOrganizer && (
-                  <span className="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-bold text-emerald-600">
-                    {t("admin.invites.organizerBadge")} · {p.eventsPublished} {t("admin.invites.events")}
-                  </span>
+                {kind === "payers" ? (
+                  <span className="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-bold text-emerald-600">{t("admin.invites.paidAmount").replace("{amount}", money(p.paidAmount))}</span>
+                ) : (
+                  p.isOrganizer && (
+                    <span className="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-bold text-emerald-600">
+                      {t("admin.invites.organizerBadge")} · {p.eventsPublished} {t("admin.invites.events")}
+                    </span>
+                  )
                 )}
               </div>
               {kind === "organizers" && (p.events ?? []).length > 0 && (
@@ -153,6 +163,7 @@ export default function AdminInvitesPage() {
     downloads: t("admin.invites.listDownloads"),
     people: t("admin.invites.listPeople"),
     organizers: t("admin.invites.listOrganizers"),
+    payers: t("admin.invites.listPayers"),
   };
 
   return (
@@ -174,6 +185,8 @@ export default function AdminInvitesPage() {
               .replace("{invited}", String(data.totals.invited))
               .replace("{organizers}", String(data.totals.organizers))}
           </p>
+          <p className="text-sm font-semibold">{t("admin.invites.adminPaid").replace("{payers}", String(data.totals.payers)).replace("{amount}", money(data.totals.paidAmount))}</p>
+          <p className="text-xs text-muted">{t("admin.invites.paidNote")}</p>
           {data.inviters.length === 0 && <p className="text-muted">{t("admin.invites.adminEmpty")}</p>}
           <ul className="flex flex-col gap-3">
             {data.inviters.map((row) => (
@@ -182,12 +195,14 @@ export default function AdminInvitesPage() {
                   <span className="block truncate font-bold">{row.inviter.name}</span>
                   <span className="block truncate text-xs text-muted">{row.inviter.email}</span>
                 </div>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-5 gap-2">
                   {counter(row, "visits", row.clicks, t("admin.invites.linkClicks"))}
                   {counter(row, "downloads", row.downloadClicks, t("admin.invites.downloadClicks"))}
                   {counter(row, "people", row.invited, t("admin.invites.people"))}
                   {counter(row, "organizers", row.organizers, t("admin.invites.organizerBadge"))}
+                  {counter(row, "payers", row.payers, t("admin.invites.payers"))}
                 </div>
+                {row.payers > 0 && <p className="text-sm font-semibold text-emerald-600">{t("admin.invites.paidAmount").replace("{amount}", money(row.paidAmount))}</p>}
                 {open?.id === row.inviter.id && (
                   <div className="flex flex-col gap-2 border-t border-border pt-3">
                     <h2 className="text-sm font-bold">{listTitle[open.kind]}</h2>

@@ -19,6 +19,7 @@ import { StepOptions } from "./step-options";
 import { StepMedia } from "./step-media";
 import { StepPreview } from "./step-preview";
 import { EMPTY_WIZARD_DATA, type WizardData } from "./types";
+import { checkPricing, checkTiers } from "@/lib/price-input";
 
 function toWizardData(event: EventDetail): WizardData {
   return {
@@ -197,6 +198,12 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
     // Which block was being saved when a request failed, to name list-type fields the API reports by index.
     let section: string | null = null;
     setError(null);
+    // Wrong or missing values on the step being left are explained here instead of being dropped from the request.
+    const problem = step === "price" ? checkPricing(data) : step === "options" ? checkTiers(data.tiers) : null;
+    if (problem) {
+      setError(t(problem));
+      return false;
+    }
     setSaving(true);
     try {
       // Use a local variable, not the `eventId` state, for the rest of this
@@ -405,6 +412,15 @@ export function EventWizard({ initialEvent }: { initialEvent?: EventDetail }) {
               {t("events.wizard.coverAdd")}
             </button>
           )}
+        </div>
+      )}
+
+      {eventId && step !== "price" && data.priceType === "PAID" && !(Number(data.price) > 0) && (
+        <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-danger/50 bg-surface p-3 text-sm">
+          <span className="text-danger">{t("events.wizard.noPriceWarning")}</span>
+          <button type="button" disabled={saving} onClick={() => void goTo(STEPS.indexOf("price"))} className="accent-gradient rounded-[10px] px-3 py-1.5 text-xs font-semibold text-white">
+            {t("events.wizard.setPrice")}
+          </button>
         </div>
       )}
 

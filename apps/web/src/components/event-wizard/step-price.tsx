@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "@/lib/locale-context";
+import { sanitizeAmount, sanitizeCount } from "@/lib/price-input";
 import type { StepProps } from "./types";
 
 export function StepPrice({ data, onChange }: StepProps) {
@@ -45,23 +46,22 @@ export function StepPrice({ data, onChange }: StepProps) {
           </label>
           <input
             id="price"
-            type="number"
-            min={0}
-            step="0.01"
+            type="text"
+            inputMode="decimal"
             value={data.price}
-            onChange={(e) => onChange({ price: e.target.value })}
+            onChange={(e) => onChange({ price: sanitizeAmount(e.target.value) })}
             className="rounded-md border border-border bg-background px-3 py-2 text-sm"
           />
+          <p className="text-xs text-muted">{t("events.wizard.priceDigitsHint")}</p>
           <label htmlFor="priceMax" className="mt-2 text-sm font-medium">
             {t("events.wizard.priceMax")}
           </label>
           <input
             id="priceMax"
-            type="number"
-            min={0}
-            step="0.01"
+            type="text"
+            inputMode="decimal"
             value={data.priceMax}
-            onChange={(e) => onChange({ priceMax: e.target.value })}
+            onChange={(e) => onChange({ priceMax: sanitizeAmount(e.target.value) })}
             className="rounded-md border border-border bg-background px-3 py-2 text-sm"
           />
         </div>
@@ -121,10 +121,10 @@ export function StepPrice({ data, onChange }: StepProps) {
           </label>
           <input
             id="minParticipants"
-            type="number"
-            min={1}
+            type="text"
+            inputMode="numeric"
             value={data.minParticipants}
-            onChange={(e) => onChange({ minParticipants: e.target.value })}
+            onChange={(e) => onChange({ minParticipants: sanitizeCount(e.target.value) })}
             className="rounded-md border border-border bg-background px-3 py-2 text-sm"
           />
         </div>
@@ -134,10 +134,10 @@ export function StepPrice({ data, onChange }: StepProps) {
           </label>
           <input
             id="capacity"
-            type="number"
-            min={1}
+            type="text"
+            inputMode="numeric"
             value={data.capacity}
-            onChange={(e) => onChange({ capacity: e.target.value })}
+            onChange={(e) => onChange({ capacity: sanitizeCount(e.target.value) })}
             className="rounded-md border border-border bg-background px-3 py-2 text-sm"
           />
         </div>
@@ -147,10 +147,10 @@ export function StepPrice({ data, onChange }: StepProps) {
           </label>
           <input
             id="presetParticipants"
-            type="number"
-            min={0}
+            type="text"
+            inputMode="numeric"
             value={data.presetParticipants}
-            onChange={(e) => onChange({ presetParticipants: e.target.value })}
+            onChange={(e) => onChange({ presetParticipants: sanitizeCount(e.target.value) })}
             className="rounded-md border border-border bg-background px-3 py-2 text-sm"
           />
           <p className="text-xs text-muted-foreground">

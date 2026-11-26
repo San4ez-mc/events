@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "@/lib/locale-context";
 import { formatDateTime } from "@/lib/format";
+import { linkParts } from "@/lib/linkify";
 import { getAccessToken } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -23,7 +24,6 @@ interface Stats {
 
 const FILTERS = ["PENDING", "ALL"] as const;
 const auth = () => ({ Authorization: `Bearer ${getAccessToken() ?? ""}`, "Content-Type": "application/json" });
-const isLink = (s: string | null) => !!s && /^https?:\/\//i.test(s.trim());
 
 /** Claims for credits from people who shared an event (story / post) and tagged @kiro.ukraine: open the link, approve or reject. */
 export default function AdminReferralsPage() {
@@ -98,13 +98,19 @@ export default function AdminReferralsPage() {
             )}
             <p className="mt-1">
               {a("referralsLink")}:{" "}
-              {isLink(c.note) ? (
-                <a href={c.note!} target="_blank" rel="noopener noreferrer" className="break-all text-[var(--accent-from)] underline">
-                  {c.note}
-                </a>
-              ) : (
-                <b className="break-all">{c.note ?? "—"}</b>
-              )}
+              <b className="break-all">
+                {c.note
+                  ? linkParts(c.note).map((part, i) =>
+                      part.url ? (
+                        <a key={i} href={part.url} target="_blank" rel="noopener noreferrer" className="font-medium text-[var(--accent-from)] underline">
+                          {part.text}
+                        </a>
+                      ) : (
+                        <span key={i}>{part.text}</span>
+                      ),
+                    )
+                  : "—"}
+              </b>
             </p>
             <p className="mb-3 text-xs text-muted">{formatDateTime(c.createdAt, locale)} · {t(`referral.status.${c.status}`)}</p>
             {c.status === "PENDING" && (

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, Alert, Image, Linking, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { linkParts } from "../src/lib/linkify";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { API_URL, getAccessToken } from "../src/lib/api-client";
 import { useAuth } from "../src/lib/auth-context";
@@ -952,7 +953,18 @@ export default function AdminScreen() {
                 <Text style={styles.title}>{c.user.name ?? c.user.nickname ?? c.user.email}</Text>
                 {c.event ? <Text style={styles.muted}>{t("admin.referrals.referralsEvent")}: {c.event.title}</Text> : null}
                 <Text style={styles.body} selectable>
-                  {t("admin.referrals.referralsLink")}: {c.note ?? "—"}
+                  {t("admin.referrals.referralsLink")}:{" "}
+                  {c.note
+                    ? linkParts(c.note).map((part, i) =>
+                        part.url ? (
+                          <Text key={i} style={{ color: colors.accentFrom, textDecorationLine: "underline" }} accessibilityRole="link" onPress={() => void Linking.openURL(part.url!).catch(() => Alert.alert(t("common.somethingWentWrong")))}>
+                            {part.text}
+                          </Text>
+                        ) : (
+                          <Text key={i}>{part.text}</Text>
+                        ),
+                      )
+                    : "—"}
                 </Text>
                 <Text style={styles.muted}>{formatShortDateTime(c.createdAt)} · {t(`referral.status.${c.status}`)}</Text>
                 {c.status === "PENDING" && (

@@ -13,6 +13,8 @@ interface Person {
   joinedAt: string;
   isOrganizer: boolean;
   eventsPublished: number;
+  paid: boolean;
+  paidAmount: number;
   events?: { title: string; slug: string; status: string }[];
 }
 interface InviterRow {
@@ -21,10 +23,12 @@ interface InviterRow {
   downloadClicks: number;
   invited: number;
   organizers: number;
+  payers: number;
+  paidAmount: number;
 }
 interface Overview {
   inviters: InviterRow[];
-  totals: { inviters: number; invited: number; organizers: number };
+  totals: { inviters: number; invited: number; organizers: number; payers: number; paidAmount: number };
 }
 interface Action {
   at: string;
@@ -35,7 +39,9 @@ interface Details {
   downloads: Action[];
   people: Person[];
 }
-type Kind = "visits" | "downloads" | "people" | "organizers";
+type Kind = "visits" | "downloads" | "people" | "organizers" | "payers";
+
+const money = (n: number) => new Intl.NumberFormat("uk-UA", { maximumFractionDigits: 0 }).format(n);
 
 const headers = () => ({ Authorization: `Bearer ${getAccessToken() ?? ""}` });
 
@@ -80,6 +86,7 @@ export function InvitesPanel() {
     downloads: t("admin.invites.listDownloads"),
     people: t("admin.invites.listPeople"),
     organizers: t("admin.invites.listOrganizers"),
+    payers: t("admin.invites.listPayers"),
   };
 
   function renderList(row: InviterRow, kind: Kind) {
@@ -102,7 +109,7 @@ export function InvitesPanel() {
         </>
       );
     }
-    const people = kind === "organizers" ? d.people.filter((p) => p.isOrganizer) : d.people;
+    const people = kind === "organizers" ? d.people.filter((p) => p.isOrganizer) : kind === "payers" ? d.people.filter((p) => p.paid) : d.people;
     return (
       <>
         {people.length === 0 && <Text style={styles.muted}>{t("admin.invites.emptyList")}</Text>}
@@ -111,7 +118,7 @@ export function InvitesPanel() {
             <Text style={styles.lineText}>{p.name}</Text>
             <Text style={styles.muted}>
               {p.email} · {formatShortDateTime(p.joinedAt)}
-              {p.isOrganizer ? ` · ${t("admin.invites.organizerBadge")} (${p.eventsPublished} ${t("admin.invites.events")})` : ""}
+              {kind === "payers" ? ` · ${t("admin.invites.paidAmount").replace("{amount}", money(p.paidAmount))}` : p.isOrganizer ? ` · ${t("admin.invites.organizerBadge")} (${p.eventsPublished} ${t("admin.invites.events")})` : ""}
             </Text>
             {kind === "organizers" ? (p.events ?? []).map((e) => (
               <Text key={e.slug} style={styles.muted} numberOfLines={1}>
@@ -144,6 +151,8 @@ export function InvitesPanel() {
       <Text style={styles.total}>
         {t("admin.invites.adminTotals").replace("{inviters}", String(data.totals.inviters)).replace("{invited}", String(data.totals.invited)).replace("{organizers}", String(data.totals.organizers))}
       </Text>
+      <Text style={styles.total}>{t("admin.invites.adminPaid").replace("{payers}", String(data.totals.payers)).replace("{amount}", money(data.totals.paidAmount))}</Text>
+      <Text style={styles.muted}>{t("admin.invites.paidNote")}</Text>
       {data.inviters.length === 0 && <Text style={styles.muted}>{t("admin.invites.adminEmpty")}</Text>}
       {data.inviters.map((row) => (
         <View key={row.inviter.id} style={styles.card}>
@@ -158,7 +167,9 @@ export function InvitesPanel() {
             {counter(row, "downloads", row.downloadClicks, t("admin.invites.downloadClicks"))}
             {counter(row, "people", row.invited, t("admin.invites.people"))}
             {counter(row, "organizers", row.organizers, t("admin.invites.organizerBadge"))}
+            {counter(row, "payers", row.payers, t("admin.invites.payers"))}
           </View>
+          {row.payers > 0 ? <Text style={[styles.total, { color: colors.success }]}>{t("admin.invites.paidAmount").replace("{amount}", money(row.paidAmount))}</Text> : null}
           {open?.id === row.inviter.id && (
             <View style={styles.list}>
               <Text style={styles.listTitle}>{listTitle[open.kind]}</Text>

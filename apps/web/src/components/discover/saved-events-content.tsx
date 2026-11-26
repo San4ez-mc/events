@@ -20,7 +20,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "@/lib/locale-context";
 import { getAccessToken } from "@/lib/api-client";
 import type { CursorPage, EventCard } from "@/lib/event-types";
-import { formatCurrency, formatPriceAmount } from "@/lib/format";
+import { paidPriceText } from "@/lib/format";
 import { formatCardDate } from "./event-card";
 import { EventResultRow } from "@/components/search/event-result-row";
 import { EmptyState, ScreenHeader } from "@/components/ui/screen-header";
@@ -106,7 +106,7 @@ export function SavedEventsContent() {
 
   const list = segment === "saved" ? saved : created;
   const price = (e: EventCard) =>
-    e.priceType === "FREE" ? t("common.free") : e.priceType === "DONATION" ? t("common.donation") : `${formatPriceAmount(e.price, e.priceMax)} ${formatCurrency(e.currency)}`;
+    e.priceType === "FREE" ? t("common.free") : e.priceType === "DONATION" ? t("common.donation") : paidPriceText(e, t);
   const place = (e: EventCard) => [locale === "uk" ? e.city?.nameUk : e.city?.nameEn, price(e)].filter(Boolean).join(" · ");
 
   const tile = (value: number | string, label: string, Icon: typeof IoEyeOutline) => (
@@ -155,6 +155,10 @@ export function SavedEventsContent() {
             </div>
             {a?.openRatePercent != null && <p className="text-xs text-muted">{t("myEvents.stats.openRate").replace("{percent}", String(a.openRatePercent))}</p>}
           </>
+        )}
+
+        {item.priceType === "PAID" && !item.price && (
+          <p role="alert" className="text-[13px] font-semibold text-danger">{t("myEvents.noPrice")}</p>
         )}
 
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] font-bold text-[var(--accent-from)]">

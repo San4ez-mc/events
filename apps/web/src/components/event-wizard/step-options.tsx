@@ -7,6 +7,7 @@ import { api } from "@/lib/api-client";
 import type { Category } from "@/lib/geo-types";
 import { TextField } from "@/components/ui/text-field";
 import type { RegistrationFieldType } from "@kiro/types";
+import { sanitizeAmount, sanitizeCount } from "@/lib/price-input";
 import type { StepProps, WizardField } from "./types";
 
 const MAX_ADDITIONAL_CATEGORIES = 5;
@@ -277,13 +278,13 @@ export function StepOptions({ data, onChange }: StepProps) {
               className={`${input} min-w-0 flex-1`}
             />
             <input
-              type="number"
-              min={0}
+              type="text"
+              inputMode="decimal"
               value={tier.price}
               onChange={(e) =>
                 onChange({
                   tiers: data.tiers.map((x, idx) =>
-                    idx === i ? { ...x, price: e.target.value } : x,
+                    idx === i ? { ...x, price: sanitizeAmount(e.target.value) } : x,
                   ),
                 })
               }
@@ -292,13 +293,13 @@ export function StepOptions({ data, onChange }: StepProps) {
               className={`${input} w-28`}
             />
             <input
-              type="number"
-              min={1}
+              type="text"
+              inputMode="numeric"
               value={tier.capacity}
               onChange={(e) =>
                 onChange({
                   tiers: data.tiers.map((x, idx) =>
-                    idx === i ? { ...x, capacity: e.target.value } : x,
+                    idx === i ? { ...x, capacity: sanitizeCount(e.target.value) } : x,
                   ),
                 })
               }

@@ -19,6 +19,7 @@ import { CalendarPicker } from "../discover/CalendarPicker";
 import { AddressAutocomplete } from "./AddressAutocomplete";
 import { EventReportCard } from "./EventReportCard";
 import { radius, spacing, type Palette, useThemedStyles } from "../../lib/theme";
+import { checkPricing, checkTiers, sanitizeAmount } from "../../lib/price-input";
 
 interface Named {
   id: string;
@@ -237,6 +238,10 @@ const FIELD_LABELS: Record<string, string> = {
   description: "events.wizard.description",
   cityId: "events.wizard.city",
   onlineUrl: "events.wizard.onlineUrl",
+  price: "events.wizard.priceAmount",
+  priceMax: "events.wizard.priceMax",
+  externalRegistrationUrl: "create.externalUrl",
+  capacity: "create.maxPeople",
   youtubeUrl: "events.wizard.youtubeUrl",
 };
 
@@ -555,6 +560,11 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
   }
 
   async function saveDraft(currentStep: number) {
+    if (currentStep === 1) {
+      // Wrong or missing values are explained here instead of being dropped from the request.
+      const problem = checkPricing(form) ?? checkTiers(form.packages);
+      if (problem) throw new Error(t(problem));
+    }
     if (currentStep === 0) {
       if (form.title.trim().length < 3) throw new Error(t("create.titleTooShort"));
       let id = eventId;
@@ -1071,12 +1081,13 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
               <>
                 {form.priceType === "PAID" && (
                   <Field label={t("events.wizard.priceAmount")}>
-                    <TextInput value={form.price} onChangeText={(v) => set({ price: v.replace(/[^0-9.]/g, "") })} style={styles.input} keyboardType="decimal-pad" placeholder="350" placeholderTextColor={colors.muted} />
+                    <TextInput value={form.price} onChangeText={(v) => set({ price: sanitizeAmount(v) })} style={styles.input} keyboardType="decimal-pad" placeholder="350" placeholderTextColor={colors.muted} />
                   </Field>
                 )}
+                {form.priceType === "PAID" && <Text style={styles.hint}>{t("events.wizard.priceDigitsHint")}</Text>}
                 {form.priceType === "PAID" && (
                   <Field label={t("events.wizard.priceMax")}>
-                    <TextInput value={form.priceMax} onChangeText={(v) => set({ priceMax: v.replace(/[^0-9.]/g, "") })} style={styles.input} keyboardType="decimal-pad" placeholder="2700" placeholderTextColor={colors.muted} />
+                    <TextInput value={form.priceMax} onChangeText={(v) => set({ priceMax: sanitizeAmount(v) })} style={styles.input} keyboardType="decimal-pad" placeholder="2700" placeholderTextColor={colors.muted} />
                   </Field>
                 )}
                 <Field label={t("events.wizard.paymentUrl")}>
@@ -1143,7 +1154,7 @@ export function CreateEventFlow({ editEventId }: { editEventId?: string } = {}) 
                         <TextInput value={pkg.name} onChangeText={(v) => set({ packages: form.packages.map((x, j) => (j === i ? { ...x, name: v } : x)) })} style={styles.input} placeholder={t("create.packageName")} placeholderTextColor={colors.muted} />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <TextInput value={pkg.price} onChangeText={(v) => set({ packages: form.packages.map((x, j) => (j === i ? { ...x, price: v.replace(/[^0-9.]/g, "") } : x)) })} style={styles.input} keyboardType="decimal-pad" placeholder="грн" placeholderTextColor={colors.muted} />
+                        <TextInput value={pkg.price} onChangeText={(v) => set({ packages: form.packages.map((x, j) => (j === i ? { ...x, price: sanitizeAmount(v) } : x)) })} style={styles.input} keyboardType="decimal-pad" placeholder="грн" placeholderTextColor={colors.muted} />
                       </View>
                       <Pressable onPress={() => {
                         setPackagesTouched(true);

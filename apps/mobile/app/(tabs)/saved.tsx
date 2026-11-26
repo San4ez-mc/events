@@ -167,6 +167,8 @@ export default function MyEventsTab() {
           </>
         )}
 
+        {item.priceType === "PAID" && !item.price ? <Text style={[styles.rate, { color: colors.danger, fontWeight: "700" }]}>{t("myEvents.noPrice")}</Text> : null}
+
         <View style={styles.actions}>
           {live ? (
             <>

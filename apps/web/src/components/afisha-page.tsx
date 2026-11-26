@@ -6,7 +6,7 @@ import type { SupportedLocale } from "@kiro/i18n";
 import { LOCALE_COOKIE, resolveLocale } from "@/lib/locale";
 import { getT } from "@/lib/i18n-server";
 import { AFISHA_FILTERS, dateWindow, type AfishaFilter } from "@/lib/afisha";
-import { EVENT_TZ, formatCurrency, formatPriceAmount } from "@/lib/format";
+import { EVENT_TZ, paidPriceText } from "@/lib/format";
 import { fetchCategoriesFlat, fetchCities, fetchPublicEvents, type PublicCategory, type PublicCity } from "@/lib/server-api";
 import type { EventCard } from "@/lib/event-types";
 import { CityAlertForm } from "@/components/city-alert-form";
@@ -144,7 +144,7 @@ function AfishaRow({ event, locale, t }: { event: EventCard; locale: SupportedLo
     ? new Date(event.startsAt).toLocaleString(locale === "uk" ? "uk-UA" : "en-GB", { timeZone: EVENT_TZ, weekday: "short", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })
     : null;
   const place = event.format === "ONLINE" ? t("events.wizard.formatOnline") : event.city ? name(event.city, locale) : null;
-  const price = event.priceType === "FREE" ? t("common.free") : event.priceType === "DONATION" ? t("common.donation") : `${formatPriceAmount(event.price, event.priceMax)} ${formatCurrency(event.currency)}`;
+  const price = event.priceType === "FREE" ? t("common.free") : event.priceType === "DONATION" ? t("common.donation") : paidPriceText(event, t);
   return (
     <Link href={`/events/${event.slug}`} className="flex gap-3.5 rounded-[14px] border border-border bg-surface p-3 transition hover:border-[var(--accent-from)]/50">
       <div className="h-[88px] w-[66px] shrink-0 overflow-hidden rounded-[10px] bg-background">

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { IoCalendarOutline, IoLocationOutline } from "react-icons/io5";
 import type { SupportedLocale } from "@kiro/i18n";
 import type { EventCard } from "@/lib/event-types";
-import { formatCurrency, formatPriceAmount } from "@/lib/format";
+import { paidPriceText } from "@/lib/format";
 import { formatCardDate } from "@/components/discover/event-card";
 
 /** UX §9 — search is a plain list, not the swipe card. Card style matches the app's list rows. */
@@ -26,7 +26,7 @@ export function EventResultRow({
       ? t("common.free")
       : event.priceType === "DONATION"
         ? t("common.donation")
-        : `${formatPriceAmount(event.price, event.priceMax)} ${formatCurrency(event.currency)}`;
+        : paidPriceText(event, t);
 
   return (
     <Link

@@ -73,3 +73,6 @@ apps/mobile/google-services.json
 # Firebase/Google service-account private keys must never be committed
 *firebase-adminsdk*.json
 *service-account*.json
+
+# local notes with secrets
+tik tok.txt

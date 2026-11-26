@@ -57,7 +57,12 @@ export function formatDateTime(value: string | Date, locale: string): string {
 /** "350" or, for a price range, "300–2700" (price is the lowest price, priceMax the highest). */
 export function formatPriceAmount(price: string | null | undefined, priceMax?: string | null): string {
   if (price && priceMax && Number(priceMax) > Number(price)) return `${Number(price)}–${Number(priceMax)}`;
-  return price ?? "?";
+  return price ?? "";
+}
+
+/** The price line of a paid event: "350 грн", or just the word "paid" when no amount was given. */
+export function paidPriceText(e: { price: string | null; priceMax?: string | null; currency: string }, t: (key: string) => string): string {
+  return e.price ? `${formatPriceAmount(e.price, e.priceMax)} ${formatCurrency(e.currency)}` : t("events.wizard.pricePaid");
 }
 
 /** Every event is shown in Kyiv time (the platform is Ukraine-only); pages that render on the server would otherwise show UTC. */
